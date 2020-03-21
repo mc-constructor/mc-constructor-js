@@ -1,0 +1,748 @@
+:A
+ XXX
+X   X
+X   X
+XXXXX
+X   X
+
+:B
+
+XXXX
+X   X
+XXXX
+X   X
+XXXX
+
+:C
+
+ XXXX
+X
+X
+X
+ XXXX
+
+:D
+
+XXX
+X  X
+X   X
+X   X
+XXXX
+
+:E
+
+XXXXX
+X
+XXX
+X
+XXXXX
+
+:F
+
+XXXXX
+X
+XXX
+X
+X
+
+:G
+ XXXX
+X
+X  XX
+X   X
+ XXXX
+
+:H
+
+X   X
+X   X
+XXXXX
+X   X
+X   X
+
+:I
+
+XXXXX
+  X
+  X
+  X
+XXXXX
+
+:J
+
+    X
+    X
+    X
+X   X
+ XXX
+
+:K
+
+X   X
+X  X
+XXX
+X  X
+X   X
+
+:L
+
+X
+X
+X
+X
+XXXXX
+
+:M
+
+X    X
+XX  XX
+X XX X
+X    X
+X    X
+
+:N
+
+X    X
+XX   X
+X X  X
+X  X X
+X    X
+
+:O
+
+ XXX
+X   X
+X   X
+X   X
+ XXX
+
+:P
+
+XXXX
+X   X
+XXXX
+X
+X
+
+:Q
+
+ XXX
+X   X
+X X X
+X   X
+ XXX X
+
+:R
+
+XXXX
+X   X
+XXXX
+X   X
+X   X
+
+:S
+
+ XXXX
+X
+ XXX
+    X
+XXXX
+
+:T
+
+XXXXX
+  X
+  X
+  X
+  X
+
+:U
+
+X   X
+X   X
+X   X
+X   X
+ XXX
+
+:V
+
+X   X
+X   X
+X   X
+ X X
+  X
+
+:W
+
+X   X
+X   X
+X   X
+X X X
+ X X
+
+:X
+
+X   X
+ X X
+  X
+ X X
+X   X
+
+:Y
+
+X   X
+ X X
+  X
+  X
+  X
+
+:Z
+
+XXXXX
+   X
+  X
+ X
+XXXXX
+
+:a
+
+
+
+ XXXX
+X   X
+ XXX X
+
+:b
+
+X
+X
+XXXX
+X   X
+XXXX
+
+:c
+
+
+
+ XXXX
+X
+ XXXX
+
+:d
+
+     X
+     X
+  XXXX
+ X   X
+  XXXX
+
+:e
+
+
+XXXX
+X  XX
+XX
+XXXXX
+
+:f
+
+  XX
+ X  X
+XXX
+ X
+ X
+
+:g
+
+
+
+  XX
+ X  X
+ XXXX
+    X
+  XXX
+
+:h
+
+X
+X
+XXXX
+X   X
+X   X
+
+:i
+
+   X
+
+  XX
+   X
+  XXX
+
+:j
+
+   X
+
+   X
+   X
+   X
+  XX
+
+:k
+
+X
+X  X
+XXX
+X X
+X  X
+
+:l
+
+ XX
+  X
+  X
+  X
+  XX
+
+:m
+
+
+
+ X X
+X X X
+X X X
+
+:n
+
+
+
+XXXX
+X   X
+X   X
+
+:o
+
+
+
+ XXX
+X   X
+X   X
+ XXX
+
+:p
+
+
+
+ XXX
+X   X
+X   X
+XXXX
+X
+X
+
+:q
+
+
+
+ XXX
+X   X
+X   X
+ XXXX
+    X
+    XX
+
+:r
+
+
+
+  XX
+ X
+ X
+
+:s
+
+
+ XXX
+XX
+  XX
+XXX
+
+:t
+
+
+  X
+ XXX
+  X
+  X
+
+:u
+
+
+
+X   X
+X   X
+ XXXX
+
+:v
+
+
+
+X   X
+ X X
+  X
+
+:w
+
+
+
+X   X
+X X X
+ X X
+
+:x
+
+
+
+XX XX
+  X
+XX XX
+
+:y
+
+
+
+ X  X
+ X  X
+  XXX
+    X
+  XX
+
+:z
+
+
+XXXXX
+   X
+ X
+XXXXX
+
+:0
+
+ XXX
+X  XX
+X X X
+XX  X
+ XXX
+
+:1
+
+   X
+ X X
+   X
+   X
+XXXXX
+
+:2
+
+XXXXX
+    X
+XXXX
+X
+XXXXX
+
+:3
+
+XXXXX
+    X
+XXXXX
+    X
+XXXXX
+
+:4
+
+X   X
+X   X
+XXXXXX
+    X
+    X
+
+:5
+
+XXXXX
+X
+XXXX
+    X
+XXXX
+
+:6
+
+ XXX
+X
+XXXX
+X   X
+ XXX
+
+:7
+
+XXXXX
+    X
+   X
+  X
+ X
+
+:8
+
+ XXX
+X   X
+ XXX
+X   X
+ XXX
+
+:9
+
+ XXX
+X   X
+ XXXX
+    X
+ XXX
+
+:`
+
+ X
+  X
+
+:~
+
+
+ X
+X X X
+   X
+
+:!
+
+  X
+  X
+  X
+
+  X
+
+:@
+
+ XXX
+X X X
+X X X
+X
+ XXXX
+
+:#
+
+ X X
+XXXXX
+ X X
+XXXXX
+ X X
+
+:$
+  X
+ XXXX
+X X
+ XXX
+  X X
+XXXX
+  X
+
+:%
+
+X   X
+   X
+  X
+ X
+X   X
+
+:^
+
+  X
+ X X
+
+:&
+   X
+ XXXX
+X  X
+XXXXX
+X  X
+ XXXX
+   X
+
+:*
+
+X X X
+ X X
+XXXXX
+ X X
+X X X
+
+:(
+
+   X
+  X
+  X
+  X
+   X
+
+:)
+
+  X
+   X
+   X
+   X
+  X
+
+:-
+
+
+
+ XXX
+
+:_
+
+
+
+
+
+XXXXX
+
+:+
+
+
+  X
+ XXX
+  X
+
+:=
+
+
+ XXX
+
+ XXX
+
+:[
+
+  XX
+  X
+  X
+  X
+  XX
+
+:]
+
+  XX
+   X
+   X
+   X
+  XX
+
+:{
+
+   XX
+  X
+ XX
+  X
+   XX
+
+:}
+
+XX
+  X
+  XX
+  X
+XX
+
+:|
+  X
+  X
+  X
+  X
+  X
+  X
+  X
+
+:\
+
+X
+ X
+  X
+   X
+    X
+
+::
+
+
+   X
+
+   X
+
+:;
+
+
+   X
+
+   X
+  X
+
+:"
+
+ X X
+ X X
+
+:'
+
+  X
+  X
+
+:,
+
+
+
+
+
+  X
+ X
+
+:.
+
+
+
+
+
+  X
+
+:<
+
+   XX
+ XX
+X
+ XX
+   XX
+
+:>
+
+XX
+  XX
+    X
+  XX
+XX
+
+:?
+
+ XXX
+X   X
+   X
+  X
+
+  X
+
+:/
+
+    X
+   X
+  X
+ X
+X

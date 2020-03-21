@@ -1,0 +1,13 @@
+time set day
+weather clear
+gamerule doWeatherCycle false
+gamerule doDaylightCycle false
+
+#fill -5 10 -5 5 15 5 air
+#list
+#teleport trexarming 0 10 10
+
+fill -6 4 -5 6 4 6 air
+fill -6 3 -5 6 3 6 grass_block
+kill @e[type=!player]
+teleport @p 0 4 0
