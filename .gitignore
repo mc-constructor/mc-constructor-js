@@ -1,3 +1,6 @@
 .env
 .idea
+.jar
+.out
+.server
 node_modules

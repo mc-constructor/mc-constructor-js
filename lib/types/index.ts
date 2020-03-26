@@ -1,1 +1,2 @@
-export * from './src/location';
+export * from './src/blocks'
+export * from './src/location'

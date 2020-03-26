@@ -296,4 +296,4 @@ class Parser {
 
 }
 
-export const ASCII = loadData('ascii')
+// export const ASCII = loadData('ascii')
