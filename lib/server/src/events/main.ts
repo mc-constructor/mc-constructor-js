@@ -9,7 +9,7 @@ export const SERVER_MAIN_PATTERNS: ServerEventPatterns<ServerChannel.main> = [
   [ServerMainEventType.unknown, /.*/],
 ]
 
-export type ServerAuthenticatorEventDataTypeMap = {
+export type ServerMainEventDataTypeMap = {
   [ServerMainEventType.unknown]: any
 }
 
@@ -20,4 +20,4 @@ export type ServerAuthenticatorEventDataTypeMap = {
 //       never
 // }
 
-export type ServerMainEventDataTypes = ServerEventDataTypes<ServerMainEventType, ServerAuthenticatorEventDataTypeMap>
+export type ServerMainEventDataTypes = ServerEventDataTypes<ServerMainEventType, ServerMainEventDataTypeMap>

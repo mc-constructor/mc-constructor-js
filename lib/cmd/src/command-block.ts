@@ -1,58 +1,51 @@
-import { Location, Facing } from '../../types'
-import { BlockData, BlockState, SetBlockCommand } from './setblock'
+import { Coordinates, Block } from '../../types'
 
-export enum CommandBlockType {
-  chain = 'minecraft:chain_command_block',
-  impulse = 'minecraft:command_block',
-  repeating = 'minecraft:repeating_command_block',
+import { BlockDataBase, BlockStateBase } from './block-extras'
+import { Command } from './command'
+import { SetBlockCommand } from './set-block'
+
+export interface CommandBlockTypeStatic {
+  readonly chain: Block.chainCommandBlock
+  readonly impulse: Block.commandBlock
+  readonly repeating: Block.repeatingCommandBlock
 }
+export const CommandBlockType: CommandBlockTypeStatic = Object.freeze({
+  chain: Block.chainCommandBlock,
+  impulse: Block.commandBlock,
+  repeating: Block.repeatingCommandBlock,
+})
+
+export type CommandBlockType = Block.chainCommandBlock | Block.commandBlock | Block.repeatingCommandBlock
 
 export enum AutoSignal {
   alwaysActive = 1,
   requiresRedstone = 0,
 }
 
-export function commandBlock(
-  cmd: string,
-  loc: Location,
-  type: CommandBlockType = CommandBlockType.impulse,
-  extras: string = ''): string {
-  return `setblock ${loc} ${type}{Command:"${cmd}"}${extras}`
-}
-
-export class CommandBlockState extends BlockState {
-
-  public facing(facing: Facing): this {
-    return this.setData('facing', facing)
-  }
+export class CommandBlockState extends BlockStateBase {
 
   public conditional(conditional: boolean): this {
     return this.setData('conditional', conditional)
   }
 }
 
-export class CommandBlockData extends BlockData {
+export class CommandBlockData extends BlockDataBase {
   public autoSignal(autoSignal: AutoSignal): this {
     return this.setData('auto', autoSignal)
   }
-  public command(cmd: string): this {
-    return this.setData('Command', `"${cmd.replace(/"/g, '\\"')}"`)
+  public command(cmd: string | Command): this {
+    if (typeof cmd === 'string') {
+      return this.setData('Command', `"${cmd.replace(/"/g, '\\"')}"`)
+    }
+    this.setData('Command', cmd)
   }
 }
 
-export class SetCommandBlockCommand extends SetBlockCommand<CommandBlockState, CommandBlockData> {
-  public static create(cmd: string, loc: Location, type: CommandBlockType = CommandBlockType.impulse): SetCommandBlockCommand {
-    return new SetCommandBlockCommand(cmd, loc, type)
-  }
+export class SetCommandBlockCommand extends SetBlockCommand<CommandBlockType> {
 
-  protected constructor(blockCmd: string, location: Location, type: CommandBlockType) {
-    super(CommandBlockState, CommandBlockData, location, type)
-    this.data.command(blockCmd)
-  }
-
-  public facing(facing: Facing): this {
-    this.state.facing(facing)
-    return this
+  public constructor(cmd: string | Command, loc: Coordinates, type: CommandBlockType) {
+    super(type, new CommandBlockState(), new CommandBlockData(), loc)
+    this.data.command(cmd)
   }
 
   public conditional(conditional: boolean): this {

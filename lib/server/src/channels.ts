@@ -1,6 +1,5 @@
 import { ServerChannel, ServerChannelMessage } from './messages'
 import {
-  PlayerAuthenticationEventData,
   SERVER_AUTHENTICATOR_PATTERNS,
   ServerAuthenticatorEventDataTypes,
   ServerAuthenticatorEventType

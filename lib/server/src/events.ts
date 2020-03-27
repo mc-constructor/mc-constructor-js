@@ -6,12 +6,19 @@ import { ServerChannel, ServerChannelMessage, ServerMessages } from './messages'
 import { Server } from './server'
 import {
   CHANNEL_PATTERNS,
-  ChannelEvent, ChannelEventTypes,
+  ChannelEvent,
+  ChannelEventTypes,
   EventStreamChannels,
   ServerEventPatterns,
   ServerEventsChannel
 } from './channels'
 import { Client } from './client'
+
+export * from './events/auth'
+export * from './events/main'
+export * from './events/thread'
+export * from './events/unknown'
+export * from './events/worker'
 
 export function makeEventStream<
   TChannel extends ServerChannel,

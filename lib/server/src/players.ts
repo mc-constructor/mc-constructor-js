@@ -1,7 +1,7 @@
 import { Observable, Observer } from 'rxjs'
 import { filter, map } from 'rxjs/operators'
 
-import { loc, Location } from '../../types'
+import { loc, Coordinates } from '../../types'
 
 import { ServerEvents } from './events'
 import { ServerAuthenticatorEventType } from './events/auth'
@@ -13,7 +13,7 @@ export interface Player {
   uuid: string
   entityId: number
   ip: string
-  startLoc: Location
+  startLoc: Coordinates
   joined: true
 }
 

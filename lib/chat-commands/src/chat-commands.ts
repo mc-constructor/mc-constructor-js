@@ -1,8 +1,11 @@
-import { ServerEventsChannel } from '../../server/src/channels'
-import { ServerChannel } from '../../server/src/messages'
-import { ServerThreadEventType } from '../../server/src/events/thread'
-import { Client } from '../../server/src/client'
 import { filter } from 'rxjs/operators'
+
+import { Client, ServerChannel, ServerEventsChannel, ServerThreadEventType } from '../../server'
+import { GAMES_COMMANDS } from './games'
+
+const COMMANDS = {
+  games: GAMES_COMMANDS,
+}
 
 export class ChatCommands {
 
@@ -17,13 +20,18 @@ export class ChatCommands {
         // console.log(`sending "${event.data.message}"`)
         // client.send(event.data.message)
 
-        if (cmd === 'games') {
-          const [subCmd, ...gamesArgs] = args
-          switch (subCmd) {
-            case 'list': return client.send(`tellraw ${event.data.player}`)
-          }
-        }
+        const messageParts = this.handleMessage(client, cmd, args).map(part => JSON.stringify(part)).join(',')
+          // TODO: tellraw command tooling
+          // https://minecraft.gamepedia.com/Raw_JSON_text_format
+        return client.send(`tellraw ${event.data.player} [${messageParts}]`)
       })
+  }
+
+  private handleMessage(client: Client, cmd: string, args: any[]): any[] {
+    if (COMMANDS[cmd]) {
+      return COMMANDS[cmd](client, args)
+    }
+    return [`I don't know what you're talking about :(`]
   }
 
 }

@@ -1,0 +1,10 @@
+{
+  "extends": "../tsconfig",
+  "compilerOptions": {
+    "baseUrl": "../",
+    "paths": {
+      "@minecraft/core/*": ["./lib/*"],
+      "@minecraft/minigames": ["./minigames"]
+    }
+  }
+}

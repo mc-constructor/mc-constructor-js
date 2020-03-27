@@ -1,6 +1,5 @@
 import { fill, set } from '../../cmd'
-import { loc, Location } from '../../types'
-import { setupCodslap } from './codslap'
+import { loc, Coordinates } from '../../types'
 
 const GROUND_DEPTH = 3
 const TOPSOIL = GROUND_DEPTH + 1
@@ -18,7 +17,7 @@ const INIT = [
   ...fill(loc(-50, AIR_START + 3, -50), loc(50, AIR_START+ 5, 50), 'air'),
 ]
 
-function box(start: Location, end: Location, wallBlockId): string[] {
+function box(start: Coordinates, end: Coordinates, wallBlockId): string[] {
     const [sx, sy, sz] = start
     const [ex, ey, ez] = end
   return [
@@ -47,7 +46,7 @@ export function test(): string[] {
   //   commandBlock('summon sheep', loc(0, AIR_START, 0)),
   // )
   // result.push(summonPassenger(RANDOM_ANIMAL, loc(0,AIR_START, 0), 50))
-  result.push(...setupCodslap(loc(0, AIR_START, 0)))
+  // result.push(...setupCodslap(loc(0, AIR_START, 0)))
 
   return result
 }

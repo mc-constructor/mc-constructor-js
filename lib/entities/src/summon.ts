@@ -1,4 +1,4 @@
-import { Location } from '../../types'
+import { Coordinates } from '../../types'
 
 export enum AnimalType {
   cat = 'cat',
@@ -36,7 +36,7 @@ export function passengers(id: string | RandomIdFn, depth: number = 0): string {
   return ''
 }
 
-export function summonPassenger(id: string | RandomIdFn, loc: Location, depth: number = 0): string {
+export function summonPassenger(id: string | RandomIdFn, loc: Coordinates, depth: number = 0): string {
   const passengersStr = passengers(id, depth)
   return `summon ${getId(id)} ${loc}${passengersStr ? ` {${passengersStr}}` : ''}`
 }
