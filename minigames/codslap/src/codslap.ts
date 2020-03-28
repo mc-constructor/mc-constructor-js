@@ -1,12 +1,12 @@
 import { Command, rawCmd, tellraw, text } from '@minecraft/core/cmd'
-import { Coordinates } from '@minecraft/core/types'
+import { Coordinates, Item } from '@minecraft/core/types'
 import { Minigame } from '@minecraft/minigames'
 
 import { CodslapInitCommand } from './init'
 import { ServerChannel, ServerEvents, ServerThreadEventType } from '@minecraft/core/server'
-import { delay, filter, retryWhen, switchMap, take } from 'rxjs/operators'
-import { Subscription } from 'rxjs'
-import { fromPromise } from 'rxjs/internal-compatibility'
+import { catchError, delay, filter, retryWhen, switchMap, take, tap } from 'rxjs/operators'
+import { Observable, Subscription, throwError } from 'rxjs'
+import { give } from '@minecraft/core/cmd/src/give'
 
 const subs: Subscription[] = []
 
@@ -15,13 +15,16 @@ export class CodslapMiniGame implements Minigame {
   public readonly title = 'Codslap!'
   public readonly description = 'Slap your friends with an overpowered cod.'
 
+  public static cleanup(): void {
+    subs.forEach(sub => sub.unsubscribe())
+    subs.length = 0
+  }
+
   public validateGameState(): Command {
     return undefined
   }
 
   public init(loc: Coordinates): Command {
-    subs.forEach(sub => sub.unsubscribe())
-    subs.length = 0
     return new CodslapInitCommand(loc)
   }
 
@@ -31,10 +34,21 @@ export class CodslapMiniGame implements Minigame {
       .pipe(
         filter(event => event.type === ServerThreadEventType.playerDied || event.type === ServerThreadEventType.playerKilled),
         switchMap(event => {
-          const give = rawCmd(`give @p[name=${event.data.player}] cod`, true)
-          return fromPromise(give.execute(event$.client))
+          const cmd = give(`@e[type=player,name=${event.data.player}]`, Item.cod)
+          const cmd$ = new Observable(o => {
+            cmd.execute(event$.client).then(result => {
+              o.next(result)
+              o.complete()
+            }, err => o.error(err))
+          })
+          return cmd$.pipe(
+            retryWhen(errors => errors.pipe(
+              tap(() => console.log('before retry')),
+              delay(2000),
+              tap(() => console.log('retrying in 2s')),
+            )),
+          )
         }),
-        retryWhen(errors => errors.pipe(delay(1000), take(30))),
       )
       .subscribe()
     subs.push(sub)

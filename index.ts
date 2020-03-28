@@ -7,6 +7,6 @@ require('dotenv').config()
 const events$ = new ServerEvents()
 const players$ = new Players(events$)
 
-events$.all.subscribe(console.log.bind(console))
+events$.all.subscribe(event => console.debug(event.source.source.raw))
 players$.subscribe(console.log.bind(console, 'PLAYERS'))
 new ChatCommands(events$)

@@ -70,7 +70,7 @@ export class CodslapInitCommand extends ComplexCommand {
       weather.clear,
       gamerule.doWeatherCycle.disable,
       gamerule.doDaylightCycle.disable,
-      gamerule.commandBlockOutput.enable,
+      gamerule.commandBlockOutput.disable,
       rawCmd(`setworldspawn ${spawn}`, true),
     ]
   }
@@ -137,7 +137,11 @@ export class CodslapInitCommand extends ComplexCommand {
   protected initPlayers(): Command[] {
     return [
       // rawCmd<string>(`execute as @a run teleport @s ${this.center.modify.up(100)}`, true)
+
+      // clear only gives a response if something was cleared - need to give something to make sure clear gives a response
+      rawCmd(`execute as @a run give @s cod`, true),
       rawCmd(`execute as @a run clear`, true),
+
       rawCmd(`execute as @a run give @s cod{Enchantments:[{id:knockback,lvl:50}]}`, true),
       rawCmd(`teleport @a ${this.center.modify.up(27)}`, true),
       rawCmd(`gamemode survival @a`, true),

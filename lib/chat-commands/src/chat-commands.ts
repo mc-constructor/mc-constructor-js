@@ -15,6 +15,7 @@ const RELOAD = [
 const COMMANDS = Object.defineProperties({}, {
   games: {
     get: () => {
+      require('../../../minigames/codslap/').CodslapMiniGame.cleanup()
       RELOAD.forEach(module => delete require.cache[module])
       const GAMES_COMMANDS = require('./games').GAMES_COMMANDS
       return GAMES_COMMANDS

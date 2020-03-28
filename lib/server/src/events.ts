@@ -42,7 +42,7 @@ export function makeEventStream<
           } as ChannelEvent<TChannel>
         }
       }
-      console.warn('UNRECOGNIZED MESSAGE', msg);
+      console.warn('[unrecognized]', msg.source.raw);
       return undefined
     }),
     filter(msg => !!msg),
