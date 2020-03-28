@@ -1,3 +1,5 @@
+import { inspect } from 'util'
+
 export interface AxisValueWrapper {
 
   make(value: number): this
@@ -9,7 +11,7 @@ export interface AxisValueWrapper {
 export type AxisValue = AxisValueWrapper & number
 
 export function isAxisValue(obj: any): obj is AxisValue {
-  return obj instanceof AxisValueImp ||
+  return typeof obj === 'number' || obj instanceof AxisValueImp ||
     (typeof obj === 'object' && typeof obj.make === 'function' && typeof obj.valueOf() === 'number')
 }
 
@@ -215,12 +217,12 @@ class CoordinatesImpl implements Iterable<any> {
     // Up: Y
     // Down: -Y
     this.modify = Object.defineProperties(this.modifyInternal.bind(this), {
-      east: { value: this.modifyInternal.bind(this, 0) },
-      up: { value: this.modifyInternal.bind(this, 1) },
-      south: { value: this.modifyInternal.bind(this, 2) },
-      west: { value: (value: number) => this.modifyInternal(0, -value) },
-      down: { value: (value: number) => this.modifyInternal(1, -value) },
-      north: { value: (value: number) => this.modifyInternal(2, -value) },
+      east: { value: (value: number) => this.modify(0, this.x.plus(value)) },
+      west: { value: (value: number) => this.modify(0, this.x.minus(value)) },
+      south: { value: (value: number) => this.modify(2, this.z.plus(value)) },
+      north: { value: (value: number) => this.modify(2, this.z.minus(value)) },
+      up: { value: (value: number) => this.modify(1, this.y.plus(value)) },
+      down: { value: (value: number) => this.modify(1, this.y.minus(value)) },
     })
   }
 
@@ -256,6 +258,10 @@ class CoordinatesImpl implements Iterable<any> {
   }
 
   [Symbol.toStringTag](): string {
+    return this.toString()
+  }
+
+  [inspect.custom](): string {
     return this.toString()
   }
 

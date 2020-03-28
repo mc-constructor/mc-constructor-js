@@ -37,18 +37,20 @@ export interface TimeCommandBuilder {
   set: TimeSetCommandBuilder
 }
 
-class TimeCommand extends SimpleArgsCommand {
+class TimeCommand extends SimpleArgsCommand<string> {
+  public readonly expectResponse = true
   protected readonly command: string = 'time'
 
   constructor(protected readonly subCommand: TimeSubCommand, protected readonly arg: number | TimeType | TimeSpec) {
     super(subCommand, arg)
   }
+
 }
 
-function timeFn(subCommand: TimeSubCommand.add, value: number): Command
-function timeFn(subCommand: TimeSubCommand.query, type: TimeType): Command
-function timeFn(subCommand: TimeSubCommand.set, arg: number | TimeSpec): Command
-function timeFn(subCommand: TimeSubCommand, arg: number | TimeSpec | TimeType): Command {
+function timeFn(subCommand: TimeSubCommand.add, value: number): Command<any>
+function timeFn(subCommand: TimeSubCommand.query, type: TimeType): Command<any>
+function timeFn(subCommand: TimeSubCommand.set, arg: number | TimeSpec): Command<any>
+function timeFn(subCommand: TimeSubCommand, arg: number | TimeSpec | TimeType): Command<any> {
   return new TimeCommand(subCommand, arg)
 }
 

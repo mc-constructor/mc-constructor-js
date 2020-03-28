@@ -11,7 +11,7 @@ export abstract class BlockExtras {
 
   private readonly data: { [key: string]: any } = {}
 
-  protected generate(block?: SetBlockCommand<any>): string {
+  public _generate(block?: SetBlockCommand<any>): string {
     const keys = Object.keys(this.data)
     if (!keys.length) {
       return ''
@@ -25,11 +25,11 @@ export abstract class BlockExtras {
   }
 
   protected getData(key: string): any {
-    return this.data.get(key)
+    return this.data[key]
   }
 
   public toString(): string {
-    return this.generate()
+    return this._generate()
   }
 
   public [Symbol.toStringTag](): string {
@@ -47,14 +47,14 @@ export class BlockStateBase extends BlockExtras {
     return this.setData('facing', direction)
   }
 
-  protected generate(block?: SetBlockCommand<any>): string {
+  public _generate(block?: SetBlockCommand<any>): string {
     if (block) {
       const direction = this.getData('facing')
       if (typeof direction !== 'string') {
         this.setData('facing', facing(direction, block.loc))
       }
     }
-    return super.generate(block)
+    return super._generate(block)
   }
 }
 

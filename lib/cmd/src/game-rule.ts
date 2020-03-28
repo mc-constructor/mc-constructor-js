@@ -1,4 +1,5 @@
 import { Command, SimpleArgsCommand } from './command'
+import { ExpectResponse } from '../../server'
 
 export enum GameRule {
   announceAdvancements = 'announceAdvancements',
@@ -123,12 +124,14 @@ export type GameRuleCommandBuilderImplicit = {
 
 export type GameRuleCommandBuilder = GameRuleCommandBuilderExplicit & GameRuleCommandBuilderImplicit
 
-class GameRuleCommand<TRule extends GameRule> extends SimpleArgsCommand {
+class GameRuleCommand<TRule extends GameRule> extends SimpleArgsCommand<string> {
+  public readonly expectResponse = true
   protected readonly command: string = 'gamerule'
 
   constructor(public readonly rule: TRule, public readonly value?: GameRuleValue[TRule]) {
-    super(value)
+    super(...(typeof value === 'undefined' ? [rule] : [rule, value]))
   }
+
 }
 
 function gameruleFn<TRule extends GameRule>(rule: TRule, value?: GameRuleValue[TRule]): Command {

@@ -2,10 +2,10 @@ import { Client } from '../../server'
 import { Block, Coordinates } from '../../types'
 
 import { Command,  } from './command'
-import { SetBlockCommand } from './set-block'
 import { AutoSignal, CommandBlockType, SetCommandBlockCommand } from './command-block'
+import { SetBlockCommand } from './set-block'
 
-export class BackupBlockCommand<TTargetBlock extends Block> extends Command {
+export class BackupBlockCommand<TTargetBlock extends Block> extends Command<string> {
 
   public readonly loc: Coordinates
   public readonly block: Block
@@ -16,7 +16,7 @@ export class BackupBlockCommand<TTargetBlock extends Block> extends Command {
     this.loc = target.loc
   }
 
-  public execute(client: Client): Promise<void> {
+  public execute(client: Client): Promise<string> {
     const backup = new SetCommandBlockCommand(this.target, this.loc.modify(1, 1), CommandBlockType.repeating)
     backup.autoSignal(AutoSignal.alwaysActive)
     backup.conditional(false)

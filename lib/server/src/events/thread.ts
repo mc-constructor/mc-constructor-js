@@ -4,7 +4,7 @@ import { ServerChannel } from '../messages'
 export enum ServerThreadEventType {
   playerChat = 'playerChat', // <{player}> {message}
   playerEmote = 'playerEmote', // * {player} {action}
-  playerFell = 'playerFell', // {player} fell from a high place
+  playerDied = 'playerDied', // {player} fell from a high place
   playerJoin = 'playerJoin', // {player} joined the game
   playerKilled = 'playerKilled', // {player} was {action} by {killer}
   playerLeft = 'playerLeft', // {player} left the game
@@ -15,7 +15,7 @@ export enum ServerThreadEventType {
 export const SERVER_THREAD_PATTERNS: ServerEventPatterns<ServerChannel.thread> = [
   [ServerThreadEventType.playerChat, /<(?<player>\w+)> (?<message>.+)/],
   [ServerThreadEventType.playerEmote, /\* (?<player>\w+) (?<action>.+)/],
-  [ServerThreadEventType.playerFell, /(?<player>\w+) fell from a high place/],
+  [ServerThreadEventType.playerDied, /(?<player>\w+) (fell from a high place|tried to swim in lava)/],
   [ServerThreadEventType.playerJoin, /(?<player>\w+) joined the game/],
   [ServerThreadEventType.playerKilled, /(?<player>\w+) was (?<action>\w+) by (?<killer>\w+)/],
   [ServerThreadEventType.playerLeft, /(?<player>\w+) left the game/],
@@ -51,7 +51,7 @@ export interface PlayerEmoteEventData extends PlayerEventData {
 type ServerThreadEventDataTypeMap = {
   [ServerThreadEventType.playerChat]: PlayerChatEventData,
   [ServerThreadEventType.playerEmote]: PlayerEmoteEventData,
-  [ServerThreadEventType.playerFell]: PlayerEventData,
+  [ServerThreadEventType.playerDied]: PlayerEventData,
   [ServerThreadEventType.playerJoin]: PlayerEventData,
   [ServerThreadEventType.playerKilled]: PlayerKilledEventData,
   [ServerThreadEventType.playerLeft]: PlayerEventData,

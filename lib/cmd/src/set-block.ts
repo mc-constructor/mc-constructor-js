@@ -1,9 +1,9 @@
 import { Block, Coordinates } from '../../types'
 
+import { BackupBlockCommand } from './backup-block'
 import { BlockCommand } from './block-command'
 import { BlockData } from './block-data'
 import { BlockState } from './block-state'
-import { BackupBlockCommand } from './backup-block'
 
 export class SetBlockCommand<TBlock extends Block> extends BlockCommand<TBlock> {
 
@@ -19,14 +19,18 @@ export class SetBlockCommand<TBlock extends Block> extends BlockCommand<TBlock> 
   }
 
   public formatArgs(): string {
-    return `${this.loc} ${this.block}${this.state}${this.data}`
+    return `${this.loc} ${this.block}${this.state._generate(this)}${this.data._generate(this)}`
   }
 
   public backup(): BackupBlockCommand<TBlock> {
     return new BackupBlockCommand(this)
   }
 
-  protected parseResponse(responseText: string): void {
-    return
+  public toString(): string {
+    return `"${super.toString().replace(/"/g, '\\"')}"`
+  }
+
+  protected parseResponse(responseText: string): string {
+    return responseText
   }
 }

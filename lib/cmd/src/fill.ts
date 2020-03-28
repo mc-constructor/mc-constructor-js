@@ -8,14 +8,19 @@ import { Command, ComplexCommand } from './command'
 const MAX_FILL_VOLUME = 32768
 
 // TODO: move this elsewhere
-export function getVolume(start: Coordinates, end: Coordinates): number {
-  // TODO: use reduce?
+export function getVolume(start: Coordinates, end: Coordinates, method: FillMethod): number {
   const [sx, sy, sz] = start
   const [ex, ey, ez] = end
   const l = Math.abs(sx - ex) + 1
   const w = Math.abs(sy - ey) + 1
   const d = Math.abs(sz - ez) + 1
-  return l * w * d
+  const totalVolume = l * w * d
+  if (method === FillMethod.hollow || method === FillMethod.outline) {
+    return totalVolume - (
+      (l - 1) * (w - 1) * (d - 1)
+    )
+  }
+  return totalVolume
 }
 
 export enum FillMethod {
@@ -45,7 +50,7 @@ class FillIncrementCommand<TBlock extends Block> extends BlockCommand<Block> {
 
 }
 
-export class FillCommand<TBlock extends Block> extends ComplexCommand {
+export class FillCommand<TBlock extends Block> extends ComplexCommand<string> {
 
   constructor(
     public readonly block: TBlock,
@@ -64,12 +69,13 @@ export class FillCommand<TBlock extends Block> extends ComplexCommand {
   public compile(): Command[] {
     const [sx, sy, sz] = this.start
     const [ex, ey, ez] = this.end
-    const volume = getVolume(this.start, this.end)
+    const volume = getVolume(this.start, this.end, this.method)
 
     if (volume < MAX_FILL_VOLUME) {
       return [this.makeIncrement(this.start, this.end)]
     }
 
+    // FIXME: calculate correct volume when using these methods
     if (this.method === FillMethod.hollow || this.method === FillMethod.outline) {
       throw new Error(
         `FillMethod '${this.method}' cannot be used when filling a volume larger than ${MAX_FILL_VOLUME} (requested volume ${volume})`,
@@ -98,14 +104,14 @@ export class FillCommand<TBlock extends Block> extends ComplexCommand {
     const dimIncEnd = incEnd[dimIx]
     const result = []
 
-    let step = incStart.clone()
-    let lastStep = incStart
+    let stepStart = incStart.clone()
+    let stepEnd = incEnd.modify(dimIx, incStart[dimIx])
 
-    while (step[dimIx] < incEnd[dimIx]) {
-      const nextInc = step[dimIx] + increment > dimIncEnd ? dimIncEnd : step[dimIx].plus(increment)
-      step = step.modify(dimIx, nextInc)
-      result.push(this.makeIncrement(lastStep, step))
-      lastStep = step
+    while (stepStart[dimIx] < dimIncEnd) {
+      const nextInc = stepStart[dimIx] + increment > dimIncEnd ? dimIncEnd : stepStart[dimIx].plus(increment)
+      stepStart = stepStart.modify(dimIx, nextInc)
+      result.push(this.makeIncrement(stepStart, stepEnd))
+      stepEnd = stepEnd.modify(dimIx, nextInc + 1)
     }
 
     return result

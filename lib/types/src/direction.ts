@@ -22,8 +22,8 @@ export function facing(target: Coordinates, from: Coordinates): Direction {
       if (onAxis) {
         throw new Error('The target and from coordinates must share two axis')
       }
+      onAxis = axis
     }
-    onAxis = axis
   }
 
   if (!onAxis) {

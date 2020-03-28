@@ -2,9 +2,10 @@ import { Block, Coordinates } from '../../types'
 
 import { BlockData } from './block-data'
 import { BlockState } from './block-state'
+import { BlockExtras } from './block-extras'
+import { BoxCommand } from './box-command'
 import { FillCommand, FillMethod } from './fill'
 import { SetBlockCommand } from './set-block'
-import { BlockExtras } from './block-extras'
 
 export type BlockStateModifiers<TBlock extends Block> = {
   [TMember in keyof BlockState[TBlock]]: TMember extends (...args: any[]) => BlockState[TBlock] ? BlockState[TBlock][TMember] : never
@@ -27,8 +28,9 @@ export type BlockCommandDataModifiers<TBlock extends Block, TBlockData extends B
 }
 
 export interface BlockCommandBuilderCommands<TBlock extends Block> {
-  set(loc: Coordinates): SetBlockCommand<TBlock>
+  set(loc: Coordinates, ): SetBlockCommand<TBlock>
   fill(start: Coordinates, end: Coordinates, method?: FillMethod): FillCommand<TBlock>
+  box(start: Coordinates, end: Coordinates): BoxCommand<TBlock>
 }
 
 export type BlockCommandBuilder<TBlock extends Block> =
@@ -38,7 +40,7 @@ export type BlockCommandBuilder<TBlock extends Block> =
 
 const IGNORED_MODS = [
   'constructor',
-  'generate',
+  '_generate',
   'getData',
   'setData',
   'toString',
@@ -86,6 +88,7 @@ class BlockCommandBuilderImpl<
     const modifiers = new Map<any, (args?: any) => any>()
     modifiers.set('set', this.setBlockCommand.bind(this))
     modifiers.set('fill', this.fillBlockCommand.bind(this))
+    modifiers.set('box', this.boxBlockCommand.bind(this))
     this.bindModifiers(modifiers, this.stateModifiers, this.state)
     this.bindModifiers(modifiers, this.dataModifiers, this.data)
 
@@ -97,7 +100,7 @@ class BlockCommandBuilderImpl<
   private getModifiers<TObj extends TBlockData | TBlockState>(cls: new () => TObj): ReadonlySet<keyof TObj> {
     const mods = Object.entries(Object.getOwnPropertyDescriptors(cls.prototype))
       // FIXME: actually ignore protected methods from base classes, figure out a cleaner way to ignore "generate"
-      .filter(([name, desc]) => !IGNORED_MODS.includes(name) && typeof desc.value === 'function')
+      .filter(([name, desc]) => !name.startsWith('_') && !IGNORED_MODS.includes(name) && typeof desc.value === 'function')
       .map(([name]) => name) as (keyof TObj)[]
     const parent = Object.getPrototypeOf(cls)
     if (parent === Function.prototype || parent === BlockExtras.prototype) {
@@ -132,6 +135,10 @@ class BlockCommandBuilderImpl<
 
   private fillBlockCommand(start: Coordinates, end: Coordinates, method: FillMethod): FillCommand<TBlock> {
     return new FillCommand(this.block, this.state, this.data, method, start, end)
+  }
+
+  private boxBlockCommand(start: Coordinates, end: Coordinates): BoxCommand<TBlock> {
+    return new BoxCommand(this.block, this.state, this.data, start, end)
   }
 }
 

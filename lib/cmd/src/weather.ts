@@ -1,4 +1,4 @@
-import { Command, SimpleArgsCommand, SimpleCommand } from './command'
+import { Command, SimpleArgsCommand } from './command'
 
 export enum Weather {
   clear = 'clear',
@@ -13,7 +13,7 @@ export type WeatherCommandBuilder = {
   [TWeather in Weather]: WeatherSubCommandBuilder
 } & { (subCommand: Weather, duration?: number): Command }
 
-class WeatherCommand extends SimpleArgsCommand {
+class WeatherCommand extends SimpleArgsCommand<string> {
   protected readonly command: string = 'weather'
 
   constructor(subcommand: Weather, duration?: number) {
@@ -28,7 +28,13 @@ function weatherFn(subCommand: Weather, duration?: number): Command {
 export const weather: WeatherCommandBuilder = Object.defineProperties(weatherFn,
   Object.values(Weather).reduce((result, subCommand) => {
     result[subCommand] = {
-      get: () => Object.assign(weatherFn.bind(undefined, subCommand, new WeatherCommand(subCommand)))
+      get: () => {
+        const cmd = new WeatherCommand(subCommand)
+        return Object.assign(weatherFn.bind(undefined, subCommand), {
+          execute: cmd.execute.bind(cmd),
+        })
+
+      }
     }
     return result
   }, {})
