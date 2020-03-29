@@ -1,12 +1,38 @@
+import { DandiApplication, EntryPoint, Inject, Injectable } from '@dandi/core'
 import { ChatCommands } from './lib/chat-commands'
-import { Players, ServerEvents } from './lib/server'
+import { ChatCommandsModule } from './lib/chat-commands'
+import { Players, ServerEvents, ServerModule } from './lib/server'
+import { MinigameModule } from './minigames'
 // import { ASCII } from './lib/routines'
 
 require('dotenv').config()
 
-const events$ = new ServerEvents()
-const players$ = new Players(events$)
+@Injectable(EntryPoint)
+class Init implements EntryPoint {
 
-events$.all.subscribe(event => console.debug(event.source.source.raw))
-players$.subscribe(console.log.bind(console, 'PLAYERS'))
-new ChatCommands(events$)
+  constructor(
+    @Inject(ServerEvents) private events$: ServerEvents,
+    @Inject(Players) private players$: Players,
+    @Inject(ChatCommands) private chatCommands: ChatCommands,
+  ) {
+    console.log('Init')
+  }
+
+  public run(): void {
+    console.log('Run')
+    this.players$.subscribe() // REQUIRED in order to correctly track players
+    this.events$.all.subscribe(event => console.debug(event.source.source.raw))
+  }
+
+}
+
+const app = new DandiApplication({
+  providers: [
+    Init,
+    ChatCommandsModule,
+    MinigameModule,
+    ServerModule,
+  ]
+})
+
+app.run().catch(console.error.bind(console))

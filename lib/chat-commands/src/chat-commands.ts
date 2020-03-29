@@ -1,31 +1,21 @@
+import { Inject, Injectable } from '@dandi/core'
+
 import { filter } from 'rxjs/operators'
 
-import { tellraw, text, TextBuilder } from '../../cmd'
-import { Client, ServerChannel, ServerEvents, ServerThreadEventType } from '../../server'
+import { tellraw, text, TextBuilder, TextFragmentBuilder } from '../../cmd'
+import { ServerChannel, ServerEvents, ServerThreadEventType } from '../../server'
 
-const RELOAD = [
-  require.resolve('./games'),
-  require.resolve('../../../minigames/index'),
-  require.resolve('../../../minigames/codslap/index'),
-  require.resolve('../../../minigames/codslap/src/codslap'),
-  require.resolve('../../../minigames/codslap/src/init'),
-  require.resolve('../../../minigames/test/index'),
-]
+import { GamesCommands } from './games'
 
-const COMMANDS = Object.defineProperties({}, {
-  games: {
-    get: () => {
-      require('../../../minigames/codslap/').CodslapMiniGame.cleanup()
-      RELOAD.forEach(module => delete require.cache[module])
-      const GAMES_COMMANDS = require('./games').GAMES_COMMANDS
-      return GAMES_COMMANDS
-    }
-  },
-})
-
+@Injectable()
 export class ChatCommands {
 
-  constructor(events$: ServerEvents) {
+  private readonly commands: { [cmd: string]: { exec(args: string[]): Promise<TextBuilder | TextFragmentBuilder> }}
+
+  constructor(
+    @Inject(ServerEvents) events$: ServerEvents,
+    @Inject(GamesCommands) games: GamesCommands,
+  ) {
     const thread$ = events$.channel(ServerChannel.thread)
     thread$.eventType(ServerThreadEventType.playerChat)
       .pipe(
@@ -37,20 +27,24 @@ export class ChatCommands {
         // console.log(`sending "${event.data.message}"`)
         // client.send(event.data.message)
 
-        const messageParts = await this.handleMessage(events$, cmd, args)
+        const responseMessage = await this.handleMessage(cmd, args)
           // TODO: tellraw command tooling
           // https://minecraft.gamepedia.com/Raw_JSON_text_format
-        if (messageParts) {
-          return tellraw(event.data.player, ...messageParts).execute(events$.client)
+        if (responseMessage) {
+          return tellraw(event.data.player, responseMessage).execute(events$.client)
         }
       })
+    this.commands = {
+      games,
+      game: games,
+    }
   }
 
-  private async handleMessage(event$: ServerEvents, cmd: string, args: any[]): Promise<TextBuilder[]> {
-    if (COMMANDS[cmd]) {
-      return await COMMANDS[cmd](event$, args)
+  private async handleMessage(cmd: string, args: any[]): Promise<TextBuilder | TextFragmentBuilder> {
+    if (this.commands[cmd]) {
+      return await this.commands[cmd].exec(args)
     }
-    return [text(`I don't know what you're talking about :(`)]
+    return text(`I don't know what you're talking about :(`)
   }
 
 }

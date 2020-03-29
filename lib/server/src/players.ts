@@ -7,6 +7,7 @@ import { ServerEvents } from './events'
 import { ServerAuthenticatorEventType } from './events/auth'
 import { ServerThreadEventType } from './events/thread'
 import { ServerChannel } from './messages'
+import { Inject, Injectable } from '@dandi/core'
 
 export interface Player {
   name: string
@@ -23,6 +24,7 @@ function isCompletePlayer(player: PendingPlayer): player is Player {
   return player.name && player.uuid && player.entityId && player.ip && !!player.startLoc
 }
 
+@Injectable()
 export class Players extends Observable<Player[]> {
 
   private readonly playersByName: Map<string, Player> = new Map<string, Player>()
@@ -31,7 +33,9 @@ export class Players extends Observable<Player[]> {
 
   private readonly pendingPlayers = new Map<string, PendingPlayer>()
 
-  constructor(events$: ServerEvents) {
+  constructor(
+    @Inject(ServerEvents) events$: ServerEvents
+  ) {
     super(o => {
       const updatePendingPlayer = this.updatePending.bind(this, o)
 
@@ -69,7 +73,8 @@ export class Players extends Observable<Player[]> {
 
       const threadSub = thread$
         .pipe(
-          filter(event => event.type === ServerThreadEventType.playerLeft)
+          filter(event => event.type === ServerThreadEventType.playerLeft),
+          filter(event => this.playersByName.has(event.data.player))
         )
         .subscribe(event => {
           const player = this.playersByName.get(event.data.player)
@@ -86,6 +91,10 @@ export class Players extends Observable<Player[]> {
         threadSub.unsubscribe()
       }
     })
+  }
+
+  public get players(): Player[] {
+    return [...this.playersByName.values()]
   }
 
   private updatePending(o: Observer<Player[]>, data: PendingPlayer): void {

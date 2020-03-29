@@ -8,9 +8,13 @@
     "build": "tsc"
   },
   "dependencies": {
+    "@dandi/common": "^1.0.0-alpha.53",
+    "@dandi/core": "^1.0.0-alpha.53",
     "dotenv": "^8.2.0",
+    "luxon": "^1.22.2",
     "rcon-client": "^4.2.0",
-    "rxjs": "^6.5.4"
+    "rxjs": "^6.5.4",
+    "uuid": "^7.0.2"
   },
   "devDependencies": {
     "@types/node": "^13.9.2",

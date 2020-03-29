@@ -1,18 +1,21 @@
 import { Command, SimpleVoidCommand } from './command'
-import { TextBuilder } from './text'
+import { TextBuilder, TextFragmentBuilder } from './text'
+
+// https://minecraft.gamepedia.com/Commands/tellraw
+
 
 class TellRawCommand extends SimpleVoidCommand {
   protected readonly command: string = 'tellraw'
 
-  constructor(public readonly target: string, public readonly segments: TextBuilder[]) {
+  constructor(public readonly target: string, public readonly text: TextBuilder) {
     super()
   }
 
   protected formatArgs(): string {
-    return `${this.target} [${this.segments.join(',')}]`;
+    return `${this.target} [${this.text}]`;
   }
 }
 
-export function tellraw(target: string, ...segments: TextBuilder[]): Command {
-  return new TellRawCommand(target, segments)
+export function tellraw(target: string, text: TextBuilder | TextFragmentBuilder): Command {
+  return new TellRawCommand(target, text.builder)
 }

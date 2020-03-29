@@ -1,43 +1,56 @@
-import { CodslapMiniGame } from '../../../minigames/codslap'
+import { Inject, Injectable } from '@dandi/core'
 
-import { text } from '../../cmd'
-import { loc } from '../../types'
-import { ServerEvents } from '../../server'
+import {  MinigameLoader, MinigameRunner } from '../../../minigames'
 
-const minigames = [new CodslapMiniGame()]
+import { text, TextBuilder, TextFragmentBuilder } from '../../cmd'
+import { Players, ServerEvents } from '../../server'
 
-export const GAMES_COMMANDS = async function (events$: ServerEvents, args: string[]): Promise<any[]> {
-  const [subCmd, ...gamesArgs] = args
-  switch (subCmd) {
-    case 'list': return [
-      text(''), // start empty so that the initial formatting properties aren't used for all parts
-      text(`\nYou can play these minigames:\n\n`).bold.color('aqua'),
-      ...minigames.reduce((result, minigame) => {
-        result.push(
-          text(`  ${minigame.title} :`).bold.italic,
-          text(' ' + minigame.description),
-        )
-        return result
-      }, []),
-      text('\n\nChat '),
-      text('$games start ').color('light_purple'),
-      text('game_name').color('light_purple').italic,
-      text(' to start a game'),
-    ]
+@Injectable()
+export class GamesCommands {
 
-    case 'start': {
-      const game = new CodslapMiniGame()
-      const validate = game.validateGameState()
-      if (validate) {
-        await validate.execute(events$.client)
-      }
-      game.init(loc(0, 100, 0)).execute(events$.client)
-      game.ready(events$).execute(events$.client)
-      return
-    }
+  constructor(
+    @Inject(MinigameLoader) private loader: MinigameLoader,
+    @Inject(MinigameRunner) private runner: MinigameRunner,
+    @Inject(ServerEvents) private events$: ServerEvents,
+    @Inject(Players) private players$: Players,
+  ) {
+  }
 
-    case 'clear': {
-
+  public async exec(args: string[]): Promise<TextBuilder | TextFragmentBuilder> {
+    const [subCmd, ...gamesArgs] = args
+    switch (subCmd) {
+      case 'list': return this.list()
+      case 'start':
+        const [gameName] = gamesArgs
+        return this.start(gameName)
     }
   }
+
+  private list(initial?: TextBuilder | TextFragmentBuilder): TextBuilder | TextFragmentBuilder {
+    const games = this.loader.listGames()
+    initial = initial || text()
+    const result = initial.add(`\n\nYou can play these minigames:\n\n`).bold.color('aqua')
+    games.forEach(minigame => {
+      result.add(`  ${minigame.title} :`).bold.italic
+        .add(' ' + minigame.description)
+    })
+    return result
+      .add('\n\nChat ')
+      .add('$games start ').color('light_purple')
+      .add('game_name').color('light_purple').italic
+      .add(' to start a game')
+  }
+
+  private async start(gameName: string): Promise<TextBuilder | TextFragmentBuilder> {
+    const games = this.loader.listGames()
+    const gameInfo = games.find(game => game.titleMatch.test(gameName))
+    if (!gameInfo) {
+      return this.list(
+        text(`\n\nCould not find a game named ${gameName}`).italic
+      )
+    }
+
+    await this.runner.runGame(this.loader.loadMinigame(gameInfo))
+  }
+
 }

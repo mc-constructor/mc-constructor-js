@@ -6,7 +6,7 @@ export enum ServerAuthenticatorEventType {
 }
 
 export const SERVER_AUTHENTICATOR_PATTERNS: ServerEventPatterns<ServerChannel.authenticator> = [
-  [ServerAuthenticatorEventType.playerLogin, /UUID of player (?<player>\w+) is (?<uuid>[\da-f\-]+)/],
+  [ServerAuthenticatorEventType.playerLogin, /^UUID of player (?<player>\w+) is (?<uuid>[\da-f\-]+)$/],
 ]
 
 export interface PlayerAuthenticationEventData {

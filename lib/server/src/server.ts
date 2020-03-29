@@ -1,12 +1,15 @@
-import { Observable } from 'rxjs'
 import { ChildProcessWithoutNullStreams, spawn } from 'child_process'
+
+import { Injectable, Provider } from '@dandi/core'
+
+import { SharedObservable } from '../../common'
+
 import { Client } from './client'
-import { share } from 'rxjs/operators'
 
-const cmdArgIndex = process.argv.indexOf('--cmd')
-const cmd = process.argv[cmdArgIndex + 1]
+const SERVER_CMD_INDEX = process.argv.indexOf('--cmd')
+const SERVER_CMD = process.argv[SERVER_CMD_INDEX + 1]
 
-class PendingMessage {
+class PendingCommand {
 
   public readonly promise: Promise<string>
 
@@ -15,100 +18,97 @@ class PendingMessage {
     return this._resolve
   }
 
-  constructor() {
+  constructor(public readonly cmd: string, public readonly expectResponse: boolean) {
     this.promise = new Promise<string>(resolve => this._resolve = resolve)
   }
 }
 
-export class Server extends Observable<string> implements Client {
+@Injectable()
+export class Server extends SharedObservable<string> implements Client {
 
   private serverProcess: ChildProcessWithoutNullStreams
   private shuttingDown: boolean = false
-  private readonly pendingMessages: PendingMessage[] = []
+  private readonly queue: PendingCommand[] = []
+  private currentCommand: PendingCommand
 
   constructor() {
-    super((oServer => {
-      const message$ = new Observable<string>(oProcess => {
-        // const serverStdIn = openSync('.in', 'w+')
-        // const serverStdOut = openSync('.out', 'w+')
-        // const serverStdErr = openSync('.err', 'w+')
-        // const stdin = createWriteStream('.in', { encoding: 'utf-8' })
-        // const stdoutFile = createReadStream('.out', { encoding: 'utf-8' })
-        // const stderr = createReadStream('.err', { encoding: 'utf-8' })
-        // const serverStdIn = new Writable()
+    super(o => {
+      // const serverStdIn = openSync('.in', 'w+')
+      // const serverStdOut = openSync('.out', 'w+')
+      // const serverStdErr = openSync('.err', 'w+')
+      // const stdin = createWriteStream('.in', { encoding: 'utf-8' })
+      // const stdoutFile = createReadStream('.out', { encoding: 'utf-8' })
+      // const stderr = createReadStream('.err', { encoding: 'utf-8' })
+      // const serverStdIn = new Writable()
 
-        // stdoutFile.on('ready', () => {
-        //   // const stdout = new Writable({ defaultEncoding: 'utf-8' })
-        //   // stdoutFile.pipe(stdout)
-        //   stdoutFile.on('data', chunk => {
-        //     const entries = chunk.toString().split('\n')
-        //     entries.forEach(entry => {
-        //       if (!entry) {
-        //         return
-        //       }
-        //       const pending = this.pendingMessages.pop()
-        //       if (pending) {
-        //         pending.resolve(entry)
-        //       }
-        //       oProcess.next(entry)
-        //     })
-        //   })
-        // })
+      // stdoutFile.on('ready', () => {
+      //   // const stdout = new Writable({ defaultEncoding: 'utf-8' })
+      //   // stdoutFile.pipe(stdout)
+      //   stdoutFile.on('data', chunk => {
+      //     const entries = chunk.toString().split('\n')
+      //     entries.forEach(entry => {
+      //       if (!entry) {
+      //         return
+      //       }
+      //       const pending = this.pendingMessages.pop()
+      //       if (pending) {
+      //         pending.resolve(entry)
+      //       }
+      //       oProcess.next(entry)
+      //     })
+      //   })
+      // })
 
-        this.serverProcess = spawn('java', cmd.split(' '), {
-          // TODO: reuse stdin/stdout to support msm?
-          cwd: process.cwd(),
-          env: process.env,
-          detached: true,
-          // stdio: 'ignore',
-          // stdio: [serverStdIn, serverStdOut, serverStdErr]
-          // stdio: ['pipe', serverStdOut, 'pipe']
-        })
-
-        this.serverProcess.stdout.on('data', chunk => {
-          const entries = chunk.toString().split('\n')
-          entries.forEach(entry => {
-            if (!entry) {
-              return
-            }
-            const pending = this.pendingMessages.shift()
-            if (pending) {
-              pending.resolve(entry)
-            }
-            oProcess.next(entry)
-          })
-        })
-
-        this.serverProcess.on('error', err => oProcess.error(err))
-
-        this.serverProcess.on('beforeExit', (code) => {
-          console.log('SERVER PROCESS BEFOREEXIT', code)
-          // oProcess.complete()
-        })
-
-        this.serverProcess.on('exit', (code) => {
-          console.log('SERVER PROCESS EXIT', code)
-          // oProcess.complete()
-        })
-
-        this.serverProcess.on('close', (code, signal) => {
-          console.log('SERVER PROCESS CLOSE', { code, signal })
-        })
-
-        this.serverProcess.on('SIGINT', () => {
-          console.warn('SERVER PROCESS SIGINT')
-        })
-
-        // this.serverProcess.unref()
-        return () => {
-          this.cleanShutdown('Observable cleanup')
-          this.serverProcess = undefined
-        }
+      this.serverProcess = spawn('java', SERVER_CMD.split(' '), {
+        // TODO: reuse stdin/stdout to support msm?
+        cwd: process.cwd(),
+        env: process.env,
+        detached: true,
+        // stdio: 'ignore',
+        // stdio: [serverStdIn, serverStdOut, serverStdErr]
+        // stdio: ['pipe', serverStdOut, 'pipe']
       })
 
-      const sub = message$.pipe(share()).subscribe(oServer)
-      return sub.unsubscribe.bind(sub)
-    }))
+      this.serverProcess.stdout.on('data', chunk => {
+        const entries = chunk.toString().split('\n')
+        entries.forEach(entry => {
+          if (!entry) {
+            return
+          }
+          const pending = this.currentCommand
+          if (pending) {
+            pending.resolve(entry)
+          }
+          o.next(entry)
+        })
+      })
+
+      this.serverProcess.on('error', err => o.error(err))
+
+      this.serverProcess.on('beforeExit', (code) => {
+        console.log('SERVER PROCESS BEFOREEXIT', code)
+        // oProcess.complete()
+      })
+
+      this.serverProcess.on('exit', (code) => {
+        console.log('SERVER PROCESS EXIT', code)
+        // oProcess.complete()
+      })
+
+      this.serverProcess.on('close', (code, signal) => {
+        console.log('SERVER PROCESS CLOSE', { code, signal })
+      })
+
+      this.serverProcess.on('SIGINT', () => {
+        console.warn('SERVER PROCESS SIGINT')
+      })
+
+      // this.serverProcess.unref()
+      return () => {
+        this.cleanShutdown('Observable cleanup')
+        this.serverProcess = undefined
+      }
+    })
 
     process.on('SIGINT', () => console.log('SIGINT'))
     // process.on('SIGINT', this.cleanShutdown.bind(this, 'SIGINT'))
@@ -121,20 +121,40 @@ export class Server extends Observable<string> implements Client {
   public send(cmd: string, expectResponse: false): Promise<void>
   public send(cmd: string, expectResponse?: true): Promise<string>
   public send(cmd: string, expectResponse: boolean = true): Promise<string | void> {
+    const queuedCommand = new PendingCommand(cmd, expectResponse)
+    this.queue.push(queuedCommand)
+    this.checkQueue()
+    return queuedCommand.promise
+  }
+
+  private async checkQueue(): Promise<void> {
+    if (this.currentCommand) {
+      return
+    }
+
     if (!this.serverProcess) {
       throw new Error('Not connected')
     }
-    console.debug('[cmd]', cmd)
-    this.serverProcess.stdin.write(`${cmd}\n`)
-    if (expectResponse) {
-      const pending = new PendingMessage()
-      this.pendingMessages.push(pending)
-      pending.promise.then(result => {
-        console.debug('[cmd]', cmd, '\n  > ', result)
-      })
-      return pending.promise
+
+    this.currentCommand = this.queue.shift()
+    if (!this.currentCommand) {
+      return
     }
-    return
+
+    console.debug('[cmd]', this.currentCommand.cmd)
+    this.serverProcess.stdin.write(`${this.currentCommand.cmd}\n`)
+    if (this.currentCommand.expectResponse) {
+      const timeout = setTimeout(() => {
+        this.currentCommand.resolve(undefined)
+      }, 250)
+      const result = await this.currentCommand.promise
+      clearTimeout(timeout)
+      console.debug('  > ', result)
+    } else {
+      this.currentCommand.resolve(undefined)
+    }
+    this.currentCommand = undefined
+    setTimeout(() => this.checkQueue(), 0)
   }
 
   private async cleanShutdown(reason: string, code?: any): Promise<void> {
@@ -151,5 +171,10 @@ export class Server extends Observable<string> implements Client {
   }
 }
 
-// TODO: make "signals" based on inputs from server stdout, changes to "stats" files
-// map stats UUIDs to players with usercache.json
+export const ClientProvider: Provider<Client> = {
+  provide: Client,
+  useFactory(server: Server): Client {
+    return server
+  },
+  deps: [Server],
+}

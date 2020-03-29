@@ -2,6 +2,16 @@
 # yarn lockfile v1
 
 
+"@dandi/common@^1.0.0-alpha.53":
+  version "1.0.0-alpha.53"
+  resolved "https://registry.yarnpkg.com/@dandi/common/-/common-1.0.0-alpha.53.tgz#4149d119764fbb6fa7f75c1dbfec34acf8b26ff7"
+  integrity sha512-PCu4gxa2oNx2pBhNw6QyYkNjyrKUpTm81AFZS3Ku6gkV2zsQkSjZ3dyd5dnVDS+oZZ3TaAxYqfg5X5l39fVu3Q==
+
+"@dandi/core@^1.0.0-alpha.53":
+  version "1.0.0-alpha.53"
+  resolved "https://registry.yarnpkg.com/@dandi/core/-/core-1.0.0-alpha.53.tgz#db70e692d6d752f408c241d1f37e62a5638ba378"
+  integrity sha512-5wST1eMAmSW68/Ynum1JR2ujW9fMzjFuzLMdqsgmTQjDqPMxiu3sB3KVoD9trK0Z051i2E0j2mJyWtuqEzUJXA==
+
 "@types/json5@^0.0.29":
   version "0.0.29"
   resolved "https://registry.yarnpkg.com/@types/json5/-/json5-0.0.29.tgz#ee28707ae94e11d2b827bcbe5270bcea7f3e71ee"
@@ -38,6 +48,11 @@ json5@^1.0.1:
   integrity sha512-aKS4WQjPenRxiQsC93MNfjx+nbF4PAdYzmd/1JIj8HYzqfbu86beTuNgXDzPknWk0n0uARlyewZo4s++ES36Ow==
   dependencies:
     minimist "^1.2.0"
+
+luxon@^1.22.2:
+  version "1.22.2"
+  resolved "https://registry.yarnpkg.com/luxon/-/luxon-1.22.2.tgz#799d65cc1ed0ba85b4cb3f7dd38fc08a8d1a6750"
+  integrity sha512-vq6eSaOOw1fKob+JXwfu0e3/UFUT4G4HTFRJab7dch8J1OdOGW/vXqCiJsY7rm2In+5gKNYx0EtnYT0Tc5V4Qw==
 
 make-error@^1.1.1:
   version "1.3.6"
@@ -116,6 +131,11 @@ typescript@^3.8.3:
   version "3.8.3"
   resolved "https://registry.yarnpkg.com/typescript/-/typescript-3.8.3.tgz#409eb8544ea0335711205869ec458ab109ee1061"
   integrity sha512-MYlEfn5VrLNsgudQTVJeNaQFUAI7DkhnOjdpAp4T+ku1TfQClewlbSuTVHiA+8skNBgaf02TL/kLOvig4y3G8w==
+
+uuid@^7.0.2:
+  version "7.0.2"
+  resolved "https://registry.yarnpkg.com/uuid/-/uuid-7.0.2.tgz#7ff5c203467e91f5e0d85cfcbaaf7d2ebbca9be6"
+  integrity sha512-vy9V/+pKG+5ZTYKf+VcphF5Oc6EFiu3W8Nv3P3zIh0EqVI80ZxOzuPfe9EHjkFNvf8+xuTHVeei4Drydlx4zjw==
 
 yn@3.1.1:
   version "3.1.1"

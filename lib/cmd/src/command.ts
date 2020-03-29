@@ -40,8 +40,8 @@ abstract class SimpleCommandBase<TResponse = any> extends Command<TResponse> {
     return this.compile()
   }
 
-  public [Symbol.toStringTag](): string {
-    return this.toString()
+  public get [Symbol.toStringTag](): string {
+    return `[${this.constructor.name} ${this.toString()}]`
   }
 
   protected abstract formatArgs(): string
@@ -84,7 +84,15 @@ export abstract class ComplexCommand<TResponse = any> extends Command<TResponse>
 
   public async execute(client: Client): Promise<TResponse> {
     const cmds = this.compile()
-    const cmdResponses = await Promise.all(cmds.map(cmd => cmd.execute(client)))
+    const exec = new Set(cmds.map(cmd => {
+      const p = cmd.execute(client)
+      p.then(() => exec.delete(p))
+      return p
+    }))
+    const cmdResponses = await Promise.all(exec).catch(err => {
+      console.error(err)
+      return Promise.reject(err)
+    })
     return this.compileResponse(cmdResponses)
   }
 

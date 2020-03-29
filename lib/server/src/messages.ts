@@ -1,5 +1,8 @@
+import { Inject, Injectable } from '@dandi/core'
 import { Observable } from 'rxjs'
 import { map } from 'rxjs/operators'
+import { SharedObservable } from '../../common'
+import { Server } from './server'
 
 export enum ServerChannel {
   main = 'main',
@@ -36,8 +39,9 @@ export interface ServerChannelMessage<TChannel extends ServerChannel> extends Se
   channel: TChannel
 }
 
-export class ServerMessages extends Observable<ServerMessage> {
-  constructor(server$: Observable<string>) {
+@Injectable()
+export class ServerMessages extends SharedObservable<ServerMessage> {
+  constructor(@Inject(Server) server$: Server) {
     super(o => server$.pipe(
       map(raw => {
         const [hour, min, sec] = raw.substring(1, 9).split(':').map(val => parseInt(val, 10))

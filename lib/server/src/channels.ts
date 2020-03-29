@@ -57,7 +57,7 @@ export interface ChannelEvent<
   data: TDataType
 }
 
-export type ServerEventPattern<TChannel extends ServerChannel> = [keyof ChannelEventTypes[TChannel], RegExp]
+export type ServerEventPattern<TChannel extends ServerChannel> = [keyof ChannelEventTypes[TChannel], RegExp | RegExp[]]
 export type ServerEventPatterns<TChannel extends ServerChannel> = ServerEventPattern<TChannel>[]
 
 export type EventStreamChannels = { [TChannel in ServerChannel]: ServerEventsChannel<TChannel> }

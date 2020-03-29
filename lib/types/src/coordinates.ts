@@ -253,15 +253,15 @@ class CoordinatesImpl implements Iterable<any> {
     return this.join(' ')
   }
 
-  [Symbol.iterator](): Iterator<any> {
+  public [Symbol.iterator](): Iterator<any> {
     return [this.x, this.y, this.z][Symbol.iterator]()
   }
 
-  [Symbol.toStringTag](): string {
-    return this.toString()
+  public get [Symbol.toStringTag](): string {
+    return `[${this.constructor.name} ${this.toString()}]`
   }
 
-  [inspect.custom](): string {
+  public [inspect.custom](): string {
     return this.toString()
   }
 

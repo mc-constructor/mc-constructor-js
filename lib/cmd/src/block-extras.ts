@@ -32,8 +32,8 @@ export abstract class BlockExtras {
     return this._generate()
   }
 
-  public [Symbol.toStringTag](): string {
-    return this.toString()
+  public get [Symbol.toStringTag](): string {
+    return `[${this.constructor.name} ${this.toString()}]`
   }
 
 }

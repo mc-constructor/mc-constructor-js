@@ -1,3 +1,4 @@
+import { Inject, Injectable } from '@dandi/core'
 import {
   AutoSignal,
   block,
@@ -9,10 +10,10 @@ import {
   time,
   weather
 } from '@minecraft/core/cmd'
-import { Block, Coordinates, Direction, loc } from '@minecraft/core/types'
+import { Block, Direction, loc } from '@minecraft/core/types'
+import { Players } from '@minecraft/core/server'
 
-export const DEFAULT_ARENA_SIZE = 25
-
+import { CommonCommands } from './common'
 
   // return [
   //   // `scoreboard objectives remove hit_filter`,
@@ -45,33 +46,75 @@ export const DEFAULT_ARENA_SIZE = 25
  *   - ice platform
  *   - platform shrinks
  *   - randomly spawn creepers / tnt minecart (use data to make it less explosive?)
+ *   - collect
+ *   - cage and platform made of bedrock / hole in the middle
+ *   - collecting food drops increases satiation
+ *   - collecting wool heals you
+ *   - collecting gunpowder grants/upgrades armor
+ *   - can we detect missed attacks?
+ *   - increase knockback level with successful slaps (e.g. 10 slaps = level++)
+ *   - killing player takes a random piece of armor or fish if it is better
+ *
  */
 
+@Injectable()
 export class CodslapInitCommand extends ComplexCommand {
 
-  constructor(public readonly center: Coordinates, public readonly arenaSize = DEFAULT_ARENA_SIZE) {
+  constructor(
+    @Inject(Players) private players$: Players,
+    @Inject(CommonCommands) private common: CommonCommands,
+  ) {
     super()
   }
 
   public compile(): Command[] {
     return [
+      ...this.initHoldingArea(),
+      ...this.movePlayersToHoldingArea(),
       ...this.initRules(),
       ...this.initArena(),
       ...this.initCommandBlocks(),
       ...this.initObjectives(),
       ...this.initPlayers(),
+      ...this.removeHoldingArea(),
+    ]
+  }
+
+  protected initHoldingArea(): Command[] {
+    const holding = this.common.spawn.modify.up(100)
+    return [
+      block(Block.whiteWool).fill(
+        holding.modify.west(this.common.arenaSize).modify.north(this.common.arenaSize),
+        holding.modify.east(this.common.arenaSize).modify.south(this.common.arenaSize),
+      )
+    ]
+  }
+
+  protected movePlayersToHoldingArea(): Command[] {
+    const holding = this.common.spawn.modify.up(100).modify.up(1)
+    return [
+      rawCmd(`execute as @a run teleport @s ${holding}`, true)
+    ]
+  }
+
+  protected removeHoldingArea(): Command[] {
+    const holding = this.common.spawn.modify.up(100)
+    return [
+      block(Block.air).fill(
+        holding.modify.west(this.common.arenaSize).modify.north(this.common.arenaSize),
+        holding.modify.east(this.common.arenaSize).modify.south(this.common.arenaSize),
+      )
     ]
   }
 
   protected initRules(): Command[] {
-    const spawn = this.center.modify(1,  27)
     return [
       time.set.day,
       weather.clear,
       gamerule.doWeatherCycle.disable,
       gamerule.doDaylightCycle.disable,
       gamerule.commandBlockOutput.disable,
-      rawCmd(`setworldspawn ${spawn}`, true),
+      rawCmd(`setworldspawn ${this.common.spawn}`, true),
     ]
   }
 
@@ -86,9 +129,11 @@ export class CodslapInitCommand extends ComplexCommand {
   }
 
   protected initArena(): Command[] {
-    const baseStart = this.center.modify.west(this.arenaSize).modify.north(this.arenaSize)
-    const baseEnd = this.center.modify.east(this.arenaSize).modify.south(this.arenaSize)
+    const baseStart = this.common.baseStart
+    const baseEnd = this.common.baseEnd
+    const center = this.common.center
     const cage = block(Block.ironBars)
+    // const cage = block(Block.bedrock)
       .box(
         baseStart.modify.up(50),
         baseEnd,
@@ -111,45 +156,67 @@ export class CodslapInitCommand extends ComplexCommand {
         cage.end.modify.down(25).modify.east(25).modify.south(25),
       )
 
-    const platformRadius = Math.floor(this.arenaSize / 4)
-    const platform = block(Block.netherrack)
+    const platformHeight = this.common.platformHeight
+    const platformStart = this.common.platformStart
+    const platformEnd = this.common.platformEnd
+    // const platformBlock = block(Block.honeycombBlock)
+    const platformBlock = block(Block.packedIce)
+    // const platformBlock = block(Block.glass)
+    const platform = platformBlock
+      .fill(platformStart, platformEnd)
+
+    const holeSize = this.common.platformHoleSize
+
+    const platformHoleLip = platformBlock
       .fill(
-        this.center.modify.west(platformRadius).modify.north(platformRadius).modify.up(25),
-        this.center.modify.east(platformRadius).modify.south(platformRadius).modify.up(25),
+        center.modify.west(holeSize + 1).modify.north(holeSize + 1).modify.up(this.common.platformHeight + 1),
+        center.modify.east(holeSize + 1).modify.south(holeSize + 1).modify.up(this.common.platformHeight),
       )
 
-    const spawn = this.center.modify(1, platform.start.y + 2)
+    const platformHole = block(Block.air)
+      .fill(
+        center.modify.west(holeSize).modify.north(holeSize).modify.up(platformHeight + 1),
+        center.modify.east(holeSize).modify.south(holeSize).modify.up(platformHeight),
+      )
+
+    const platformInnerVoid = block(Block.air)
+      .fill(
+        platform.start.modify.west(-1).modify.north(-1),
+        platform.end.modify.east(-1).modify.south(-1).modify.up(1),
+      )
 
     return [
+      rawCmd(`kill @e[type=!player]`, true),
       reset,
       cage,
       moatContainer,
       lava,
       platform,
-      rawCmd(`spawnpoint @a ${spawn}`, true),
-      rawCmd(`summon sheep ${spawn}`, true),
-      rawCmd(`summon sheep ${spawn}`, true),
-      rawCmd(`summon sheep ${spawn}`, true),
-      rawCmd(`summon sheep ${spawn}`, true),
+      platformInnerVoid,
+      platformHoleLip,
+      platformHole,
     ]
   }
 
   protected initPlayers(): Command[] {
+    const playerTeleports = this.players$.players.map(player =>
+      rawCmd(`execute as @p[name=${player.name}] run teleport ${this.common.getRandomSpawn()}`, true))
     return [
-      // rawCmd<string>(`execute as @a run teleport @s ${this.center.modify.up(100)}`, true)
-
+      ...playerTeleports,
+      // rawCmd(`execute as @a run give @s cod`, true),
       // clear only gives a response if something was cleared - need to give something to make sure clear gives a response
-      rawCmd(`execute as @a run give @s cod`, true),
       rawCmd(`execute as @a run clear`, true),
+      ...this.common.resetPlayer('@a'),
 
-      rawCmd(`execute as @a run give @s cod{Enchantments:[{id:knockback,lvl:50}]}`, true),
-      rawCmd(`teleport @a ${this.center.modify.up(27)}`, true),
+      rawCmd(`execute as @a run effect clear @s`, true),
+      rawCmd(`execute as @a run effect give @s instant_health 10`, true),
       rawCmd(`gamemode survival @a`, true),
+      // rawCmd(`gamemode creative @a`, true),
     ]
   }
 
   protected initCommandBlocks(): Command[] {
-    const cmdBlockCenter = this.center.modify(1, 0).modify.west(3)
+    const cmdBlockCenter = this.common.center.modify(1, 0).modify.west(3)
 
     const slapFilterReset =
       block(Block.chainCommandBlock)

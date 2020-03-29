@@ -1,6 +1,9 @@
+import { Inject, Injectable } from '@dandi/core'
+
 import { Observable, Observer, Subscription } from 'rxjs'
-import { ServerChannel, ServerChannelMessage, ServerMessage } from './messages'
 import { share } from 'rxjs/operators'
+
+import { ServerChannel, ServerChannelMessage, ServerMessages } from './messages'
 
 export class MessageStream<TChannel extends ServerChannel> extends Observable<ServerChannelMessage<TChannel>> {
   constructor(channel: TChannel, initFn: (channel: ServerChannel, o: Observer<ServerChannelMessage<TChannel>>) => void) {
@@ -10,11 +13,12 @@ export class MessageStream<TChannel extends ServerChannel> extends Observable<Se
 
 export type MessageStreamChannels = { [TChannel in ServerChannel]: MessageStream<TChannel> }
 
+@Injectable()
 export class Director {
 
   public readonly channels: MessageStreamChannels
 
-  constructor(messages$: Observable<ServerMessage>) {
+  constructor(@Inject(ServerMessages) messages$: ServerMessages) {
     const channels = new Map<ServerChannel, Observer<any>>()
     let sub: Subscription
 

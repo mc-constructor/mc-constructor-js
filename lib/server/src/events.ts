@@ -13,6 +13,7 @@ import {
   ServerEventsChannel
 } from './channels'
 import { Client } from './client'
+import { Inject, Injectable } from '@dandi/core'
 
 export * from './events/auth'
 export * from './events/main'
@@ -31,7 +32,9 @@ export function makeEventStream<
   return channel$.pipe(
     map((msg: ServerChannelMessage<TChannel>) => {
       for (const [type, pattern] of patterns) {
-        const result = msg.content.match(pattern)
+        const result = Array.isArray(pattern) ?
+          pattern.map(p => msg.content.match(p)).find(r => !!r) : // TODO: return after first match instead of iterating everything
+          msg.content.match(pattern)
         if (result) {
           const data = Object.assign({}, result.groups) as ChannelEventTypes[TChannel][any]
           const source = msg
@@ -50,19 +53,19 @@ export function makeEventStream<
   )
 }
 
+@Injectable()
 export class ServerEvents {
-
-  private readonly _channels: EventStreamChannels
 
   public readonly all: Observable<ChannelEvent<any>>
   public readonly client: Client
 
-  constructor() {
-    const server = new Server()
+  private readonly _channels: EventStreamChannels
+
+  constructor(
+    @Inject(Server) server: Server,
+    @Inject(Director) director: Director,
+  ) {
     this.client = server
-    const server$ = server.pipe(share())
-    const messages$ = new ServerMessages(server$).pipe(share())
-    const director = new Director(messages$)
 
     this._channels = Object
       .entries(CHANNEL_PATTERNS)
