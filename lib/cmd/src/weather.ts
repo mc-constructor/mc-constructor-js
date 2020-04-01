@@ -13,7 +13,7 @@ export type WeatherCommandBuilder = {
   [TWeather in Weather]: WeatherSubCommandBuilder
 } & { (subCommand: Weather, duration?: number): Command }
 
-class WeatherCommand extends SimpleArgsCommand<string> {
+class WeatherCommand extends SimpleArgsCommand {
   protected readonly command: string = 'weather'
 
   constructor(subcommand: Weather, duration?: number) {

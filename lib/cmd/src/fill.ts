@@ -50,7 +50,7 @@ class FillIncrementCommand<TBlock extends Block> extends BlockCommand<Block> {
 
 }
 
-export class FillCommand<TBlock extends Block> extends ComplexCommand<string> {
+export class FillCommand<TBlock extends Block> extends ComplexCommand {
 
   constructor(
     public readonly block: TBlock,

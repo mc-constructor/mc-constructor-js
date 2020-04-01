@@ -1,6 +1,5 @@
 import { InjectionToken, Module } from '@dandi/core'
 import { Command } from '@minecraft/core/cmd'
-import { Coordinates } from '@minecraft/core/types'
 
 import { GameScope } from './game-scope'
 import { localToken } from './local-token'

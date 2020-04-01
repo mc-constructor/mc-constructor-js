@@ -1,34 +1,19 @@
-import { Client, ExpectResponse } from '../../server'
+import { Client } from '../../server'
 
-export type NonVoidResponse = object | string | number | boolean
-
-export abstract class Command<TResponse = any> {
+export abstract class Command {
 
   protected constructor() {}
 
-  public abstract execute(client: Client): Promise<TResponse>
-
-  protected validateResponse(responseText: string): void {
-    if (responseText.includes('Unknown command')) {
-      throw new Error(responseText)
-    }
-  }
-
+  public abstract execute(client: Client): void
 }
 
-abstract class SimpleCommandBase<TResponse = any> extends Command<TResponse> {
-
-  public abstract readonly expectResponse: ExpectResponse<TResponse>
+export abstract class SimpleCommand extends Command {
 
   protected abstract readonly command: string
 
-  public async execute(client: Client): Promise<TResponse> {
+  public execute(client: Client): void {
     const cmd = this.compile()
-    const responseText = await client.send(cmd, this.expectResponse)
-    if (typeof responseText === 'string') {
-      this.validateResponse(responseText)
-      return this.parseResponse(responseText)
-    }
+    client.send(cmd)
   }
 
   public compile(): string {
@@ -45,21 +30,9 @@ abstract class SimpleCommandBase<TResponse = any> extends Command<TResponse> {
   }
 
   protected abstract formatArgs(): string
-
-  protected parseResponse(responseText: string): TResponse {
-    return
-  }
 }
 
-export abstract class SimpleCommand<TResponse extends NonVoidResponse = any> extends SimpleCommandBase<TResponse> {
-  public readonly expectResponse = true as ExpectResponse<TResponse>
-}
-
-export abstract class SimpleVoidCommand extends SimpleCommandBase<void> {
-  public readonly expectResponse = false
-}
-
-abstract class SimpleArgsCommandBase<TResponse = any, TArgs extends Array<any> = any[]> extends SimpleCommandBase<TResponse> {
+export abstract class SimpleArgsCommand<TArgs extends Array<any> = any[]> extends SimpleCommand {
   protected readonly args: TArgs
 
   protected constructor(...args: TArgs) {
@@ -72,37 +45,18 @@ abstract class SimpleArgsCommandBase<TResponse = any, TArgs extends Array<any> =
   }
 }
 
-export abstract class SimpleArgsCommand<TResponse extends NonVoidResponse, TArgs extends Array<any> = any[]> extends SimpleArgsCommandBase {
-  public readonly expectResponse = true as ExpectResponse<TResponse>
-}
+export abstract class ComplexCommand extends Command {
 
-export abstract class SimpleArgsVoidCommand extends SimpleArgsCommandBase<void> {
-  public readonly expectResponse = false
-}
-
-export abstract class ComplexCommand<TResponse = any> extends Command<TResponse> {
-
-  public async execute(client: Client): Promise<TResponse> {
+  public execute(client: Client): void {
     const cmds = this.compile()
-    const exec = new Set(cmds.map(cmd => {
-      const p = cmd.execute(client)
-      p.then(() => exec.delete(p))
-      return p
-    }))
-    const cmdResponses = await Promise.all(exec).catch(err => {
-      console.error(err)
-      return Promise.reject(err)
-    })
-    return this.compileResponse(cmdResponses)
+    cmds.forEach(cmd => cmd.execute(client))
   }
 
-  public abstract compile(): Command<any>[]
-
-  protected abstract compileResponse(cmdResponses: any[]): TResponse
+  public abstract compile(): Command[]
 }
 
-export class RawCommand<TResponse = any> extends SimpleCommandBase<TResponse> {
-  constructor(protected readonly command: string, public readonly expectResponse: ExpectResponse<TResponse>) {
+export class RawCommand extends SimpleCommand {
+  constructor(protected readonly command: string) {
     super()
   }
 
@@ -111,7 +65,7 @@ export class RawCommand<TResponse = any> extends SimpleCommandBase<TResponse> {
   }
 }
 
-export class MultiCommand<TResponse = any> extends ComplexCommand<TResponse> {
+export class MultiCommand extends ComplexCommand {
   public readonly cmds: ReadonlyArray<Command>
 
   constructor(...cmds: Command[]) {
@@ -122,17 +76,13 @@ export class MultiCommand<TResponse = any> extends ComplexCommand<TResponse> {
   public compile(): Command[] {
     return [...this.cmds]
   }
-
-  protected compileResponse(cmdResponses: any[]): TResponse {
-    return undefined
-  }
 }
 
 export function multi(...cmds: Command[]): Command {
   return new MultiCommand(...cmds)
 }
 
-export function rawCmd<TResponse = any>(cmd: string, expectResponse: ExpectResponse<TResponse>): Command<TResponse> {
-  return new RawCommand<TResponse>(cmd, expectResponse)
+export function rawCmd(cmd: string): Command {
+  return new RawCommand(cmd)
 }
 

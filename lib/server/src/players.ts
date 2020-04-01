@@ -2,6 +2,7 @@ import { Observable, Observer } from 'rxjs'
 import { filter, map } from 'rxjs/operators'
 
 import { loc, Coordinates } from '../../types'
+import { isEventType } from './channels'
 
 import { ServerEvents } from './events'
 import { ServerAuthenticatorEventType } from './events/auth'
@@ -73,7 +74,7 @@ export class Players extends Observable<Player[]> {
 
       const threadSub = thread$
         .pipe(
-          filter(event => event.type === ServerThreadEventType.playerLeft),
+          filter(isEventType(ServerThreadEventType.playerLeft)),
           filter(event => this.playersByName.has(event.data.player))
         )
         .subscribe(event => {

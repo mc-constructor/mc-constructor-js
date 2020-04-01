@@ -10,12 +10,12 @@ import {
   time,
   weather
 } from '@minecraft/core/cmd'
-import { Block, Direction, loc } from '@minecraft/core/types'
 import { Players } from '@minecraft/core/server'
+import { Block, Direction, loc } from '@minecraft/core/types'
 
 import { CommonCommands } from './common'
 
-  // return [
+// return [
   //   // `scoreboard objectives remove hit_filter`,
   //   // `scoreboard objectives remove codslap`,
   //   `scoreboard objectives add hit_filter minecraft.custom:minecraft.damage_dealt`,
@@ -93,7 +93,7 @@ export class CodslapInitCommand extends ComplexCommand {
   protected movePlayersToHoldingArea(): Command[] {
     const holding = this.common.spawn.modify.up(100).modify.up(1)
     return [
-      rawCmd(`execute as @a run teleport @s ${holding}`, true)
+      rawCmd(`execute as @a run teleport @s ${holding}`)
     ]
   }
 
@@ -114,17 +114,26 @@ export class CodslapInitCommand extends ComplexCommand {
       gamerule.doWeatherCycle.disable,
       gamerule.doDaylightCycle.disable,
       gamerule.commandBlockOutput.disable,
-      rawCmd(`setworldspawn ${this.common.spawn}`, true),
+      rawCmd(`setworldspawn ${this.common.spawn}`),
     ]
   }
 
   protected initObjectives(): Command[] {
     return [
-      rawCmd(`scoreboard objectives remove hit_filter`, true),
-      rawCmd(`scoreboard objectives remove codslap`, true),
-      rawCmd(`scoreboard objectives add hit_filter minecraft.custom:minecraft.damage_dealt`, true),
-      rawCmd(`scoreboard objectives add codslap trigger "CODSLAP!"`, true),
-      rawCmd(`scoreboard objectives setdisplay sidebar codslap`, true),
+      rawCmd(`scoreboard objectives remove hit_filter`),
+      rawCmd(`scoreboard objectives add hit_filter minecraft.custom:minecraft.damage_dealt`),
+
+      rawCmd(`scoreboard objectives remove codslap`),
+      rawCmd(`scoreboard objectives add codslap dummy "CODSLAP!"`),
+
+      // rawCmd(`scoreboard objectives remove kill_filter`, true),
+      // rawCmd(`scoreboard objectives add kill_filter minecraft.custom:minecraft.playerKillCount`, true),
+
+      // rawCmd(`scoreboard objectives remove codslap_kill`, true),
+      // rawCmd(`scoreboard objectives add codslap_kill dummy "CODSLAP KILL!"`, true),
+
+      rawCmd(`scoreboard objectives setdisplay belowName codslap`),
+      rawCmd(`scoreboard objectives setdisplay sidebar codslap_kill`),
     ]
   }
 
@@ -186,7 +195,7 @@ export class CodslapInitCommand extends ComplexCommand {
       )
 
     return [
-      rawCmd(`kill @e[type=!player]`, true),
+      rawCmd(`kill @e[type=!player]`),
       reset,
       cage,
       moatContainer,
@@ -200,17 +209,17 @@ export class CodslapInitCommand extends ComplexCommand {
 
   protected initPlayers(): Command[] {
     const playerTeleports = this.players$.players.map(player =>
-      rawCmd(`execute as @p[name=${player.name}] run teleport ${this.common.getRandomSpawn()}`, true))
+      rawCmd(`execute as @p[name=${player.name}] run teleport ${this.common.getRandomSpawn()}`))
     return [
       ...playerTeleports,
       // rawCmd(`execute as @a run give @s cod`, true),
       // clear only gives a response if something was cleared - need to give something to make sure clear gives a response
-      rawCmd(`execute as @a run clear`, true),
+      rawCmd(`execute as @a run clear`),
       ...this.common.resetPlayer('@a'),
 
-      rawCmd(`execute as @a run effect clear @s`, true),
-      rawCmd(`execute as @a run effect give @s instant_health 10`, true),
-      rawCmd(`gamemode survival @a`, true),
+      rawCmd(`execute as @a run effect clear @s`),
+      rawCmd(`execute as @a run effect give @s instant_health 10`),
+      rawCmd(`gamemode survival @a`),
       // rawCmd(`gamemode creative @a`, true),
     ]
   }
@@ -231,8 +240,22 @@ export class CodslapInitCommand extends ComplexCommand {
       .facing(slapFilterReset.loc)
       .autoSignal(AutoSignal.alwaysActive)
       .set(slapFilterReset.loc.modify.south(-1))
-      // .backup()
-        // .backup()
+
+    // tips for figuring out who slapped whom - use a command block that finds the nearest player to the slapper
+    // could be inaccurate due to knockback?
+    // https://gaming.stackexchange.com/questions/258135/a-minecraft-poison-sword
+
+    // const killFilterReset =
+    //   block(Block.chainCommandBlock)
+    //     .command('execute as @[scores={kill_filter=1..}] run scoreboard players reset @s kill_filter')
+    //     .facing(Direction.south)
+    //     .autoSignal(AutoSignal.alwaysActive)
+    //     .conditional(true)
+    //     .set(cmdBlockCenter.modify.west(1))
+    //
+    // const killTracker =
+    //   block(Block.repeatingCommandBlock)
+    //     .command('execute as @a[scores={kill_filter=1..}]')
 
     return [
       // reset entire target area to avoid "Cannot place block" if command block locations already have the same kind of block

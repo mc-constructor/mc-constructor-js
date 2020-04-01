@@ -43,7 +43,7 @@ export class CommandBlockData extends BlockDataBase {
 
 export class SetCommandBlockCommand extends SetBlockCommand<CommandBlockType> {
 
-  public constructor(cmd: string | Command<any>, loc: Coordinates, type: CommandBlockType) {
+  public constructor(cmd: string | Command, loc: Coordinates, type: CommandBlockType) {
     super(type, new CommandBlockState(), new CommandBlockData(), loc)
     this.data.command(cmd)
   }

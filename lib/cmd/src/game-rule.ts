@@ -1,5 +1,4 @@
 import { Command, SimpleArgsCommand } from './command'
-import { ExpectResponse } from '../../server'
 
 export enum GameRule {
   announceAdvancements = 'announceAdvancements',
@@ -124,7 +123,7 @@ export type GameRuleCommandBuilderImplicit = {
 
 export type GameRuleCommandBuilder = GameRuleCommandBuilderExplicit & GameRuleCommandBuilderImplicit
 
-class GameRuleCommand<TRule extends GameRule> extends SimpleArgsCommand<string> {
+class GameRuleCommand<TRule extends GameRule> extends SimpleArgsCommand {
   public readonly expectResponse = true
   protected readonly command: string = 'gamerule'
 

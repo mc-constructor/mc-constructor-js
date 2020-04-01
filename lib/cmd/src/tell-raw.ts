@@ -1,10 +1,10 @@
-import { Command, SimpleVoidCommand } from './command'
+import { Command, SimpleCommand } from './command'
 import { TextBuilder, TextFragmentBuilder } from './text'
 
 // https://minecraft.gamepedia.com/Commands/tellraw
 
 
-class TellRawCommand extends SimpleVoidCommand {
+class TellRawCommand extends SimpleCommand {
   protected readonly command: string = 'tellraw'
 
   constructor(public readonly target: string, public readonly text: TextBuilder) {

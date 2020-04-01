@@ -4,7 +4,7 @@ import { SimpleCommand } from './command'
 import { BlockState } from './block-state'
 import { BlockData } from './block-data'
 
-export abstract class BlockCommand<TBlock extends Block> extends SimpleCommand<string> {
+export abstract class BlockCommand<TBlock extends Block> extends SimpleCommand {
   public readonly expectResponse = true
 
   protected constructor(

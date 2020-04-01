@@ -1,6 +1,5 @@
 import { DandiApplication, EntryPoint, Inject, Injectable } from '@dandi/core'
-import { ChatCommands } from './lib/chat-commands'
-import { ChatCommandsModule } from './lib/chat-commands'
+import { ChatCommands, ChatCommandsModule } from './lib/chat-commands'
 import { Players, ServerEvents, ServerModule } from './lib/server'
 import { MinigameModule } from './minigames'
 // import { ASCII } from './lib/routines'

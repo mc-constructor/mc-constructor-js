@@ -85,7 +85,7 @@ export class ServerEventsChannel<TChannel extends ServerChannel> extends Observa
 
   public eventType<TEventType extends keyof ChannelEventTypes[TChannel]>(
     type: TEventType,
-  ): Observable<ChannelEvent<TChannel, TEventType>> {
+  ): Observable<ChannelEvent<TChannel, TEventType, ChannelEventTypes[TChannel][TEventType]>> {
     const existing = this.byType.get(type)
     if (existing) {
       return existing as Observable<ChannelEvent<TChannel, TEventType>>
@@ -93,9 +93,33 @@ export class ServerEventsChannel<TChannel extends ServerChannel> extends Observa
     const byType = this.pipe(
       filter(event => event.type === type),
       share(),
-    ) as Observable<ChannelEvent<TChannel, TEventType>>
+    ) as Observable<ChannelEvent<TChannel, TEventType, ChannelEventTypes[TChannel][TEventType]>>
     this.byType.set(type, byType)
     return byType
   }
 
+}
+
+export type IsEventTypeFn<TChannel extends ServerChannel, TEventType extends keyof ChannelEventTypes[TChannel]> =
+  (event: ChannelEvent<TChannel>) => event is ChannelEvent<TChannel, TEventType, ChannelEventTypes[TChannel][TEventType]>
+
+export function isEventType<TChannel extends ServerChannel, TEventType extends keyof ChannelEventTypes[TChannel]>
+(
+  type: TEventType,
+): IsEventTypeFn<TChannel, TEventType>
+export function isEventType<TChannel extends ServerChannel, TEventType extends keyof ChannelEventTypes[TChannel]>
+(
+  type: TEventType,
+  event: ChannelEvent<TChannel>,
+): event is ChannelEvent<TChannel, TEventType, ChannelEventTypes[TChannel][TEventType]>
+export function isEventType<TChannel extends ServerChannel, TEventType extends keyof ChannelEventTypes[TChannel]>
+(
+  type: TEventType,
+  event?: ChannelEvent<TChannel>,
+): any
+{
+  if (typeof event === 'undefined') {
+    return isEventType.bind(undefined, type)
+  }
+  return event.type === type
 }

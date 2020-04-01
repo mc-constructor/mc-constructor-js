@@ -14,9 +14,12 @@ export enum ServerChannel {
 const ServerChannelValues = Object.values(ServerChannel)
 
 export enum ServerMessageLevel {
+  trace = 'TRACE',
+  debug = 'DEBUG',
   info = 'INFO',
   warn = 'WARN',
   error = 'ERROR',
+  fatal = 'FATAL',
 }
 
 export interface ServerMessageSource {
@@ -44,10 +47,16 @@ export class ServerMessages extends SharedObservable<ServerMessage> {
   constructor(@Inject(Server) server$: Server) {
     super(o => server$.pipe(
       map(raw => {
-        const [hour, min, sec] = raw.substring(1, 9).split(':').map(val => parseInt(val, 10))
+        // Based on <PatternLayout pattern="%d{[HH:mm:ss.SSS]} [%t/%level] %msg%n" />
+        const timeStart = 1
+        const timeEnd = 13
+        const [hour, min, sec, ms] = raw
+          .substring(timeStart, timeEnd)
+          .split(/[:.]/g)
+          .map(val => parseInt(val, 10))
         const now = new Date()
-        const ts = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, min, sec)
-        const metaStart = 12
+        const ts = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, min, sec, ms)
+        const metaStart = timeEnd + 3
         const metaEnd = raw.indexOf(']', metaStart)
         const metaRaw = raw.substring(metaStart, metaEnd)
         const [channelRaw, levelRaw] = metaRaw.split('/', 2)
@@ -57,7 +66,7 @@ export class ServerMessages extends SharedObservable<ServerMessage> {
           .replace(channel, '')
           .trim()
           .replace(/^[#\-]/, '') || undefined
-        const content = raw.substring(metaEnd + 3)
+        const content = raw.substring(metaEnd + 2)
         const source = {
           raw,
           metaRaw,
