@@ -29,8 +29,4 @@ export class SetBlockCommand<TBlock extends Block> extends BlockCommand<TBlock> 
   public toString(): string {
     return `"${super.toString().replace(/"/g, '\\"')}"`
   }
-
-  protected parseResponse(responseText: string): string {
-    return responseText
-  }
 }

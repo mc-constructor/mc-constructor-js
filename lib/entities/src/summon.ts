@@ -1,3 +1,4 @@
+import { randomInt } from '../../common'
 import { Coordinates } from '../../types'
 
 export enum AnimalType {
@@ -15,10 +16,6 @@ export enum AnimalType {
   wolf = 'wolf',
 }
 const ANIMALS = Object.values(AnimalType)
-
-export function randomInt(min: number, max: number): number {
-  return Math.floor(Math.random() * (max - min) ) + min
-}
 
 export const RANDOM_ANIMAL = () => ANIMALS[randomInt(0, ANIMALS.length - 1)]
 

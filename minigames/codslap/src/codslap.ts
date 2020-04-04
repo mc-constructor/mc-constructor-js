@@ -1,18 +1,21 @@
 import { Inject, Injectable } from '@dandi/core'
 import { Command, rawCmd, tellraw, text } from '@minecraft/core/cmd'
-import { randomInt } from '@minecraft/core/entities'
+import { randomInt } from '@minecraft/core/common'
 import {
   ChannelEvent,
-  Client, forPlayer,
+  Client,
+  forPlayer,
   isEventType,
+  PlayerEventTypes,
   Players,
   ServerChannel,
   ServerEvents,
+  ServerEventsChannel,
   ServerThreadEventType
 } from '@minecraft/core/server'
 import { Minigame } from '@minecraft/minigames'
 
-import { combineLatest, interval, Subscription } from 'rxjs'
+import { combineLatest, interval, Observable, Subscription } from 'rxjs'
 import { filter, map, switchMap, take, tap } from 'rxjs/operators'
 
 import { CommonCommands } from './common'
@@ -29,6 +32,9 @@ function isPlayerDeathEvent(event: ChannelEvent<ServerChannel.thread>): event is
   return isEventType(ServerThreadEventType.playerDied, event) || isEventType(ServerThreadEventType.playerKilled, event)
 }
 
+type PlayerDeathEvent = ChannelEvent<ServerChannel.thread, PlayerDeathEventType>
+type PlayerRespawnEvent = ChannelEvent<ServerChannel.thread, PlayerEventTypes>
+
 @Injectable(Minigame)
 export class CodslapMiniGame implements Minigame {
 
@@ -37,6 +43,11 @@ export class CodslapMiniGame implements Minigame {
     subs.length = 0
   }
 
+  private readonly thread$: ServerEventsChannel<ServerChannel.thread>
+  private readonly playerDeath$: Observable<PlayerDeathEvent>
+  private readonly playerRespawn$: Observable<PlayerRespawnEvent>
+  private readonly scoreboardCheckTrigger$: Observable<void>
+
   constructor(
     @Inject(Players) private players$: Players,
     @Inject(ServerEvents) private events$: ServerEvents,
@@ -44,6 +55,12 @@ export class CodslapMiniGame implements Minigame {
     @Inject(CommonCommands) private common: CommonCommands,
     @Inject(CodslapInitCommand) public readonly init: CodslapInitCommand,
   ) {
+    this.thread$ = this.events$.channel(ServerChannel.thread)
+
+    this.playerDeath$ = this.initPlayerDeath()
+    this.playerRespawn$ = this.initPlayerRespawn()
+
+    this.scoreboardCheckTrigger$ = this.initScoreboardCheckTrigger()
   }
 
   public validateGameState(): Command {
@@ -51,9 +68,26 @@ export class CodslapMiniGame implements Minigame {
   }
 
   public ready(): Command {
-    const thread$ = this.events$.channel(ServerChannel.thread)
-    const sub = thread$.pipe(
-      filter(isPlayerDeathEvent),
+    this.initStreams()
+    return tellraw('@a', text('May the best codslapper win!').bold)
+  }
+
+  private initStreams(): void {
+    subs.push(
+      this.playerRespawn$.subscribe(this.onPlayerRespawn.bind(this)),
+      this.scoreboardCheckTrigger$.subscribe(),
+      this.players$.subscribe(players => console.log('Codslap Players', players))
+    )
+  }
+
+  private initPlayerDeath(): Observable<PlayerDeathEvent> {
+    return this.thread$.pipe(
+      filter(isPlayerDeathEvent)
+    )
+  }
+
+  private initPlayerRespawn(): Observable<PlayerRespawnEvent> {
+    return this.playerDeath$.pipe(
       tap(event => {
         rawCmd(`execute as ${event.data.player} run spawnpoint @s ${this.common.getRandomSpawn()}`).execute(this.client)
       }),
@@ -68,15 +102,12 @@ export class CodslapMiniGame implements Minigame {
 
         // look for an event showing the give command succeeded, indicating the player has respawned
         // also look for a player disconnect
-        const stopCheck$ = thread$.pipe(
+        const stopCheck$ = this.thread$.pipe(
           filter(forPlayer(event.data.player)),
           filter(checkEvent => {
             if (checkEvent.type === ServerThreadEventType.playerLeft) {
               return true
             }
-            // if (isEventType(ServerThreadEventType.playerGivenItems, checkEvent) && checkEvent.data.item === 'Raw Cod') {
-            //   return true
-            // }
             if (isEventType(ServerThreadEventType.playerTeleported, checkEvent) && checkEvent.data.target === checkEvent.data.player) {
               return true
             }
@@ -89,21 +120,30 @@ export class CodslapMiniGame implements Minigame {
       }),
       map(([,stopCheckEvent]) => stopCheckEvent),
       filter(isEventType(ServerThreadEventType.playerTeleported)),
-      tap((event) => {
-        const creeperCount = randomInt(0, 6)
-        this.common.resetPlayer(event.data.player).forEach(cmd => cmd.execute(this.client))
-        rawCmd(`execute as @a run effect clear @s`).execute(this.client)
-        for (let index = 0; index < creeperCount; index++) {
-          rawCmd(`execute as @p run summon creeper ${this.common.getRandomSpawn()}`).execute(this.client)
-        }
-        const sheepCount = randomInt(10, 20)
-        for (let index = 0; index < sheepCount; index++) {
-          rawCmd(`execute as @p run summon sheep ${this.common.getRandomSpawn()} {Attributes:[{Name:generic.maxHealth,Base:2}],Health:2}`).execute(this.client)
-        }
+    )
+  }
+
+  private initScoreboardCheckTrigger(): Observable<any> {
+    return combineLatest([this.players$, interval(1500)]).pipe(
+      tap(([players]) => {
+        players.forEach(player => {
+          rawCmd(`scoreboard players list ${player.name}`).execute(this.client)
+        })
       })
-    ).subscribe()
-    subs.push(sub)
-    return tellraw('@a', text('May the best codslapper win!').bold)
+    )
+  }
+
+  private onPlayerRespawn(event: PlayerRespawnEvent): void {
+    const creeperCount = randomInt(0, 6)
+    this.common.resetPlayer(event.data.player).forEach(cmd => cmd.execute(this.client))
+    rawCmd(`execute as @a run effect clear @s`).execute(this.client)
+    for (let index = 0; index < creeperCount; index++) {
+      rawCmd(`execute as @p run summon creeper ${this.common.getRandomSpawn()}`).execute(this.client)
+    }
+    const sheepCount = randomInt(10, 20)
+    for (let index = 0; index < sheepCount; index++) {
+      rawCmd(`execute as @p run summon sheep ${this.common.getRandomSpawn()} {Attributes:[{Name:generic.maxHealth,Base:2}],Health:2}`).execute(this.client)
+    }
   }
 
 }

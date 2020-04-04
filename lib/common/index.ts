@@ -1,1 +1,3 @@
-export * from './src/shared-observable'
+export * from './src/piped-observable'
+export * from './src/random-int'
+export * from './src/range'

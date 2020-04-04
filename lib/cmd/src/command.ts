@@ -1,24 +1,29 @@
-import { Client } from '../../server'
+import { Client, MessageFailedResponse, MessageResponse, MessageSuccessResponse } from '../../server'
+import { CommandError } from './command-error'
 
-export abstract class Command {
+export abstract class Command<TResponse extends any = any> {
 
   protected constructor() {}
 
-  public abstract execute(client: Client): void
+  public abstract execute(client: Client): Promise<TResponse>
 }
 
-export abstract class SimpleCommand extends Command {
+export abstract class SimpleCommand<TResponse extends any = any> extends Command<TResponse> {
 
   protected abstract readonly command: string
 
-  public execute(client: Client): void {
+  public async execute(client: Client): Promise<TResponse> {
     const cmd = this.compile()
-    client.send(cmd)
+    const response = await client.send(cmd)
+    if (response.success === true) {
+      return this.parseSuccessResponse(response)
+    }
+    throw this.parseFailedResponse(response)
   }
 
   public compile(): string {
     const args = this.formatArgs()
-    return `${this.command}${args ? ' ' : ''}${args}`
+    return `cmd\n${this.command}${args ? ' ' : ''}${args}`
   }
 
   public toString(): string {
@@ -30,9 +35,18 @@ export abstract class SimpleCommand extends Command {
   }
 
   protected abstract formatArgs(): string
+
+  protected parseSuccessResponse(response: MessageSuccessResponse): TResponse {
+    return undefined
+  }
+
+  protected parseFailedResponse(response: MessageFailedResponse): CommandError {
+    const [key, message] = response.extras
+    return new CommandError(key, message)
+  }
 }
 
-export abstract class SimpleArgsCommand<TArgs extends Array<any> = any[]> extends SimpleCommand {
+export abstract class SimpleArgsCommand<TArgs extends Array<any> = any[], TResponse extends any = any> extends SimpleCommand<TResponse> {
   protected readonly args: TArgs
 
   protected constructor(...args: TArgs) {
@@ -47,21 +61,30 @@ export abstract class SimpleArgsCommand<TArgs extends Array<any> = any[]> extend
 
 export abstract class ComplexCommand extends Command {
 
-  public execute(client: Client): void {
+  public async execute(client: Client): Promise<any> {
     const cmds = this.compile()
-    cmds.forEach(cmd => cmd.execute(client))
+    const responses = await Promise.all(cmds.map(cmd => cmd.execute(client)))
+    return this.parseResponses(responses)
   }
 
   public abstract compile(): Command[]
+
+  protected parseResponses(responses: MessageResponse[]): any {
+    return responses
+  }
 }
 
-export class RawCommand extends SimpleCommand {
+export class RawCommand extends SimpleCommand<MessageResponse> {
   constructor(protected readonly command: string) {
     super()
   }
 
   protected formatArgs(): string {
     return '';
+  }
+
+  protected parseResponse(response: MessageResponse): MessageResponse {
+    return response
   }
 }
 
@@ -83,6 +106,7 @@ export function multi(...cmds: Command[]): Command {
 }
 
 export function rawCmd(cmd: string): Command {
-  return new RawCommand(cmd)
+  return new RawCommand(cmd);
 }
 
+  // 3[]4:'charegd:]_creeper}'{}colorso:0}

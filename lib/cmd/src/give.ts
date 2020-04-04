@@ -1,9 +1,16 @@
-import { Item } from '../../types'
+import { MessageSuccessResponse } from '../../server'
+import { fromEntityId, Item } from '../../types'
 
 import { SimpleCommand } from './command'
 import { ItemBuilder } from './item'
 
-class GiveCommand<TItem extends Item> extends SimpleCommand {
+export interface GiveResult<TItem> {
+  count: number
+  item: TItem
+  playerName?: string
+}
+
+class GiveCommand<TItem extends Item> extends SimpleCommand<GiveResult<TItem>> {
   protected readonly command: string = 'give'
 
   constructor(
@@ -19,13 +26,22 @@ class GiveCommand<TItem extends Item> extends SimpleCommand {
     return `${this.target} ${this.item} ${this.count}`;
   }
 
-  protected parseResponse(responseText: string): void {
-    if (!responseText.match('Gave')) {
-      throw new Error(responseText)
+  private matchesItem(item: Item): item is TItem {
+    return this.item.item === item
+  }
+
+  protected parseSuccessResponse(response: MessageSuccessResponse): GiveResult<TItem> {
+    const [key, countRaw, entityIdRaw, playerName] = response.extras
+    const count = parseInt(countRaw)
+    const entityId = entityIdRaw.substring(1, entityIdRaw.length - 1)
+    const item = fromEntityId(entityId)
+    if (!this.matchesItem(item)) {
+      throw new Error(`Response contained unexpected item ${item}`)
     }
-    if (this.playerCheck && !responseText.match(new RegExp(`Gave \\d+ .+ to ${this.playerCheck}`))) {
-      console.log('wrong player')
-      throw new Error('wrong player')
+    return {
+      count,
+      item,
+      playerName,
     }
   }
 }

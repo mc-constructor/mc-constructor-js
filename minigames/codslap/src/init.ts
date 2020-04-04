@@ -10,6 +10,7 @@ import {
   time,
   weather
 } from '@minecraft/core/cmd'
+import { randomInt, range } from '@minecraft/core/common'
 import { Players } from '@minecraft/core/server'
 import { Block, Direction, loc } from '@minecraft/core/types'
 
@@ -114,6 +115,7 @@ export class CodslapInitCommand extends ComplexCommand {
       gamerule.doWeatherCycle.disable,
       gamerule.doDaylightCycle.disable,
       gamerule.commandBlockOutput.disable,
+      gamerule.sendCommandFeedback.enable,
       rawCmd(`setworldspawn ${this.common.spawn}`),
     ]
   }
@@ -210,6 +212,10 @@ export class CodslapInitCommand extends ComplexCommand {
   protected initPlayers(): Command[] {
     const playerTeleports = this.players$.players.map(player =>
       rawCmd(`execute as @p[name=${player.name}] run teleport ${this.common.getRandomSpawn()}`))
+
+    const sheepCount = randomInt(10, 20)
+    const sheep = range(sheepCount).map(() =>
+      rawCmd(`execute as @p run summon sheep ${this.common.getRandomSpawn()} {Attributes:[{Name:generic.maxHealth,Base:2}],Health:2}`))
     return [
       ...playerTeleports,
       // rawCmd(`execute as @a run give @s cod`, true),
@@ -220,6 +226,7 @@ export class CodslapInitCommand extends ComplexCommand {
       rawCmd(`execute as @a run effect clear @s`),
       rawCmd(`execute as @a run effect give @s instant_health 10`),
       rawCmd(`gamemode survival @a`),
+      ...sheep,
       // rawCmd(`gamemode creative @a`, true),
     ]
   }
@@ -263,10 +270,6 @@ export class CodslapInitCommand extends ComplexCommand {
       slapTracker,
       slapFilterReset,
     ]
-  }
-
-  protected compileResponse(cmdResponses: any[]): void {
-    return undefined
   }
 
 }

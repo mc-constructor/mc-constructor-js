@@ -16,12 +16,12 @@ export class BackupBlockCommand<TTargetBlock extends Block> extends Command {
     this.loc = target.loc
   }
 
-  public execute(client: Client): void {
+  public async execute(client: Client): Promise<any> {
     const backup = new SetCommandBlockCommand(this.target, this.loc.modify(1, 1), CommandBlockType.repeating)
     backup.autoSignal(AutoSignal.alwaysActive)
     backup.conditional(false)
     // explicitly create just the backup to save sending an extra command -
     // the backup will automatically create the target in game
-    backup.execute(client)
+    return await backup.execute(client)
   }
 }
