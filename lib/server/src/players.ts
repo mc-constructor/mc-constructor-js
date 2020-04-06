@@ -1,34 +1,49 @@
-import { Inject, Injectable, InjectionToken, Provider } from '@dandi/core'
-import { Observable, Observer } from 'rxjs'
-import { shareReplay } from 'rxjs/operators'
+import { Uuid } from '@dandi/common'
+import { Inject, Injectable } from '@dandi/core'
+import { merge, Observer } from 'rxjs'
+import { map, share, tap } from 'rxjs/operators'
 
 import { listPlayers } from '../../cmd'
+import { SharedObservable } from '../../common'
 
 import { Client } from './client'
-import { ServerEvents } from './events'
-import { localToken } from './local-token'
+import { eventType, PlayerEvent, ServerEvents, ServerEventType } from './events'
 
 export interface Player {
   name: string
-  uuid: string
+  uuid: Uuid
 }
 
 @Injectable()
-export class PlayersService extends Observable<Player[]> {
+export class Players extends SharedObservable<Player[]> {
 
   private readonly playersByName: Map<string, Player> = new Map<string, Player>()
-  private readonly playersByUuid: Map<string, Player> = new Map<string, Player>()
+  private readonly playersByUuid: Map<Uuid, Player> = new Map<Uuid, Player>()
 
   constructor(
     @Inject(Client) client: Client,
-    // @Inject(ServerEvents) events$: ServerEvents
+    @Inject(ServerEvents) events$: ServerEvents,
   ) {
     super(o => {
-      this.playersByName.clear()
-      this.playersByUuid.clear()
+      const source$ = events$.pipe(share())
+
+      const playerJoin$ = source$.pipe(
+        eventType(ServerEventType.playerJoined),
+        tap(this.onPlayerJoin.bind(this)),
+      )
+      const playerLeave$ = source$.pipe(
+        eventType(ServerEventType.playerLeft),
+        tap(this.onPlayerLeave.bind(this))
+      )
+
       this.init(client, o)
 
+      const sub = merge(playerJoin$, playerLeave$).pipe(map(() => this.players)).subscribe(o)
+
       return () => {
+        sub.unsubscribe()
+        this.playersByName.clear()
+        this.playersByUuid.clear()
       }
     })
   }
@@ -43,13 +58,20 @@ export class PlayersService extends Observable<Player[]> {
     o.next(this.players)
   }
 
+  private onPlayerJoin(event: PlayerEvent): void {
+    this.addPlayer(event.player)
+  }
+
+  private onPlayerLeave(event: PlayerEvent): void {
+    this.removePlayer(event.player)
+  }
+
   private addPlayer(player: Player): void {
     this.playersByName.set(player.name, player)
     this.playersByUuid.set(player.uuid, player)
   }
 
-  private removePlayer(name: string): void {
-    const player = this.playersByName.get(name)
+  private removePlayer(player: Player): void {
     if (!player) {
       return
     }
@@ -57,23 +79,4 @@ export class PlayersService extends Observable<Player[]> {
     this.playersByUuid.delete(player.uuid)
   }
 
-}
-
-export interface Players extends Observable<Player[]> {
-  readonly players: ReadonlyArray<Player>
-}
-export const Players: InjectionToken<Players> = localToken.opinionated<Players>('Players', {
-  multi: false,
-})
-
-export const PlayersProvider: Provider<Players> = {
-  provide: Players,
-  useFactory(players: PlayersService): Players {
-    return Object.defineProperties(players.pipe(shareReplay(1)), {
-      players: {
-        get: () => players.players,
-      },
-    })
-  },
-  deps: [PlayersService]
 }

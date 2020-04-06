@@ -1,10 +1,9 @@
 import { ModuleBuilder, Registerable } from '@dandi/core'
 
-// import { Director } from './director'
-// import { ServerEvents } from './events'
+import { ServerEvents } from './events'
 import { localToken } from './local-token'
 // import { ServerMessages } from './messages'
-import { PlayersProvider, PlayersService } from './players'
+import { Players } from './players'
 import { Client } from './client'
 
 export class ServerModuleBuilder extends ModuleBuilder<ServerModuleBuilder> {
@@ -14,10 +13,8 @@ export class ServerModuleBuilder extends ModuleBuilder<ServerModuleBuilder> {
 }
 
 export const ServerModule = new ServerModuleBuilder(
-  // Director,
-  PlayersService,
-  PlayersProvider,
+  Players,
   Client,
-  // ServerEvents,
+  ServerEvents,
   // ServerMessages,
 )

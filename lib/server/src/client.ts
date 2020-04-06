@@ -1,6 +1,6 @@
-import { Uuid } from '@dandi/common'
 import { createConnection, Socket } from 'net'
 
+import { Uuid } from '@dandi/common'
 import { Injectable } from '@dandi/core'
 
 import { SharedObservable } from '../../common'
@@ -189,6 +189,9 @@ export class Client extends SharedObservable<[Uuid, string[]]> {
       pendingMessage.onResponse(parts)
       this.pending.delete(id)
     } else {
+      if (parts.includes('net.minecraftforge.event.entity.living.LivingFallEvent')) {
+        return
+      }
       this.next([id, parts])
     }
   }

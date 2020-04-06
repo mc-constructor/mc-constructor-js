@@ -295,4 +295,6 @@ export enum Item {
   zombiePigmanSpawnEgg = 'minecraft:zombie_pigman_spawn_egg',
   zombieSpawnEgg = 'minecraft:zombie_spawn_egg',
   zombieVillagerSpawnEgg = 'minecraft:zombie_villager_spawn_egg',
+
+  codslapper = 'nodesupportmod:codslapper',
 }
