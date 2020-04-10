@@ -32,6 +32,7 @@ export class MinigameRunner {
     } catch (err) {
       console.error(err)
     }
-    game.ready().execute(this.client)
+    console.log('game ready!')
+    await game.ready().execute(this.client)
   }
 }

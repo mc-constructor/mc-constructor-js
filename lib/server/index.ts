@@ -1,5 +1,6 @@
 export * from './src/client'
 export * from './src/events'
+export * from './src/message'
+export * from './src/message-error'
 export * from './src/players'
-export * from './src/client'
 export * from './src/server.module'

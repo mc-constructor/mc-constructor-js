@@ -1,13 +1,18 @@
 import { createConnection, Socket } from 'net'
+import { TextEncoder } from 'util'
 
 import { Uuid } from '@dandi/common'
 import { Injectable } from '@dandi/core'
+import { Observable } from 'rxjs'
+import { share } from 'rxjs/operators'
 
-import { SharedObservable } from '../../common'
+import { MessageType } from './message'
 
+const enc = new TextEncoder()
 const PORT_INDEX = process.argv.indexOf('--port')
 const PORT = parseInt(process.argv[PORT_INDEX + 1], 10)
 const DELIMITER = '------------------------------------------'
+const DELIMITER_BUF = enc.encode(DELIMITER)
 
 export interface MessageResponseContent {
   extras: string[]
@@ -24,6 +29,7 @@ export interface MessageFailedResponse extends MessageResponseContent {
 export type MessageResponse = MessageSuccessResponse | MessageFailedResponse
 
 export interface PendingMessage extends Promise<MessageResponse> {
+  id: Uuid
   sent: Promise<void>
 }
 
@@ -37,7 +43,11 @@ class OutgoingMessage {
   private onSendErr: (err: Error) => void
   public onResponse: (response: string[]) => void
 
-  constructor(public readonly content: string) {
+  constructor(
+    public readonly type: MessageType,
+    public readonly body: Uint8Array | string,
+    public readonly hasResponse: boolean | number,
+  ) {
     this.pendingMessage = Object.assign(new Promise<MessageResponse>((resolve, reject) => {
       this.onResponse = (responseRaw: string[]): void => {
         const [successRaw, ...extras] = responseRaw
@@ -53,18 +63,41 @@ class OutgoingMessage {
         // }
       }
     }), {
-      sent: new Promise<void>((resolve, reject) => {
-        this.onSent = resolve
+      id: this.id,
+      sent: new Promise<void>(async (resolve, reject) => {
+        this.onSent = async () => {
+          resolve()
+          if (this.hasResponse === false) {
+            this.onResponse(['true'])
+          }
+          if (typeof this.hasResponse === 'number') {
+            let timeout = setTimeout(() => this.onResponse(['true']), this.hasResponse)
+            await this.pendingMessage
+            clearTimeout(timeout)
+          }
+        }
         this.onSendErr = reject
       })
     })
   }
 
   public send(conn: Socket): Promise<void> {
-    const content = `${this.id}\n${this.content}${DELIMITER}`
-    console.log('sending to server:', content)
+    const newline = enc.encode('\n')
+    const id = enc.encode(this.id.toString())
+    const type = enc.encode(this.type)
+    const body = typeof this.body === 'string' ? enc.encode(this.body) : this.body
+    const content = Buffer.concat([
+      id,
+      newline,
+      type,
+      newline,
+      body,
+      DELIMITER_BUF
+    ])
+    console.log('sending to server:', content.toString('utf-8'))
     conn.write(content, (err) => {
       if (err) {
+        console.error('error', this, err)
         return this.onSendErr(err)
       }
 
@@ -75,7 +108,10 @@ class OutgoingMessage {
 }
 
 @Injectable()
-export class Client extends SharedObservable<[Uuid, string[]]> {
+export class Client {
+
+  public readonly messages$: Observable<[Uuid, string[]]>
+  private readonly _messages$: Observable<[Uuid, string[]]>
 
   private conn: Socket
   private onConnected: () => void
@@ -84,6 +120,7 @@ export class Client extends SharedObservable<[Uuid, string[]]> {
   private isReady: boolean = false
   private readonly connected: Promise<void> = new Promise<void>(resolve => this.onConnected = resolve)
   private readonly ready: Promise<void> = new Promise<void>(resolve => this.onReady = resolve)
+
 
   private readonly outgoing: OutgoingMessage[] = []
   private readonly pending: Map<Uuid, OutgoingMessage> = new Map<Uuid, OutgoingMessage>()
@@ -94,7 +131,7 @@ export class Client extends SharedObservable<[Uuid, string[]]> {
   private buffer = ''
 
   constructor() {
-    super(o => {
+    this._messages$ = new Observable<[Uuid, string[]]>(o => {
       this.next = o.next.bind(o)
       this.error = o.error.bind(o)
       this.conn = createConnection({ port: PORT }, this.onConnected)
@@ -114,6 +151,7 @@ export class Client extends SharedObservable<[Uuid, string[]]> {
         this.conn = undefined
       }
     })
+    this.messages$ = this._messages$.pipe(share())
 
     this.checkBuffer = this.checkBuffer.bind(this)
     this.checkQueue = this.checkQueue.bind(this)
@@ -121,8 +159,8 @@ export class Client extends SharedObservable<[Uuid, string[]]> {
     this.init()
   }
 
-  public send(cmd: string): PendingMessage {
-    const msg = new OutgoingMessage(cmd)
+  public send(type: MessageType, buffer: Uint8Array | string, hasResponse: boolean | number): PendingMessage {
+    const msg = new OutgoingMessage(type, buffer, hasResponse)
     this.outgoing.push(msg)
     this.checkQueue()
     return msg.pendingMessage
@@ -188,10 +226,8 @@ export class Client extends SharedObservable<[Uuid, string[]]> {
     if (pendingMessage) {
       pendingMessage.onResponse(parts)
       this.pending.delete(id)
+
     } else {
-      if (parts.includes('net.minecraftforge.event.entity.living.LivingFallEvent')) {
-        return
-      }
       this.next([id, parts])
     }
   }

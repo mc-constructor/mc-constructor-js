@@ -1,10 +1,9 @@
 import { Uuid } from '@dandi/common'
 import { Inject, Injectable } from '@dandi/core'
-import { merge, Observer } from 'rxjs'
+import { merge, Observable, Observer } from 'rxjs'
 import { map, share, tap } from 'rxjs/operators'
 
 import { listPlayers } from '../../cmd'
-import { SharedObservable } from '../../common'
 
 import { Client } from './client'
 import { eventType, PlayerEvent, ServerEvents, ServerEventType } from './events'
@@ -15,30 +14,20 @@ export interface Player {
 }
 
 @Injectable()
-export class Players extends SharedObservable<Player[]> {
+export class Players extends Observable<Player[]> {
 
   private readonly playersByName: Map<string, Player> = new Map<string, Player>()
   private readonly playersByUuid: Map<Uuid, Player> = new Map<Uuid, Player>()
+
+  private readonly players$: Observable<Player[]>
 
   constructor(
     @Inject(Client) client: Client,
     @Inject(ServerEvents) events$: ServerEvents,
   ) {
     super(o => {
-      const source$ = events$.pipe(share())
-
-      const playerJoin$ = source$.pipe(
-        eventType(ServerEventType.playerJoined),
-        tap(this.onPlayerJoin.bind(this)),
-      )
-      const playerLeave$ = source$.pipe(
-        eventType(ServerEventType.playerLeft),
-        tap(this.onPlayerLeave.bind(this))
-      )
-
+      const sub = this.players$.subscribe(o)
       this.init(client, o)
-
-      const sub = merge(playerJoin$, playerLeave$).pipe(map(() => this.players)).subscribe(o)
 
       return () => {
         sub.unsubscribe()
@@ -46,10 +35,28 @@ export class Players extends SharedObservable<Player[]> {
         this.playersByUuid.clear()
       }
     })
+
+    const playerJoin$ = events$.pipe(
+      eventType(ServerEventType.playerJoined),
+      tap(this.onPlayerJoin.bind(this)),
+    )
+    const playerLeave$ = events$.pipe(
+      eventType(ServerEventType.playerLeft),
+      tap(this.onPlayerLeave.bind(this))
+    )
+
+    this.players$ = merge(playerJoin$, playerLeave$).pipe(
+      map(() => this.players),
+      share(),
+    )
   }
 
   public get players(): Player[] {
     return [...this.playersByName.values()]
+  }
+
+  public hasNamedPlayer(name: string): boolean {
+    return this.playersByName.has(name)
   }
 
   private async init(client: Client, o: Observer<Player[]>): Promise<void> {

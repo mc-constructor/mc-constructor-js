@@ -1,32 +1,25 @@
-import { Client, MessageFailedResponse, MessageResponse, MessageSuccessResponse } from '../../server'
-import { CommandError } from './command-error'
+import { Client, Message, MessageResponse, MessageType, PendingMessage, SimpleMessage } from '../../server'
+import Timeout = NodeJS.Timeout
 
-export abstract class Command<TResponse extends any = any> {
-
-  protected constructor() {}
-
-  public abstract execute(client: Client): Promise<TResponse>
+export abstract class Command<TResponse extends any = any> extends Message<TResponse> {
+  public readonly type: MessageType = MessageType.cmd
 }
 
-export abstract class SimpleCommand<TResponse extends any = any> extends Command<TResponse> {
+export abstract class SimpleCommand<TResponse extends any = any> extends SimpleMessage<TResponse> {
+  public readonly type: MessageType = MessageType.cmd
 
   protected abstract readonly command: string
 
-  public async execute(client: Client): Promise<TResponse> {
-    const cmd = this.compile()
-    const response = await client.send(cmd)
-    if (response.success === true) {
-      return this.parseSuccessResponse(response)
-    }
-    throw this.parseFailedResponse(response)
-  }
-
   public compile(): string {
     const args = this.formatArgs()
-    return `cmd\n${this.command}${args ? ' ' : ''}${args}`
+    return `${this.command}${args ? ' ' : ''}${args}`
   }
 
   public toString(): string {
+    return this.compile()
+  }
+
+  protected getMessageBody(): string {
     return this.compile()
   }
 
@@ -35,15 +28,6 @@ export abstract class SimpleCommand<TResponse extends any = any> extends Command
   }
 
   protected abstract formatArgs(): string
-
-  protected parseSuccessResponse(response: MessageSuccessResponse): TResponse {
-    return undefined
-  }
-
-  protected parseFailedResponse(response: MessageFailedResponse): CommandError {
-    const [key, message] = response.extras
-    return new CommandError(key, message)
-  }
 }
 
 export abstract class SimpleArgsCommand<TArgs extends Array<any> = any[], TResponse extends any = any> extends SimpleCommand<TResponse> {
@@ -59,12 +43,47 @@ export abstract class SimpleArgsCommand<TArgs extends Array<any> = any[], TRespo
   }
 }
 
-export abstract class ComplexCommand extends Command {
+export abstract class ComplexCommand extends Message {
+  public readonly type: MessageType = MessageType.cmd
 
-  public async execute(client: Client): Promise<any> {
+  public execute(client: Client): Promise<any> & PendingMessage {
     const cmds = this.compile()
-    const responses = await Promise.all(cmds.map(cmd => cmd.execute(client)))
-    return this.parseResponses(responses)
+    const remaining = new Set<PendingMessage>();
+    let logTimeout: Timeout
+    const pendingResponses = Promise.all(cmds.map(async cmd => {
+      const pending = cmd.execute(client)
+      remaining.add(pending)
+      let result;
+      let error: Error
+      try {
+        result = await pending
+      } catch (err) {
+        error = err
+      }
+      remaining.delete(pending)
+      clearTimeout(logTimeout)
+      if (remaining.size) {
+        console.debug(`${this.constructor.name}: ${remaining.size} responses remaining`)
+        logTimeout = setTimeout(() => {
+          console.debug(`${this.constructor.name}: ${remaining.size} responses remaining`, remaining)
+        }, 2500)
+      } else {
+        console.debug(`${this.constructor.name} complete`)
+      }
+      if (error) {
+        throw error
+      }
+      return result
+    }))
+    return Object.assign(new Promise(async (resolve, reject) => {
+      pendingResponses
+        .then(this.parseResponses.bind(this))
+        .then(resolve)
+        .catch(reject)
+    }), {
+      id: 'multi' as any,
+      sent: Promise.all([...remaining].map(pending => pending.sent)).then(() => {}),
+    } as PendingMessage)
   }
 
   public abstract compile(): Command[]
@@ -75,7 +94,7 @@ export abstract class ComplexCommand extends Command {
 }
 
 export class RawCommand extends SimpleCommand<MessageResponse> {
-  constructor(protected readonly command: string) {
+  constructor(protected readonly command: string, protected readonly hasResponse: boolean | number) {
     super()
   }
 
@@ -105,8 +124,8 @@ export function multi(...cmds: Command[]): Command {
   return new MultiCommand(...cmds)
 }
 
-export function rawCmd(cmd: string): Command {
-  return new RawCommand(cmd);
+export function rawCmd(cmd: string, hasResponse: boolean | number = true): Command {
+  return new RawCommand(cmd, hasResponse);
 }
 
   // 3[]4:'charegd:]_creeper}'{}colorso:0}

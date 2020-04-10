@@ -1,11 +1,11 @@
-import { Client } from '../../server'
+import { Client, Message, MessageType, PendingMessage } from '../../server'
 import { Block, Coordinates } from '../../types'
 
-import { Command,  } from './command'
 import { AutoSignal, CommandBlockType, SetCommandBlockCommand } from './command-block'
 import { SetBlockCommand } from './set-block'
 
-export class BackupBlockCommand<TTargetBlock extends Block> extends Command {
+export class BackupBlockCommand<TTargetBlock extends Block> extends Message {
+  public readonly type: MessageType = MessageType.cmd
 
   public readonly loc: Coordinates
   public readonly block: Block
@@ -16,12 +16,12 @@ export class BackupBlockCommand<TTargetBlock extends Block> extends Command {
     this.loc = target.loc
   }
 
-  public async execute(client: Client): Promise<any> {
+  public execute(client: Client): Promise<any> & PendingMessage {
     const backup = new SetCommandBlockCommand(this.target, this.loc.modify(1, 1), CommandBlockType.repeating)
     backup.autoSignal(AutoSignal.alwaysActive)
     backup.conditional(false)
     // explicitly create just the backup to save sending an extra command -
     // the backup will automatically create the target in game
-    return await backup.execute(client)
+    return backup.execute(client)
   }
 }

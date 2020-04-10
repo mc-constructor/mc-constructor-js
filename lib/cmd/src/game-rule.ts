@@ -124,7 +124,6 @@ export type GameRuleCommandBuilderImplicit = {
 export type GameRuleCommandBuilder = GameRuleCommandBuilderExplicit & GameRuleCommandBuilderImplicit
 
 class GameRuleCommand<TRule extends GameRule> extends SimpleArgsCommand {
-  public readonly expectResponse = true
   protected readonly command: string = 'gamerule'
 
   constructor(public readonly rule: TRule, public readonly value?: GameRuleValue[TRule]) {

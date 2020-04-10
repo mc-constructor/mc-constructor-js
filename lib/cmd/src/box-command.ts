@@ -1,7 +1,8 @@
 import { Block, Coordinates, loc } from '../../types'
-import { Command, ComplexCommand } from './command'
+
 import { BlockState } from './block-state'
 import { BlockData } from './block-data'
+import { Command, ComplexCommand } from './command'
 import { FillCommand, FillMethod } from './fill'
 
 export class BoxCommand<

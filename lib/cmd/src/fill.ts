@@ -33,6 +33,7 @@ export enum FillMethod {
 
 class FillIncrementCommand<TBlock extends Block> extends BlockCommand<Block> {
   protected readonly command: string = 'fill'
+  protected readonly allowedErrorKeys = ['commands.fill.toobig']
 
   constructor(
     block: TBlock,

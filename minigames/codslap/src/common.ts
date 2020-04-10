@@ -1,7 +1,7 @@
 import { Injectable } from '@dandi/core'
 import { Command, item, rawCmd, text } from '@minecraft/core/cmd'
 import { randomInt } from '@minecraft/core/common'
-import { Coordinates, Enchantment, Item, loc } from '@minecraft/core/types'
+import { Coordinates, Item, loc } from '@minecraft/core/types'
 
 @Injectable()
 export class CommonCommands {
@@ -18,17 +18,12 @@ export class CommonCommands {
   public readonly spawnRange = this.platformRadius - 1
   public readonly spawn = this.center.modify(1, this.platformStart.y + 1).modify.east(5)
 
-  public readonly cod = item(Item.cod)
-    .enchant(Enchantment.knockback, 5)
-    .enchant(Enchantment.vanishingCurse, 1)
-    .enchant(Enchantment.bindingCurse, 1)
-    .enchant(Enchantment.sharpness, 5)
+  public readonly cod = item(Item.codslapper)
     .name(text('The Codslapper').bold.italic)
     .lore(
       text('Long ago, one man was slapped by a cod.'),
       text('To this day, the cod haunts the world.'),
     )
-    .damage(1)
 
   public equip(target: string): Command[] {
     return [

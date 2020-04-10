@@ -94,7 +94,7 @@ export class CodslapInitCommand extends ComplexCommand {
   protected movePlayersToHoldingArea(): Command[] {
     const holding = this.common.spawn.modify.up(100).modify.up(1)
     return [
-      rawCmd(`execute as @a run teleport @s ${holding}`)
+      rawCmd(`teleport @a ${holding}`)
     ]
   }
 
@@ -149,7 +149,7 @@ export class CodslapInitCommand extends ComplexCommand {
         baseStart.modify.up(50),
         baseEnd,
       )
-    const moatContainer = block(Block.soulSand)
+    const moatContainer = block(Block.glass)
       .fill(
         baseStart.modify.up(5),
         baseEnd,
@@ -211,21 +211,21 @@ export class CodslapInitCommand extends ComplexCommand {
 
   protected initPlayers(): Command[] {
     const playerTeleports = this.players$.players.map(player =>
-      rawCmd(`execute as @p[name=${player.name}] run teleport ${this.common.getRandomSpawn()}`))
+      rawCmd(`teleport ${player.name} ${this.common.getRandomSpawn()}`))
 
     const sheepCount = randomInt(10, 20)
     const sheep = range(sheepCount).map(() =>
-      rawCmd(`execute as @p run summon sheep ${this.common.getRandomSpawn()} {Attributes:[{Name:generic.maxHealth,Base:2}],Health:2}`))
+      rawCmd(`summon sheep ${this.common.getRandomSpawn()} {Attributes:[{Name:generic.maxHealth,Base:2}],Health:2}`))
     return [
       ...playerTeleports,
-      // rawCmd(`execute as @a run give @s cod`, true),
       // clear only gives a response if something was cleared - need to give something to make sure clear gives a response
-      rawCmd(`execute as @a run clear`),
+      rawCmd(`clear @a`),
       ...this.common.resetPlayer('@a'),
 
-      rawCmd(`execute as @a run effect clear @s`),
-      rawCmd(`execute as @a run effect give @s instant_health 10`),
-      rawCmd(`gamemode survival @a`),
+      rawCmd(`effect clear @a`),
+      rawCmd(`effect give @a instant_health 10`),
+      rawCmd(`gamemode survival @a`, 1500),
+      rawCmd(`kill @e[type=item]`),
       ...sheep,
       // rawCmd(`gamemode creative @a`, true),
     ]

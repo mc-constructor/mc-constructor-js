@@ -3,9 +3,9 @@ import { TextBuilder, TextFragmentBuilder } from './text'
 
 // https://minecraft.gamepedia.com/Commands/tellraw
 
-
 class TellRawCommand extends SimpleCommand {
   protected readonly command: string = 'tellraw'
+  protected readonly hasResponse = false
 
   constructor(public readonly target: string, public readonly text: TextBuilder) {
     super()

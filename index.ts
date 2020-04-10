@@ -1,11 +1,8 @@
 import { DandiApplication, EntryPoint, Inject, Injectable } from '@dandi/core'
-
-import { gamerule, give, item, listPlayers, rawCmd, text } from './lib/cmd'
-// import { ChatCommandsModule } from './lib/chat-commands'
+import { tap } from 'rxjs/operators'
+import { ChatCommands, ChatCommandsModule } from './lib/chat-commands'
 import { Client, Players, ServerModule } from './lib/server'
-import { Enchantment, Item } from './lib/types'
-// import { MinigameModule } from './minigames'
-// import { ASCII } from './lib/routines'
+import { MinigameModule } from './minigames'
 
 require('dotenv').config()
 
@@ -13,30 +10,25 @@ require('dotenv').config()
 class Init implements EntryPoint {
 
   constructor(
-    // @Inject(ServerEvents) private events$: ServerEvents,
     @Inject(Players) private players$: Players,
-    // @Inject(ChatCommands) private chatCommands: ChatCommands,
-    @Inject(Client) private readonly client$: Client
+    @Inject(Client) private readonly client: Client,
+    @Inject(ChatCommands) private readonly cmds: ChatCommands,
   ) {
     console.log('Init')
   }
 
   public async run(): Promise<void> {
-    const cod = item(Item.codslapper)
-      .enchant(Enchantment.knockback, 5)
-      .name(text('The Codslapper').bold.italic)
-      .lore(
-        text('Long ago, one man was slapped by a cod.'),
-        text('To this day, the cod haunts the world.'),
-      )
-      .damage(1)
-    console.log('Run')
-    this.client$.subscribe(console.log.bind(console, 'client:'))
-    this.players$.subscribe(console.log.bind(console, 'Players')) // REQUIRED in order to correctly track players
-    // this.client$.send('cmd\nsay hi')
-    // gamerule.doWeatherCycle.disable.execute(this.client$)
-    console.log(await give('@p', cod, 2).execute(this.client$))
-    // this.events$.all.subscribe(event => console.debug(event.source.source.raw))
+    this.players$.pipe(
+      tap(players => {
+        if (players.length) {
+          this.cmds.commands['game'].exec(['start', 'codslap'])
+        }
+      })
+    )
+      .subscribe(console.log.bind(console, 'Players')) // REQUIRED in order to correctly track players
+
+    // block(Block.oakWood).fill(loc(-140, 99, -61), loc(-40, 149, -21)).execute(this.client)
+    // rawCmd('fill -84 99 -61 -97 149 -21 oak_wood').execute(this.client)
   }
 
 }
@@ -44,8 +36,8 @@ class Init implements EntryPoint {
 const app = new DandiApplication({
   providers: [
     Init,
-    // ChatCommandsModule,
-    // MinigameModule,
+    ChatCommandsModule,
+    MinigameModule,
     ServerModule,
   ]
 })
