@@ -1,5 +1,7 @@
 // https://minecraft.gamepedia.com/Raw_JSON_text_format
 
+import { SimpleArgsCommand } from './command'
+
 export interface TextFragment {
   text: string
   bold?: boolean
@@ -124,4 +126,15 @@ export function text(text?: string): TextBuilder | TextFragmentBuilder {
     return builder.add(text)
   }
   return builder
+}
+
+export abstract class TextCommand extends SimpleArgsCommand {
+
+  constructor(public readonly target: string, public readonly text: TextBuilder) {
+    super()
+  }
+
+  protected formatArgs(): string {
+    return `${this.target} [${this.text}]`;
+  }
 }

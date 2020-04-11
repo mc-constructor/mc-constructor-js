@@ -28,7 +28,7 @@ export class CommonCommands {
   public equip(target: string): Command[] {
     return [
       rawCmd(`replaceitem entity ${target} weapon.mainhand ${this.cod}`),
-      rawCmd(`replaceitem entity ${target} weapon.offhand ${this.cod}`)
+      // rawCmd(`replaceitem entity ${target} weapon.offhand ${this.cod}`)
     ]
   }
 

@@ -1,6 +1,5 @@
 import { Inject, Injectable } from '@dandi/core'
 import {
-  AutoSignal,
   block,
   Command,
   ComplexCommand,
@@ -12,35 +11,9 @@ import {
 } from '@minecraft/core/cmd'
 import { randomInt, range } from '@minecraft/core/common'
 import { Players } from '@minecraft/core/server'
-import { Block, Direction, loc } from '@minecraft/core/types'
+import { Block } from '@minecraft/core/types'
 
 import { CommonCommands } from './common'
-
-// return [
-  //   // `scoreboard objectives remove hit_filter`,
-  //   // `scoreboard objectives remove codslap`,
-  //   `scoreboard objectives add hit_filter minecraft.custom:minecraft.damage_dealt`,
-  //   `scoreboard objectives add codslap trigger "CODSLAP!"`,
-  //   `scoreboard objectives setdisplay sidebar codslap`,
-  //   backup(SetCommandBlockCommand.create(
-  //     'execute as @a[scores={hit_filter=1..},nbt={SelectedItem:{id:\'minecraft:cod\'}}] run scoreboard players add @s codslap 1',
-  //     loc,
-  //     CommandBlockType.repeating,
-  //   )
-  //     .facing(Facing.north)
-  //     .autoSignal(AutoSignal.alwaysActive)
-  //   ).compile(),
-  //   backup(SetCommandBlockCommand.create(
-  //     'execute as @a[scores={hit_filter=1..}] run scoreboard players reset @s hit_filter',
-  //     loc.modify(2, loc.z.minus(1)),
-  //     CommandBlockType.chain,
-  //   )
-  //     .facing(Facing.north)
-  //     .conditional(true)
-  //     .autoSignal(AutoSignal.alwaysActive)
-  //   ).compile(),
-  //   `give @a cod`
-  // ]
 
 /*
  * ideas:
@@ -74,7 +47,6 @@ export class CodslapInitCommand extends ComplexCommand {
       ...this.movePlayersToHoldingArea(),
       ...this.initRules(),
       ...this.initArena(),
-      ...this.initCommandBlocks(),
       ...this.initObjectives(),
       ...this.initPlayers(),
       ...this.removeHoldingArea(),
@@ -122,17 +94,14 @@ export class CodslapInitCommand extends ComplexCommand {
 
   protected initObjectives(): Command[] {
     return [
-      rawCmd(`scoreboard objectives remove hit_filter`),
-      rawCmd(`scoreboard objectives add hit_filter minecraft.custom:minecraft.damage_dealt`),
-
       rawCmd(`scoreboard objectives remove codslap`),
       rawCmd(`scoreboard objectives add codslap dummy "CODSLAP!"`),
 
-      // rawCmd(`scoreboard objectives remove kill_filter`, true),
-      // rawCmd(`scoreboard objectives add kill_filter minecraft.custom:minecraft.playerKillCount`, true),
+      rawCmd(`scoreboard objectives remove codslap_mob_kill`),
+      rawCmd(`scoreboard objectives add codslap_mob_kill dummy`),
 
-      // rawCmd(`scoreboard objectives remove codslap_kill`, true),
-      // rawCmd(`scoreboard objectives add codslap_kill dummy "CODSLAP KILL!"`, true),
+      rawCmd(`scoreboard objectives remove codslap_kill`),
+      rawCmd(`scoreboard objectives add codslap_kill dummy "CODSLAP KILL!"`),
 
       rawCmd(`scoreboard objectives setdisplay belowName codslap`),
       rawCmd(`scoreboard objectives setdisplay sidebar codslap_kill`),
@@ -228,47 +197,6 @@ export class CodslapInitCommand extends ComplexCommand {
       rawCmd(`kill @e[type=item]`),
       ...sheep,
       // rawCmd(`gamemode creative @a`, true),
-    ]
-  }
-
-  protected initCommandBlocks(): Command[] {
-    const cmdBlockCenter = this.common.center.modify(1, 0).modify.west(3)
-
-    const slapFilterReset =
-      block(Block.chainCommandBlock)
-        .command('execute as @a[scores={hit_filter=1..}] run scoreboard players reset @s hit_filter')
-        .facing(Direction.south)
-        .autoSignal(AutoSignal.alwaysActive)
-        .conditional(true)
-        .set(cmdBlockCenter)
-
-    const slapTracker = block(Block.repeatingCommandBlock)
-      .command('execute as @a[scores={hit_filter=1..},nbt={SelectedItem:{id:\'minecraft:cod\'}}] run scoreboard players add @s codslap 1')
-      .facing(slapFilterReset.loc)
-      .autoSignal(AutoSignal.alwaysActive)
-      .set(slapFilterReset.loc.modify.south(-1))
-
-    // tips for figuring out who slapped whom - use a command block that finds the nearest player to the slapper
-    // could be inaccurate due to knockback?
-    // https://gaming.stackexchange.com/questions/258135/a-minecraft-poison-sword
-
-    // const killFilterReset =
-    //   block(Block.chainCommandBlock)
-    //     .command('execute as @[scores={kill_filter=1..}] run scoreboard players reset @s kill_filter')
-    //     .facing(Direction.south)
-    //     .autoSignal(AutoSignal.alwaysActive)
-    //     .conditional(true)
-    //     .set(cmdBlockCenter.modify.west(1))
-    //
-    // const killTracker =
-    //   block(Block.repeatingCommandBlock)
-    //     .command('execute as @a[scores={kill_filter=1..}]')
-
-    return [
-      // reset entire target area to avoid "Cannot place block" if command block locations already have the same kind of block
-      block(Block.bedrock).fill(loc(-10, 0, -10), loc(10, 1, 10)),
-      slapTracker,
-      slapFilterReset,
     ]
   }
 

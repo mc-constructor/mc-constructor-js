@@ -44,6 +44,23 @@ export interface EntityEvent extends ServerEvent {
   entityId: string
 }
 
+export enum AttackerType {
+  player = 'player',
+}
+
+export interface AttackedEntityEvent extends EntityEvent {
+  damageSource: string
+  attackerType: AttackerType | string
+}
+
+export interface AttackedByPlayerEvent extends AttackedEntityEvent {
+  attacker: PlayerWithHeldItems
+}
+
+type AttackedByEntityEventType = {
+  [AttackerType.player]: AttackedByPlayerEvent,
+}
+
 export interface PlayerEvent extends ServerEvent {
   player: PlayerWithHeldItems
 }
@@ -61,7 +78,7 @@ function parseHeldItem(raw: string): HeldItem {
   }
 }
 
-function parsePlayerEvent(event: ServerEvent): PlayerEvent {
+function parsePlayerWithHeldItems(event: ServerEvent): [PlayerWithHeldItems, string[]] {
   const [playerRaw, mainHandRaw, offHandRaw, ...extras] = event.extras
   const [name, uuidRaw] = playerRaw.split(' ')
   const uuid = Uuid.for(uuidRaw.substring(1, uuidRaw.length - 1))
@@ -73,6 +90,11 @@ function parsePlayerEvent(event: ServerEvent): PlayerEvent {
     mainHand,
     offHand
   }
+  return [player, extras]
+}
+
+function parsePlayerEvent(event: ServerEvent): PlayerEvent {
+  const [player, extras] = parsePlayerWithHeldItems(event)
   return Object.assign(event, {
     player,
     extras,
@@ -80,17 +102,40 @@ function parsePlayerEvent(event: ServerEvent): PlayerEvent {
 }
 
 function parseEntityEvent(event: ServerEvent): EntityEvent {
-  const [entityId] = event.extras
+  const [entityId, ...extras] = event.extras
   return Object.assign(event, {
     entityId,
+    extras,
+  })
+}
+
+function parseAttackedEntityEvent(event: ServerEvent): AttackedEntityEvent {
+  const entityEvent = parseEntityEvent(event)
+  const [damageSource, attackerType, ...extras] = entityEvent.extras
+  const attackedEntityEvent: AttackedEntityEvent = Object.assign(entityEvent, {
+    damageSource,
+    attackerType,
+    extras,
+  })
+  switch (attackerType) {
+    case AttackerType.player: return parseAttackedByPlayerEvent(attackedEntityEvent)
+  }
+  return attackedEntityEvent
+}
+
+function parseAttackedByPlayerEvent(event: AttackedEntityEvent): AttackedByPlayerEvent {
+  const [attacker, extras] = parsePlayerWithHeldItems(event)
+  return Object.assign(event, {
+    attacker,
+    extras,
   })
 }
 
 type ServerEventParserFn<TEvent extends ServerEvent> = (event: ServerEvent) => TEvent
 type ServerEventTypes = {
-  [ServerEventType.entityLivingDeath]: EntityEvent
-  [ServerEventType.entityLivingAttack]: EntityEvent
-  [ServerEventType.entityLivingDamage]: EntityEvent
+  [ServerEventType.entityLivingDeath]: AttackedEntityEvent
+  [ServerEventType.entityLivingAttack]: AttackedEntityEvent
+  [ServerEventType.entityLivingDamage]: AttackedEntityEvent
   [ServerEventType.entityLivingFall]: EntityEvent
   [ServerEventType.playerAttackEntity]: PlayerEvent
   [ServerEventType.playerEntityItemPickup]: PlayerEvent
@@ -104,9 +149,9 @@ type ServerEventTypes = {
 type ServerEventParserMap = { [TEventType in ServerEventType]: ServerEventParserFn<ServerEventTypes[TEventType]> }
 
 const PARSERS: ServerEventParserMap = {
-  [ServerEventType.entityLivingDeath]: parseEntityEvent,
-  [ServerEventType.entityLivingAttack]: parseEntityEvent,
-  [ServerEventType.entityLivingDamage]: parseEntityEvent,
+  [ServerEventType.entityLivingDeath]: parseAttackedEntityEvent,
+  [ServerEventType.entityLivingAttack]: parseAttackedEntityEvent,
+  [ServerEventType.entityLivingDamage]: parseAttackedEntityEvent,
   [ServerEventType.entityLivingFall]: parseEntityEvent,
   [ServerEventType.playerAttackEntity]: parsePlayerEvent,
   [ServerEventType.playerEntityItemPickup]: parsePlayerEvent,
@@ -124,6 +169,14 @@ export function isEventType<TEvent extends ServerEventType>(type: TEvent, event:
 
 export function eventType<TEvent extends ServerEventType>(type: TEvent): OperatorFunction<ServerEvent, ServerEventTypes[TEvent]> {
   return filter<ServerEvent, ServerEventTypes[TEvent]>(isEventType.bind(undefined, type))
+}
+
+export function isAttackerTypeEvent<TAttackerType extends AttackerType>(attackerType: TAttackerType, event: AttackedEntityEvent): event is AttackedByEntityEventType[TAttackerType] {
+  return event.attackerType === attackerType
+}
+
+export function entityAttackerType<TAttackerType extends AttackerType>(attackerType: TAttackerType): OperatorFunction<AttackedEntityEvent, AttackedByEntityEventType[TAttackerType]> {
+  return filter<AttackedEntityEvent, AttackedByEntityEventType[TAttackerType]>(isAttackerTypeEvent.bind(undefined, attackerType))
 }
 
 export type ServerEvents = Observable<ServerEvent>

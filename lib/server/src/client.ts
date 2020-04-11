@@ -65,6 +65,7 @@ class OutgoingMessage {
     }), {
       id: this.id,
       sent: new Promise<void>(async (resolve, reject) => {
+        // TODO: log warning for commands waiting on responses for a long time
         this.onSent = async () => {
           resolve()
           if (this.hasResponse === false) {
