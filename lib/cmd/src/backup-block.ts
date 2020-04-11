@@ -1,4 +1,4 @@
-import { Client, Message, MessageType, PendingMessage } from '../../server'
+import { Client, CompiledMessage, Message, MessageType, PendingMessage } from '../../server'
 import { Block, Coordinates } from '../../types'
 
 import { AutoSignal, CommandBlockType, SetCommandBlockCommand } from './command-block'
@@ -16,12 +16,13 @@ export class BackupBlockCommand<TTargetBlock extends Block> extends Message {
     this.loc = target.loc
   }
 
-  public execute(client: Client): Promise<any> & PendingMessage {
+  public compileMessage(client: Client): CompiledMessage {
     const backup = new SetCommandBlockCommand(this.target, this.loc.modify(1, 1), CommandBlockType.repeating)
     backup.autoSignal(AutoSignal.alwaysActive)
     backup.conditional(false)
     // explicitly create just the backup to save sending an extra command -
     // the backup will automatically create the target in game
-    return backup.execute(client)
+    return backup.compileMessage(client)
+
   }
 }

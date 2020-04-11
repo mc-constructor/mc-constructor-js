@@ -1,4 +1,4 @@
-import { Command, ComplexCommand, SimpleArgsCommand } from './command'
+import { Command, MultiCommand, SimpleArgsCommand } from './command'
 import { TextBuilder, TextFragmentBuilder } from './text'
 
 // https://minecraft.gamepedia.com/Commands/title
@@ -50,7 +50,9 @@ class TitleCommand extends SimpleArgsCommand {
   }
 }
 
-class ShowTitleCommand extends ComplexCommand {
+class ShowTitleCommand extends MultiCommand {
+
+  public readonly parallel = false
 
   constructor(
     public target: string,

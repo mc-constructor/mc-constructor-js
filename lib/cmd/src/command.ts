@@ -1,4 +1,12 @@
-import { Client, Message, MessageResponse, MessageType, PendingMessage, SimpleMessage } from '../../server'
+import {
+  Client,
+  CompiledMessage, CompiledSimpleMessage,
+  Message,
+  MessageResponse,
+  MessageType,
+  PendingMessage,
+  SimpleMessage
+} from '../../server'
 import Timeout = NodeJS.Timeout
 
 export abstract class Command<TResponse extends any = any> extends Message<TResponse> {
@@ -43,53 +51,92 @@ export abstract class SimpleArgsCommand<TArgs extends Array<any> = any[], TRespo
   }
 }
 
-export abstract class ComplexCommand extends Message {
-  public readonly type: MessageType = MessageType.cmd
+class MultiCommandExecutionContext {
 
-  public execute(client: Client): Promise<any> & PendingMessage {
-    const cmds = this.compile()
-    const remaining = new Set<PendingMessage>();
-    let logTimeout: Timeout
-    const pendingResponses = Promise.all(cmds.map(async cmd => {
-      const pending = cmd.execute(client)
-      remaining.add(pending)
-      let result;
-      let error: Error
-      try {
-        result = await pending
-      } catch (err) {
-        error = err
-      }
-      remaining.delete(pending)
-      clearTimeout(logTimeout)
-      if (remaining.size) {
-        console.debug(`${this.constructor.name}: ${remaining.size} responses remaining`)
-        logTimeout = setTimeout(() => {
-          console.debug(`${this.constructor.name}: ${remaining.size} responses remaining`, remaining)
-        }, 2500)
-      } else {
-        console.debug(`${this.constructor.name} complete`)
-      }
-      if (error) {
-        throw error
-      }
-      return result
-    }))
-    return Object.assign(new Promise(async (resolve, reject) => {
-      pendingResponses
-        .then(this.parseResponses.bind(this))
-        .then(resolve)
-        .catch(reject)
-    }), {
-      id: 'multi' as any,
-      sent: Promise.all([...remaining].map(pending => pending.sent)).then(() => {}),
-    } as PendingMessage)
+  public readonly remaining = new Set<PendingMessage>()
+  public readonly compiled: CompiledMessage[]
+
+  private logTimeout: Timeout
+
+  constructor(
+    client: Client,
+    public readonly cmds: Command[],
+  ) {
+    this.compiled = cmds.map(cmd => {
+      return cmd.compileMessage(client)
+    })
   }
 
-  public abstract compile(): Command[]
+  public async executeMessage(msg: CompiledMessage): Promise<any> {
+    const pending = msg.execute()
+    this.remaining.add(pending)
+
+    let result;
+    let error: Error
+    try {
+      result = await pending
+    } catch (err) {
+      error = err
+    }
+    this.remaining.delete(pending)
+    clearTimeout(this.logTimeout)
+    if (this.remaining.size) {
+      console.debug(`${this.constructor.name}: ${this.remaining.size} responses remaining`)
+      this.logTimeout = setTimeout(() => {
+        console.debug(`${this.constructor.name}: ${this.remaining.size} responses remaining`, this.remaining)
+      }, 2500)
+    } else {
+      console.debug(`${this.constructor.name} complete`)
+    }
+    if (error) {
+      throw error
+    }
+    return result
+  }
+
+}
+
+export abstract class MultiCommand extends Command {
+  private static nextInstanceId: number = 0
+
+  public readonly type: MessageType = MessageType.cmd
+  public readonly instanceId = MultiCommand.nextInstanceId++
+
+  protected abstract readonly parallel: boolean
+
+  public compileMessage(client: Client): CompiledMessage {
+    const context = new MultiCommandExecutionContext(client, this.compile())
+    const id = `${this.constructor.name}#${this.instanceId}`
+    return new CompiledSimpleMessage(this.processCommands.bind(this, context), id)
+  }
+
+  protected abstract compile(): Command[]
+
+  protected processCommands(context: MultiCommandExecutionContext): Promise<any> {
+    context.compiled.forEach(async msg => {
+      if (this.parallel) {
+        context.executeMessage(msg)
+      } else {
+        await context.executeMessage(msg)
+      }
+    })
+
+    return Promise.all(context.compiled.map(msg => msg.pendingMessage)).then(this.parseResponses.bind(this))
+  }
 
   protected parseResponses(responses: MessageResponse[]): any {
     return responses
+  }
+}
+
+export class PassThroughMultiCommand extends MultiCommand {
+
+  constructor(public readonly cmds: Command[], public readonly parallel: boolean) {
+    super()
+  }
+
+  protected compile(): Command[] {
+    return this.cmds;
   }
 }
 
@@ -107,25 +154,14 @@ export class RawCommand extends SimpleCommand<MessageResponse> {
   }
 }
 
-export class MultiCommand extends ComplexCommand {
-  public readonly cmds: ReadonlyArray<Command>
-
-  constructor(...cmds: Command[]) {
-    super()
-    this.cmds = cmds
-  }
-
-  public compile(): Command[] {
-    return [...this.cmds]
-  }
+export function parallel(...cmds: Command[]): Command {
+  return new PassThroughMultiCommand(cmds, true)
 }
 
-export function multi(...cmds: Command[]): Command {
-  return new MultiCommand(...cmds)
+export function series(...cmds: Command[]): Command {
+  return new PassThroughMultiCommand(cmds, false)
 }
 
 export function rawCmd(cmd: string, hasResponse: boolean | number = true): Command {
   return new RawCommand(cmd, hasResponse);
 }
-
-  // 3[]4:'charegd:]_creeper}'{}colorso:0}

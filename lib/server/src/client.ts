@@ -28,14 +28,25 @@ export interface MessageFailedResponse extends MessageResponseContent {
 
 export type MessageResponse = MessageSuccessResponse | MessageFailedResponse
 
-export interface PendingMessage extends Promise<MessageResponse> {
-  id: Uuid
+export interface PendingMessage<TResponse = any> extends Promise<TResponse> {
+  id: string | Uuid
   sent: Promise<void>
 }
 
+export type ExecuteFn<TResponse> = () => PendingMessage<TResponse>
+
+export interface CompiledMessage<TResponse = any> {
+  id: string | Uuid
+  pendingMessage: PendingMessage
+  sent: Promise<void>
+  execute: ExecuteFn<TResponse>
+}
+
+export type MakeResponseFn<TResponse> = (pending: PendingMessage) => Promise<TResponse> & PendingMessage
+
 class OutgoingMessage {
 
-  public readonly id: Uuid = Uuid.create()
+  public readonly id: string | Uuid = Uuid.create()
   public readonly sent: Promise<void>
   public readonly pendingMessage: PendingMessage
 
@@ -122,7 +133,6 @@ export class Client {
   private readonly connected: Promise<void> = new Promise<void>(resolve => this.onConnected = resolve)
   private readonly ready: Promise<void> = new Promise<void>(resolve => this.onReady = resolve)
 
-
   private readonly outgoing: OutgoingMessage[] = []
   private readonly pending: Map<Uuid, OutgoingMessage> = new Map<Uuid, OutgoingMessage>()
 
@@ -160,7 +170,7 @@ export class Client {
     this.init()
   }
 
-  public send(type: MessageType, buffer: Uint8Array | string, hasResponse: boolean | number): PendingMessage {
+  public send(type: MessageType, buffer?: Uint8Array | string, hasResponse?: boolean | number): PendingMessage {
     const msg = new OutgoingMessage(type, buffer, hasResponse)
     this.outgoing.push(msg)
     this.checkQueue()

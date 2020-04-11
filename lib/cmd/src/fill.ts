@@ -3,7 +3,7 @@ import { Block, Coordinates, CoordinatesAxisIndex } from '../../types'
 import { BlockCommand } from './block-command'
 import { BlockData } from './block-data'
 import { BlockState } from './block-state'
-import { Command, ComplexCommand } from './command'
+import { Command, MultiCommand } from './command'
 
 const MAX_FILL_VOLUME = 32768
 
@@ -51,7 +51,9 @@ class FillIncrementCommand<TBlock extends Block> extends BlockCommand<Block> {
 
 }
 
-export class FillCommand<TBlock extends Block> extends ComplexCommand {
+export class FillCommand<TBlock extends Block> extends MultiCommand {
+
+  protected readonly parallel = true
 
   constructor(
     public readonly block: TBlock,

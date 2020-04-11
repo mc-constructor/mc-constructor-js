@@ -33,7 +33,6 @@ export const weather: WeatherCommandBuilder = Object.defineProperties(weatherFn,
         return Object.assign(weatherFn.bind(undefined, subCommand), {
           execute: cmd.execute.bind(cmd),
         })
-
       }
     }
     return result

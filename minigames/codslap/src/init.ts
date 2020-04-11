@@ -2,12 +2,12 @@ import { Inject, Injectable } from '@dandi/core'
 import {
   block,
   Command,
-  ComplexCommand,
+  MultiCommand,
   FillMethod,
   gamerule,
   rawCmd,
   time,
-  weather
+  weather, parallel, series
 } from '@minecraft/core/cmd'
 import { randomInt, range } from '@minecraft/core/common'
 import { Players } from '@minecraft/core/server'
@@ -32,7 +32,10 @@ import { CommonCommands } from './common'
  */
 
 @Injectable()
-export class CodslapInitCommand extends ComplexCommand {
+export class CodslapInitCommand extends MultiCommand {
+
+  protected readonly false = true
+  protected readonly parallel = false
 
   constructor(
     @Inject(Players) private players$: Players,
@@ -43,72 +46,72 @@ export class CodslapInitCommand extends ComplexCommand {
 
   public compile(): Command[] {
     return [
-      ...this.initHoldingArea(),
-      ...this.movePlayersToHoldingArea(),
-      ...this.initRules(),
-      ...this.initArena(),
-      ...this.initObjectives(),
-      ...this.initPlayers(),
-      ...this.removeHoldingArea(),
+      this.initHoldingArea(),
+      this.movePlayersToHoldingArea(),
+      this.initRules(),
+      this.initArena(),
+      this.resetObjectives(),
+      this.initObjectives(),
+      this.initPlayers(),
+      this.removeHoldingArea(),
     ]
   }
 
-  protected initHoldingArea(): Command[] {
+  protected initHoldingArea(): Command {
     const holding = this.common.spawn.modify.up(100)
-    return [
+    return parallel(
       block(Block.whiteWool).fill(
         holding.modify.west(this.common.arenaSize).modify.north(this.common.arenaSize),
         holding.modify.east(this.common.arenaSize).modify.south(this.common.arenaSize),
       )
-    ]
+    )
   }
 
-  protected movePlayersToHoldingArea(): Command[] {
+  protected movePlayersToHoldingArea(): Command {
     const holding = this.common.spawn.modify.up(100).modify.up(1)
-    return [
-      rawCmd(`teleport @a ${holding}`)
-    ]
+    return rawCmd(`teleport @a ${holding}`)
   }
 
-  protected removeHoldingArea(): Command[] {
+  protected removeHoldingArea(): Command {
     const holding = this.common.spawn.modify.up(100)
-    return [
-      block(Block.air).fill(
-        holding.modify.west(this.common.arenaSize).modify.north(this.common.arenaSize),
-        holding.modify.east(this.common.arenaSize).modify.south(this.common.arenaSize),
-      )
-    ]
+    return block(Block.air).fill(
+      holding.modify.west(this.common.arenaSize).modify.north(this.common.arenaSize),
+      holding.modify.east(this.common.arenaSize).modify.south(this.common.arenaSize),
+    )
   }
 
-  protected initRules(): Command[] {
-    return [
+  protected initRules(): Command {
+    return parallel(
       time.set.day,
-      weather.clear,
+      weather.clear(), // TODO: fix accessor so it works
       gamerule.doWeatherCycle.disable,
       gamerule.doDaylightCycle.disable,
       gamerule.commandBlockOutput.disable,
       gamerule.sendCommandFeedback.enable,
       rawCmd(`setworldspawn ${this.common.spawn}`),
-    ]
+    )
   }
 
-  protected initObjectives(): Command[] {
-    return [
+  protected resetObjectives(): Command {
+    return parallel(
       rawCmd(`scoreboard objectives remove codslap`),
-      rawCmd(`scoreboard objectives add codslap dummy "CODSLAP!"`),
-
       rawCmd(`scoreboard objectives remove codslap_mob_kill`),
-      rawCmd(`scoreboard objectives add codslap_mob_kill dummy`),
-
       rawCmd(`scoreboard objectives remove codslap_kill`),
+    )
+  }
+
+  protected initObjectives(): Command {
+    return parallel(
+      rawCmd(`scoreboard objectives add codslap dummy "CODSLAP!"`),
+      rawCmd(`scoreboard objectives add codslap_mob_kill dummy`),
       rawCmd(`scoreboard objectives add codslap_kill dummy "CODSLAP KILL!"`),
 
       rawCmd(`scoreboard objectives setdisplay belowName codslap`),
       rawCmd(`scoreboard objectives setdisplay sidebar codslap_kill`),
-    ]
+    )
   }
 
-  protected initArena(): Command[] {
+  protected initArena(): Command {
     const baseStart = this.common.baseStart
     const baseEnd = this.common.baseEnd
     const center = this.common.center
@@ -140,8 +143,9 @@ export class CodslapInitCommand extends ComplexCommand {
     const platformStart = this.common.platformStart
     const platformEnd = this.common.platformEnd
     // const platformBlock = block(Block.honeycombBlock)
-    const platformBlock = block(Block.packedIce)
+    // const platformBlock = block(Block.packedIce)
     // const platformBlock = block(Block.glass)
+    const platformBlock = block(Block.bedrock)
     const platform = platformBlock
       .fill(platformStart, platformEnd)
 
@@ -165,27 +169,35 @@ export class CodslapInitCommand extends ComplexCommand {
         platform.end.modify.east(-1).modify.south(-1).modify.up(1),
       )
 
-    return [
-      rawCmd(`kill @e[type=!player]`),
-      reset,
-      cage,
-      moatContainer,
-      lava,
-      platform,
-      platformInnerVoid,
-      platformHoleLip,
+    return series(
+      parallel(
+        rawCmd(`kill @e[type=!player]`),
+        reset,
+      ),
+      parallel(
+        cage,
+        moatContainer,
+      ),
+      parallel(
+        lava,
+        platform,
+      ),
+      parallel(
+        platformInnerVoid,
+        platformHoleLip,
+      ),
       platformHole,
-    ]
+    )
   }
 
-  protected initPlayers(): Command[] {
+  protected initPlayers(): Command {
     const playerTeleports = this.players$.players.map(player =>
       rawCmd(`teleport ${player.name} ${this.common.getRandomSpawn()}`))
 
     const sheepCount = randomInt(10, 20)
     const sheep = range(sheepCount).map(() =>
       rawCmd(`summon sheep ${this.common.getRandomSpawn()} {Attributes:[{Name:generic.maxHealth,Base:2}],Health:2}`))
-    return [
+    return parallel(
       ...playerTeleports,
       // clear only gives a response if something was cleared - need to give something to make sure clear gives a response
       rawCmd(`clear @a`),
@@ -193,11 +205,10 @@ export class CodslapInitCommand extends ComplexCommand {
 
       rawCmd(`effect clear @a`),
       rawCmd(`effect give @a instant_health 10`),
-      rawCmd(`gamemode survival @a`, 1500),
+      rawCmd(`gamemode adventure @a`, 1500),
       rawCmd(`kill @e[type=item]`),
       ...sheep,
-      // rawCmd(`gamemode creative @a`, true),
-    ]
+    )
   }
 
 }

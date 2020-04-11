@@ -2,14 +2,16 @@ import { Block, Coordinates, loc } from '../../types'
 
 import { BlockState } from './block-state'
 import { BlockData } from './block-data'
-import { Command, ComplexCommand } from './command'
+import { Command, MultiCommand } from './command'
 import { FillCommand, FillMethod } from './fill'
 
 export class BoxCommand<
   TBlock extends Block,
   TBlockData extends BlockData[TBlock] = BlockData[TBlock],
   TBlockState extends BlockState[TBlock] = BlockState[TBlock],
-> extends ComplexCommand {
+> extends MultiCommand {
+
+  protected readonly parallel = true
 
   constructor(
     public block: TBlock,

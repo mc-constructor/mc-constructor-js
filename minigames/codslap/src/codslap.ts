@@ -116,7 +116,7 @@ export class CodslapMiniGame implements Minigame {
   private onCodslapMobKill(event: AttackedByPlayerEvent): void {
     console.log('onCodslapMobKill', event)
     rawCmd(`scoreboard players add ${event.attacker.name} codslap_mob_kill 1`).execute(this.client)
-    actionbar(event.attacker.name, text('Hey, be nice to the animals, okay?')).execute(this.client)
+    actionbar(event.attacker.name, text('Oh George, not the livestock!')).execute(this.client)
   }
   private onCodslapPlayerKill(event: AttackedByPlayerEvent): void {
     console.log('onCodslapPlayerKill', event)
