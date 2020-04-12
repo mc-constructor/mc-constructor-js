@@ -1,5 +1,6 @@
 import { Injectable } from '@dandi/core'
-import { Command, item, rawCmd, text } from '@minecraft/core/cmd'
+import { item, rawCmd, text } from '@minecraft/core/cmd'
+import { Command } from '@minecraft/core/command'
 import { randomInt } from '@minecraft/core/common'
 import { Coordinates, Item, loc } from '@minecraft/core/types'
 

@@ -1,6 +1,6 @@
-// https://minecraft.gamepedia.com/Raw_JSON_text_format
+import { SimpleArgsCommand } from '../../command'
 
-import { SimpleArgsCommand } from './command'
+// https://minecraft.gamepedia.com/Raw_JSON_text_format
 
 export interface TextFragment {
   text: string

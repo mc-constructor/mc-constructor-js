@@ -1,5 +1,4 @@
-import { Rcon } from 'rcon-client'
-import { Command, SimpleCommand } from './command'
+import { Command, SimpleCommand } from '../../command'
 
 const OBJECTIVES = Symbol.for('mc:objectives')
 

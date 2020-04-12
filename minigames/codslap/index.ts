@@ -1,13 +1,16 @@
 import { MinigameDescriptor } from '@minecraft/minigames'
 
-import { CodslapMiniGame } from './src/codslap'
+import { cleanup } from './src/codslap'
 import { CodslapModule } from './src/codslap.module'
 
-export const Minigame: MinigameDescriptor = {
+export const Codslap: MinigameDescriptor = {
   version: 3,
+  key: 'codslap',
   title: 'CODSLAP!',
-  titleMatch: /codslap/i,
+  // titleMatch: /codslap/i,
   description: 'Slap your friends with an overpowered cod.',
-  cleanup: CodslapMiniGame.cleanup,
+  cleanup: cleanup,
   module: CodslapModule,
 }
+
+export default Codslap

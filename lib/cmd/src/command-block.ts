@@ -1,7 +1,7 @@
+import { Command } from '../../command'
 import { Coordinates, Block } from '../../types'
 
 import { BlockDataBase, BlockStateBase } from './block-extras'
-import { Command } from './command'
 import { SetBlockCommand } from './set-block'
 
 export interface CommandBlockTypeStatic {

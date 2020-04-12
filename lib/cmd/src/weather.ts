@@ -1,4 +1,4 @@
-import { Command, SimpleArgsCommand } from './command'
+import { Command, SimpleArgsCommand } from '../../command'
 
 export enum Weather {
   clear = 'clear',

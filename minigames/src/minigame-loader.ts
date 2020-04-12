@@ -19,7 +19,6 @@ function findFiles(dir: string, files: string[] = []): string[] {
 }
 
 export interface GameInfo extends MinigameDescriptor {
-  name: string
   rootPath: string
   relativePath: string
 }
@@ -33,7 +32,7 @@ export class MinigameLoader {
 
   public loadMinigame(game: GameInfo): LoadedGameInfo {
     this.cleanupMinigame(game)
-    const loadedGame = this.getGameInfo(game.name)
+    const loadedGame = this.getGameInfo(game.key)
     return Object.assign({
       providers: [
         loadedGame.module,
@@ -62,18 +61,18 @@ export class MinigameLoader {
       .filter(game => !!game)
   }
 
-  private getGameInfo(name: string): GameInfo {
-    const relativePath = join('..', name)
+  private getGameInfo(key: string): GameInfo {
+    const relativePath = join('..', key)
     const rootPath = resolve(__dirname, relativePath)
-    const descriptor = require(relativePath).Minigame
+    const descriptor = require(relativePath).default
     return Object.assign({
-      name,
+      key,
       rootPath,
       relativePath,
     }, descriptor)
   }
 
-  private cleanupMinigame(info: GameInfo) {
+  public cleanupMinigame(info: GameInfo) {
     const gameFiles = findFiles(info.rootPath)
     info.cleanup()
     gameFiles.forEach(file => delete require.cache[file])

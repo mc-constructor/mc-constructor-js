@@ -1,55 +1,15 @@
 import {
   Client,
-  CompiledMessage, CompiledSimpleMessage,
-  Message,
-  MessageResponse,
+  CompiledMessage,
+  CompiledSimpleMessage,
+  ClientMessageResponse,
   MessageType,
-  PendingMessage,
-  SimpleMessage
+  PendingMessage
 } from '../../server'
+
+import { Command } from './command'
+
 import Timeout = NodeJS.Timeout
-
-export abstract class Command<TResponse extends any = any> extends Message<TResponse> {
-  public readonly type: MessageType = MessageType.cmd
-}
-
-export abstract class SimpleCommand<TResponse extends any = any> extends SimpleMessage<TResponse> {
-  public readonly type: MessageType = MessageType.cmd
-
-  protected abstract readonly command: string
-
-  public compile(): string {
-    const args = this.formatArgs()
-    return `${this.command}${args ? ' ' : ''}${args}`
-  }
-
-  public toString(): string {
-    return this.compile()
-  }
-
-  protected getMessageBody(): string {
-    return this.compile()
-  }
-
-  public get [Symbol.toStringTag](): string {
-    return `[${this.constructor.name} ${this.toString()}]`
-  }
-
-  protected abstract formatArgs(): string
-}
-
-export abstract class SimpleArgsCommand<TArgs extends Array<any> = any[], TResponse extends any = any> extends SimpleCommand<TResponse> {
-  protected readonly args: TArgs
-
-  protected constructor(...args: TArgs) {
-    super()
-    this.args = args
-  }
-
-  protected formatArgs(): string {
-    return this.args.join(' ')
-  }
-}
 
 class MultiCommandExecutionContext {
 
@@ -117,40 +77,27 @@ export abstract class MultiCommand extends Command {
       if (this.parallel) {
         context.executeMessage(msg)
       } else {
-        await context.executeMessage(msg)
+        const result = await context.executeMessage(msg)
+        // console.log('RESULT?', result)
       }
     })
 
     return Promise.all(context.compiled.map(msg => msg.pendingMessage)).then(this.parseResponses.bind(this))
   }
 
-  protected parseResponses(responses: MessageResponse[]): any {
+  protected parseResponses(responses: ClientMessageResponse[]): any {
     return responses
   }
 }
 
 export class PassThroughMultiCommand extends MultiCommand {
 
-  constructor(public readonly cmds: Command[], public readonly parallel: boolean) {
+  constructor(public readonly cmds: Command[], protected readonly parallel: boolean) {
     super()
   }
 
   protected compile(): Command[] {
     return this.cmds;
-  }
-}
-
-export class RawCommand extends SimpleCommand<MessageResponse> {
-  constructor(protected readonly command: string, protected readonly hasResponse: boolean | number) {
-    super()
-  }
-
-  protected formatArgs(): string {
-    return '';
-  }
-
-  protected parseResponse(response: MessageResponse): MessageResponse {
-    return response
   }
 }
 
@@ -160,8 +107,4 @@ export function parallel(...cmds: Command[]): Command {
 
 export function series(...cmds: Command[]): Command {
   return new PassThroughMultiCommand(cmds, false)
-}
-
-export function rawCmd(cmd: string, hasResponse: boolean | number = true): Command {
-  return new RawCommand(cmd, hasResponse);
 }

@@ -1,4 +1,4 @@
-import { Command, SimpleArgsCommand } from './command'
+import { Command, SimpleArgsCommand } from '../../command'
 
 export enum TimeSubCommand {
   add = 'add',

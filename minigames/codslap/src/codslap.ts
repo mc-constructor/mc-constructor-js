@@ -1,5 +1,6 @@
-import { Inject, Injectable } from '@dandi/core'
-import { actionbar, Command, rawCmd, text, title } from '@minecraft/core/cmd'
+import { Inject } from '@dandi/core'
+import { actionbar, rawCmd, text, title } from '@minecraft/core/cmd'
+import { Command } from '@minecraft/core/command'
 import { randomInt } from '@minecraft/core/common'
 import {
   AttackedByPlayerEvent,
@@ -20,6 +21,8 @@ import { Minigame } from '@minecraft/minigames'
 import { combineLatest, interval, Observable, partition, Subscription } from 'rxjs'
 import { filter, share, tap } from 'rxjs/operators'
 
+import { Codslap } from '../index'
+
 import { CommonCommands } from './common'
 import { CodslapInitCommand } from './init'
 
@@ -28,14 +31,13 @@ import { CodslapInitCommand } from './init'
  */
 
 const subs: Subscription[] = []
+export function cleanup(): void {
+  subs.forEach(sub => sub.unsubscribe())
+  subs.length = 0
+}
 
-@Injectable(Minigame)
-export class CodslapMiniGame implements Minigame {
-
-  public static cleanup(): void {
-    subs.forEach(sub => sub.unsubscribe())
-    subs.length = 0
-  }
+@Minigame(Codslap)
+export class CodslapMinigame implements Minigame {
 
   private readonly entityDeath$: Observable<AttackedByPlayerEvent>
   private readonly playerDeath$: Observable<AttackedEntityEvent>
@@ -92,7 +94,7 @@ export class CodslapMiniGame implements Minigame {
       this.events$.pipe(eventType(ServerEventType.entityLivingDeath), filter(event => event.attackerType !== 'player')).subscribe(console.log.bind(console)),
       this.playerDeath$.subscribe(this.onPlayerDeath.bind(this)),
       this.playerRespawn$.subscribe(this.onPlayerRespawn.bind(this)),
-      this.players$.subscribe(players => console.log('Codslap Players', players)),
+      this.players$.players$.subscribe(players => console.log('Codslap Players', players)),
       this.codslap$.subscribe(this.onCodslap.bind(this)),
       this.codslapMobKill$.subscribe(this.onCodslapMobKill.bind(this)),
       this.codslapPlayerKill$.subscribe(this.onCodslapPlayerKill.bind(this)),
@@ -115,12 +117,12 @@ export class CodslapMiniGame implements Minigame {
 
   private onCodslapMobKill(event: AttackedByPlayerEvent): void {
     console.log('onCodslapMobKill', event)
-    rawCmd(`scoreboard players add ${event.attacker.name} codslap_mob_kill 1`).execute(this.client)
+    rawCmd(`scoreboard players add ${event.attacker.name} codslap_m_kill 1`).execute(this.client)
     actionbar(event.attacker.name, text('Oh George, not the livestock!')).execute(this.client)
   }
   private onCodslapPlayerKill(event: AttackedByPlayerEvent): void {
     console.log('onCodslapPlayerKill', event)
-    rawCmd(`scoreboard players add ${event.attacker.name} codslap_player_kill 1`).execute(this.client)
+    rawCmd(`scoreboard players add ${event.attacker.name} codslap_p_kill 1`).execute(this.client)
     title(event.attacker.name, text('CODSLAP KILL')).execute(this.client)
   }
 

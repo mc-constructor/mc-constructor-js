@@ -1,4 +1,4 @@
-import { Command } from './command'
+import { Command } from '../../command'
 import { TextBuilder, TextCommand, TextFragmentBuilder } from './text'
 
 // https://minecraft.gamepedia.com/Commands/tellraw

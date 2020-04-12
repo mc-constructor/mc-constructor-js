@@ -1,6 +1,5 @@
-import { MessageResponse, Player } from '../../server'
-
-import { SimpleArgsCommand } from './command'
+import { SimpleArgsCommand } from '../../command'
+import { ClientMessageResponse, Player } from '../../server'
 
 type UuidsArgs = ['uuids'] | []
 const UUIDS: UuidsArgs = ['uuids']
@@ -19,7 +18,7 @@ class ListPlayersCommand extends SimpleArgsCommand<UuidsArgs, ListPlayersResult>
     super(...(uuids ? UUIDS : NO_UUIDS))
   }
 
-  protected parseSuccessResponse(response: MessageResponse): ListPlayersResult {
+  protected parseSuccessResponse(response: ClientMessageResponse): ListPlayersResult {
     const [key, connectedRaw, maxRaw, ...playersRaw] = response.extras
     const connectedPlayers = parseInt(connectedRaw)
     const maxPlayers = parseInt(maxRaw)

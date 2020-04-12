@@ -1,6 +1,6 @@
+import { SimpleCommand } from '../../command'
 import { Block } from '../../types'
 
-import { SimpleCommand } from './command'
 import { BlockState } from './block-state'
 import { BlockData } from './block-data'
 

@@ -1,4 +1,4 @@
-import { Command, MultiCommand, SimpleArgsCommand } from './command'
+import { Command, MultiCommand, parallel, SimpleArgsCommand } from '../../command'
 import { TextBuilder, TextFragmentBuilder } from './text'
 
 // https://minecraft.gamepedia.com/Commands/title
@@ -65,12 +65,18 @@ class ShowTitleCommand extends MultiCommand {
 
   public compile(): Command[] {
     const cmds = []
+    const precmds = []
     if (this.timing) {
       const ticks = this.timing.ticks
-      cmds.push(new TitleCommand(this.target, TitleSubcommand.times, ticks.fadeIn, ticks.display, ticks.fadeOut))
+      precmds.push(new TitleCommand(this.target, TitleSubcommand.times, ticks.fadeIn, ticks.display, ticks.fadeOut))
     }
     if (this.subtitle) {
-      cmds.push(new TitleCommand(this.target, TitleSubcommand.subtitle, this.subtitle))
+      precmds.push(new TitleCommand(this.target, TitleSubcommand.subtitle, this.subtitle))
+    }
+    if (precmds.length > 2) {
+      cmds.push(parallel(...precmds))
+    } else if (precmds.length) {
+      cmds.push(...precmds)
     }
 
     cmds.push(new TitleCommand(this.target, TitleSubcommand.title, this.title))
@@ -97,7 +103,7 @@ export function title(
   displaySeconds?: number,
   fadeOutSeconds?: number,
 ): ShowTitleCommand {
-  return new ShowTitleCommand(target, title.builder, subtitle.builder, new TitleTimes(fadeInSeconds, displaySeconds, fadeOutSeconds))
+  return new ShowTitleCommand(target, title.builder, subtitle?.builder, new TitleTimes(fadeInSeconds, displaySeconds, fadeOutSeconds))
 }
 export function actionbar(target: string, text: TextBuilder | TextFragmentBuilder): TitleCommand {
   return new TitleCommand(target, TitleSubcommand.actionbar, text.builder)

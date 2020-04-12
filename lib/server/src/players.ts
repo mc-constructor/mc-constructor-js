@@ -1,12 +1,13 @@
 import { Uuid } from '@dandi/common'
 import { Inject, Injectable } from '@dandi/core'
-import { merge, Observable, Observer } from 'rxjs'
+import { merge, Observable } from 'rxjs'
 import { map, share, tap } from 'rxjs/operators'
 
 import { listPlayers } from '../../cmd'
 
 import { Client } from './client'
-import { eventType, PlayerEvent, ServerEvents, ServerEventType } from './events'
+import { PlayerEvent, ServerEventType } from './event'
+import { eventType, ServerEvents } from './server-events'
 
 export interface Player {
   name: string
@@ -14,28 +15,17 @@ export interface Player {
 }
 
 @Injectable()
-export class Players extends Observable<Player[]> {
+export class Players {
 
   private readonly playersByName: Map<string, Player> = new Map<string, Player>()
   private readonly playersByUuid: Map<Uuid, Player> = new Map<Uuid, Player>()
 
-  private readonly players$: Observable<Player[]>
+  public readonly players$: Observable<Player[]>
 
   constructor(
     @Inject(Client) client: Client,
     @Inject(ServerEvents) events$: ServerEvents,
   ) {
-    super(o => {
-      const sub = this.players$.subscribe(o)
-      this.init(client, o)
-
-      return () => {
-        sub.unsubscribe()
-        this.playersByName.clear()
-        this.playersByUuid.clear()
-      }
-    })
-
     const playerJoin$ = events$.pipe(
       eventType(ServerEventType.playerJoined),
       tap(this.onPlayerJoin.bind(this)),
@@ -45,7 +35,15 @@ export class Players extends Observable<Player[]> {
       tap(this.onPlayerLeave.bind(this))
     )
 
-    this.players$ = merge(playerJoin$, playerLeave$).pipe(
+    const init$ = new Observable<void>(o => {
+      this.init(client).then(() => o.next())
+      return () => {
+        this.playersByName.clear()
+        this.playersByUuid.clear()
+      }
+    })
+
+    this.players$ = merge(init$, playerJoin$, playerLeave$).pipe(
       map(() => this.players),
       share(),
     )
@@ -59,10 +57,10 @@ export class Players extends Observable<Player[]> {
     return this.playersByName.has(name)
   }
 
-  private async init(client: Client, o: Observer<Player[]>): Promise<void> {
+  private async init(client: Client): Promise<Player[]> {
     const playerList = await listPlayers(true).execute(client)
     playerList.players.forEach(this.addPlayer.bind(this))
-    o.next(this.players)
+    return this.players
   }
 
   private onPlayerJoin(event: PlayerEvent): void {

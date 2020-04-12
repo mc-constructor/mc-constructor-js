@@ -10,20 +10,6 @@ export enum HideFlags {
   otherFlags = 32,
 }
 
-// const f = {
-//   display:{
-//     Name:"[{\"text\":\"Bleep Bloop\",\"italic\":false}]",
-//     Lore:["[{\"text\":\"Blah Blah Blah\",\"italic\":false}]"],
-//     color:789516
-//   },
-//   Enchantments:[
-//     {id:knockback,lvl:20}
-//   ],
-//   Unbreakable:1,
-//   Damage:12,
-//   HideFlags:38
-// }
-
 export interface ItemEnchantmentMap {
   id: Enchantment
   lvl: number

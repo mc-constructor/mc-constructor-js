@@ -1,18 +1,19 @@
 import { Uuid } from '@dandi/common'
-import {
-  Client,
-  CompiledMessage,
-  ExecuteFn,
-  MessageFailedResponse,
-  MessageSuccessResponse,
-  PendingMessage
-} from './client'
+import { Client, ClientMessageFailedResponse, ClientMessageSuccessResponse } from './client'
 import { MessageError } from './message-error'
 
 export enum MessageType {
   cmd = 'cmd',
   createStructure = 'createStructure',
+  minigame = 'minigame',
 }
+
+export interface PendingMessage<TResponse = any> extends Promise<TResponse> {
+  id: string | Uuid
+  sent: Promise<void>
+}
+
+export type ExecuteFn<TResponse> = () => PendingMessage<TResponse>
 
 export abstract class Message<TResponse extends any = any> {
   public execute(client: Client): Promise<any> & PendingMessage {
@@ -21,10 +22,17 @@ export abstract class Message<TResponse extends any = any> {
   public abstract compileMessage(client: Client): CompiledMessage
 }
 
+export interface CompiledMessage<TResponse = any> {
+  id: string | Uuid
+  pendingMessage: PendingMessage
+  sent: Promise<void>
+  execute: ExecuteFn<TResponse>
+}
+
 export class CompiledSimpleMessage<TResponse = any> implements CompiledMessage<TResponse> {
 
   public readonly id: string | Uuid
-  public readonly pendingMessage: PendingMessage
+  public readonly pendingMessage: PendingMessage<TResponse>
   public readonly sent: Promise<void>
 
   protected onSent: () => void
@@ -47,7 +55,7 @@ export class CompiledSimpleMessage<TResponse = any> implements CompiledMessage<T
     })
   }
 
-  public execute(): PendingMessage {
+  public execute(): PendingMessage<TResponse> {
     try {
       this.executeFn().then(this.onResponse, this.onAborted)
       this.onSent()
@@ -91,15 +99,32 @@ export abstract class SimpleMessage<TResponse extends any = any> extends Message
     }), pending)
   }
 
-  protected abstract getMessageBody(): string | Uint8Array // | Promise<string> | Promise<Uint8Array>
+  protected abstract getMessageBody(): string | Uint8Array
 
-  protected parseSuccessResponse(response: MessageSuccessResponse): TResponse {
+  protected parseSuccessResponse(response: ClientMessageSuccessResponse): TResponse {
     return undefined
   }
 
-  protected parseFailedResponse(response: MessageFailedResponse): MessageError {
+  protected parseFailedResponse(response: ClientMessageFailedResponse): MessageError {
     const [key, message] = response.extras
     return new MessageError(key, message)
   }
 
+}
+
+export abstract class SimpleArgsMessage<TArgs extends Array<any> = any[], TResponse extends any = any> extends SimpleMessage<TResponse> {
+  protected readonly args: TArgs
+
+  protected constructor(...args: TArgs) {
+    super()
+    this.args = args
+  }
+
+  protected formatArgs(): string {
+    return this.args.join(' ')
+  }
+
+  protected getMessageBody(): string | Uint8Array {
+    return this.formatArgs()
+  }
 }

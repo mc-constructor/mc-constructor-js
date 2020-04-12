@@ -1,4 +1,12 @@
 # Messages
 
-- where should failed messages actually get rejected?
-- set up commands to allow failures (e.g. clear when player has no items)
+## Check
+- are subsequent players detected correctly by players service?
+
+## Minigame Commands
+- list
+- reset
+
+## Gameplay
+- add objectives tracking events/observable, including getting initial scores from server
+- how does the codslapper level up?

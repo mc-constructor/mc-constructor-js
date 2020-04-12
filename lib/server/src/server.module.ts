@@ -1,9 +1,10 @@
 import { ModuleBuilder, Registerable } from '@dandi/core'
 
 import { Client } from './client'
-import { ServerEventsProvider } from './events'
 import { localToken } from './local-token'
 import { Players } from './players'
+import { ServerEventsProvider } from './server-events'
+import { SocketClient } from './socket-client'
 
 export class ServerModuleBuilder extends ModuleBuilder<ServerModuleBuilder> {
   constructor(...entries: Registerable[]) {
@@ -13,6 +14,6 @@ export class ServerModuleBuilder extends ModuleBuilder<ServerModuleBuilder> {
 
 export const ServerModule = new ServerModuleBuilder(
   Players,
-  Client,
+  { provide: Client, useClass: SocketClient },
   ServerEventsProvider,
 )

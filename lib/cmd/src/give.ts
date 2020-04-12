@@ -1,7 +1,7 @@
-import { MessageSuccessResponse } from '../../server'
+import { SimpleCommand } from '../../command'
+import { ClientMessageSuccessResponse } from '../../server'
 import { fromEntityId, Item } from '../../types'
 
-import { SimpleCommand } from './command'
 import { ItemBuilder } from './item'
 
 export interface GiveResult<TItem> {
@@ -30,7 +30,7 @@ class GiveCommand<TItem extends Item> extends SimpleCommand<GiveResult<TItem>> {
     return this.item.item === item
   }
 
-  protected parseSuccessResponse(response: MessageSuccessResponse): GiveResult<TItem> {
+  protected parseSuccessResponse(response: ClientMessageSuccessResponse): GiveResult<TItem> {
     const [key, countRaw, entityIdRaw, playerName] = response.extras
     const count = parseInt(countRaw)
     const entityId = entityIdRaw.substring(1, entityIdRaw.length - 1)

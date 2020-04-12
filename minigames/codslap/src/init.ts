@@ -1,17 +1,19 @@
 import { Inject, Injectable } from '@dandi/core'
 import {
   block,
-  Command,
-  MultiCommand,
+  clear,
+  clearEffect,
   FillMethod,
   gamerule,
+  giveEffect,
   rawCmd,
   time,
-  weather, parallel, series
+  weather,
 } from '@minecraft/core/cmd'
+import { Command, MultiCommand, parallel, series } from '@minecraft/core/command'
 import { randomInt, range } from '@minecraft/core/common'
 import { Players } from '@minecraft/core/server'
-import { Block } from '@minecraft/core/types'
+import { Block, Effect } from '@minecraft/core/types'
 
 import { CommonCommands } from './common'
 
@@ -47,7 +49,6 @@ export class CodslapInitCommand extends MultiCommand {
   public compile(): Command[] {
     return [
       this.initHoldingArea(),
-      this.movePlayersToHoldingArea(),
       this.initRules(),
       this.initArena(),
       this.resetObjectives(),
@@ -59,17 +60,16 @@ export class CodslapInitCommand extends MultiCommand {
 
   protected initHoldingArea(): Command {
     const holding = this.common.spawn.modify.up(100)
-    return parallel(
+    const holdingArea = parallel(
       block(Block.whiteWool).fill(
         holding.modify.west(this.common.arenaSize).modify.north(this.common.arenaSize),
         holding.modify.east(this.common.arenaSize).modify.south(this.common.arenaSize),
       )
     )
-  }
-
-  protected movePlayersToHoldingArea(): Command {
-    const holding = this.common.spawn.modify.up(100).modify.up(1)
-    return rawCmd(`teleport @a ${holding}`)
+    return series(
+      holdingArea,
+      rawCmd(`teleport @a ${holding.modify.up(2)}`),
+    )
   }
 
   protected removeHoldingArea(): Command {
@@ -95,19 +95,19 @@ export class CodslapInitCommand extends MultiCommand {
   protected resetObjectives(): Command {
     return parallel(
       rawCmd(`scoreboard objectives remove codslap`),
-      rawCmd(`scoreboard objectives remove codslap_mob_kill`),
-      rawCmd(`scoreboard objectives remove codslap_kill`),
+      rawCmd(`scoreboard objectives remove codslap_m_kill`),
+      rawCmd(`scoreboard objectives remove codslap_p_kill`),
     )
   }
 
   protected initObjectives(): Command {
     return parallel(
       rawCmd(`scoreboard objectives add codslap dummy "CODSLAP!"`),
-      rawCmd(`scoreboard objectives add codslap_mob_kill dummy`),
-      rawCmd(`scoreboard objectives add codslap_kill dummy "CODSLAP KILL!"`),
+      rawCmd(`scoreboard objectives add codslap_m_kill dummy`),
+      rawCmd(`scoreboard objectives add codslap_p_kill dummy "CODSLAP KILL!"`),
 
       rawCmd(`scoreboard objectives setdisplay belowName codslap`),
-      rawCmd(`scoreboard objectives setdisplay sidebar codslap_kill`),
+      rawCmd(`scoreboard objectives setdisplay sidebar codslap_p_kill`),
     )
   }
 
@@ -200,11 +200,11 @@ export class CodslapInitCommand extends MultiCommand {
     return parallel(
       ...playerTeleports,
       // clear only gives a response if something was cleared - need to give something to make sure clear gives a response
-      rawCmd(`clear @a`),
+      clear('@a'),
       ...this.common.resetPlayer('@a'),
 
-      rawCmd(`effect clear @a`),
-      rawCmd(`effect give @a instant_health 10`),
+      clearEffect('@a'),
+      giveEffect('@a', Effect.instantHealth, 10),
       rawCmd(`gamemode adventure @a`, 1500),
       rawCmd(`kill @e[type=item]`),
       ...sheep,

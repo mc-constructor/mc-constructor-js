@@ -1,9 +1,9 @@
+import { Command, MultiCommand } from '../../command'
 import { Block, Coordinates, CoordinatesAxisIndex } from '../../types'
 
 import { BlockCommand } from './block-command'
 import { BlockData } from './block-data'
 import { BlockState } from './block-state'
-import { Command, MultiCommand } from './command'
 
 const MAX_FILL_VOLUME = 32768
 
@@ -33,7 +33,8 @@ export enum FillMethod {
 
 class FillIncrementCommand<TBlock extends Block> extends BlockCommand<Block> {
   protected readonly command: string = 'fill'
-  protected readonly allowedErrorKeys = ['commands.fill.toobig']
+  // protected readonly allowedErrorKeys = ['commands.fill.toobig']
+  protected readonly allowedErrorKeys = ['commands.fill.failed']
 
   constructor(
     block: TBlock,
@@ -43,12 +44,24 @@ class FillIncrementCommand<TBlock extends Block> extends BlockCommand<Block> {
     public readonly start: Coordinates,
     public readonly end: Coordinates) {
     super(block, state, data)
+
+    if (getVolume(start, end, method) > MAX_FILL_VOLUME) {
+      throw new Error('wtf mate')
+    }
   }
 
   protected formatArgs(): string {
     return `${this.start} ${this.end} ${this.block}${this.state}${this.data}${this.method ? ' ' : ''}${this.method || ''}`;
   }
 
+}
+
+interface FillDimension {
+  val: number
+  index: CoordinatesAxisIndex
+  volPer: number
+  increment: number
+  fillPerIncrement: number
 }
 
 export class FillCommand<TBlock extends Block> extends MultiCommand {
@@ -89,14 +102,27 @@ export class FillCommand<TBlock extends Block> extends MultiCommand {
     const dY = Math.abs(sy - ey) + 1
     const dZ = Math.abs(sz - ez) + 1
 
-    const dims: { val: number, index: CoordinatesAxisIndex }[] = [
-      { val: dX, index: 0 as CoordinatesAxisIndex },
-      { val: dY, index: 1 as CoordinatesAxisIndex },
-      { val: dZ, index: 2 as CoordinatesAxisIndex },
-    ].sort((a, b) => b.val - a.val)
+    const makeDim = (val: number, index: CoordinatesAxisIndex): FillDimension => {
+      const start = this.start
+      const end = this.end.modify(index, this.start[index] + 1)
+      const volPer = getVolume(start, end, this.method)
+      const increment = Math.floor(MAX_FILL_VOLUME / volPer)
+      const fillPerIncrement = volPer * increment
+      return {
+        val,
+        index,
+        volPer,
+        increment,
+        fillPerIncrement,
+      }
+    }
+
+    const dims: FillDimension[] = [
+      makeDim(dX, 0),
+      makeDim(dY, 1),
+      makeDim(dZ, 2),
+    ].sort((a, b) => b.fillPerIncrement - a.fillPerIncrement)
     const selectedDim = dims[0]
-    const numCommands = Math.ceil(volume / MAX_FILL_VOLUME)
-    let increment = Math.floor(selectedDim.val / numCommands)
 
     const dimIx: CoordinatesAxisIndex = selectedDim.index
     const dimStart = this.start[dimIx]
@@ -111,16 +137,12 @@ export class FillCommand<TBlock extends Block> extends MultiCommand {
     let stepEnd = incEnd.modify(dimIx, incStart[dimIx])
 
     while (stepStart[dimIx] < dimIncEnd) {
-      const nextInc = stepStart[dimIx] + increment > dimIncEnd ? dimIncEnd : stepStart[dimIx].plus(increment)
+      const nextInc = stepStart[dimIx] + selectedDim.increment > dimIncEnd ? dimIncEnd : stepStart[dimIx].plus(selectedDim.increment)
       stepStart = stepStart.modify(dimIx, nextInc)
       result.push(this.makeIncrement(stepStart, stepEnd))
       stepEnd = stepEnd.modify(dimIx, nextInc + 1)
     }
 
     return result
-  }
-
-  protected compileResponse(cmdResponses: any[]): Block {
-    return undefined;
   }
 }
