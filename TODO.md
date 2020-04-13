@@ -9,4 +9,5 @@
 
 ## Gameplay
 - add objectives tracking events/observable, including getting initial scores from server
+- fix `setObjectiveDisplay` sending bad text format
 - how does the codslapper level up?

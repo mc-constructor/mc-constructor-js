@@ -1,5 +1,6 @@
 import { Inject } from '@dandi/core'
 import { actionbar, rawCmd, text, title } from '@minecraft/core/cmd'
+import { addScore, listPlayerScores } from '@minecraft/core/cmd'
 import { Command } from '@minecraft/core/command'
 import { randomInt } from '@minecraft/core/common'
 import {
@@ -105,24 +106,24 @@ export class CodslapMinigame implements Minigame {
     return combineLatest([this.players$, interval(1500)]).pipe(
       tap(([players]) => {
         players.forEach(player => {
-          rawCmd(`scoreboard players list ${player.name}`).execute(this.client)
+          listPlayerScores(player.name).execute(this.client)
         })
       })
     )
   }
 
   private onCodslap(event: PlayerEvent): void {
-    rawCmd(`scoreboard players add ${event.player.name} codslap 1`).execute(this.client)
+    addScore(event.player.name, 'codslap', 1).execute(this.client)
   }
 
   private onCodslapMobKill(event: AttackedByPlayerEvent): void {
     console.log('onCodslapMobKill', event)
-    rawCmd(`scoreboard players add ${event.attacker.name} codslap_m_kill 1`).execute(this.client)
+    addScore(event.attacker.name, 'codslap_m_kill', 1).execute(this.client)
     actionbar(event.attacker.name, text('Oh George, not the livestock!')).execute(this.client)
   }
   private onCodslapPlayerKill(event: AttackedByPlayerEvent): void {
     console.log('onCodslapPlayerKill', event)
-    rawCmd(`scoreboard players add ${event.attacker.name} codslap_p_kill 1`).execute(this.client)
+    addScore(event.attacker.name, 'codslap_p_kill', 1).execute(this.client)
     title(event.attacker.name, text('CODSLAP KILL')).execute(this.client)
   }
 

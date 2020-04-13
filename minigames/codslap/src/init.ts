@@ -1,12 +1,17 @@
 import { Inject, Injectable } from '@dandi/core'
 import {
+  addObjective,
   block,
   clear,
   clearEffect,
   FillMethod,
   gamerule,
   giveEffect,
+  ObjectiveDisplaySlot,
   rawCmd,
+  removeObjectives,
+  setObjectiveDisplay,
+  text,
   time,
   weather,
 } from '@minecraft/core/cmd'
@@ -93,21 +98,20 @@ export class CodslapInitCommand extends MultiCommand {
   }
 
   protected resetObjectives(): Command {
-    return parallel(
-      rawCmd(`scoreboard objectives remove codslap`),
-      rawCmd(`scoreboard objectives remove codslap_m_kill`),
-      rawCmd(`scoreboard objectives remove codslap_p_kill`),
-    )
+    return removeObjectives('codslap', 'codslap_m_kill', 'codslap_p_kill')
   }
 
   protected initObjectives(): Command {
-    return parallel(
-      rawCmd(`scoreboard objectives add codslap dummy "CODSLAP!"`),
-      rawCmd(`scoreboard objectives add codslap_m_kill dummy`),
-      rawCmd(`scoreboard objectives add codslap_p_kill dummy "CODSLAP KILL!"`),
-
-      rawCmd(`scoreboard objectives setdisplay belowName codslap`),
-      rawCmd(`scoreboard objectives setdisplay sidebar codslap_p_kill`),
+    return series(
+      parallel(
+        addObjective('codslap', 'dummy', text('CODSLAP!')),
+        addObjective('codslap_m_kill', 'dummy'),
+        addObjective('codslap_p_kill', 'dummy', text('CODSLAP KILL!').bold),
+      ),
+      parallel(
+        setObjectiveDisplay(ObjectiveDisplaySlot.belowName, 'codslap'),
+        setObjectiveDisplay(ObjectiveDisplaySlot.sidebar, 'codslap_p_kill'),
+      ),
     )
   }
 
