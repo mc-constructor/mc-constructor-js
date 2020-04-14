@@ -68,12 +68,13 @@ class AddObjectiveCommand extends ObjectiveCommand<boolean> {
   }
 
   protected formatObjectiveCommandArgs(): string {
-    return `${this.criterion} ${this.displayName}`
+    return `${this.criterion}${this.displayName ? ' ' : ''}${this.displayName || ''}`
   }
 }
 
 class RemoveObjectiveCommand extends ObjectiveCommand<boolean> {
   protected readonly subCommand = ObjectivesSubCommand.remove
+  protected readonly allowedErrorKeys = ['arguments.objective.notFound']
 
   constructor(id: string) {
     super(id)

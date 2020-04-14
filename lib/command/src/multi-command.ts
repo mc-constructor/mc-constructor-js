@@ -13,10 +13,7 @@ import Timeout = NodeJS.Timeout
 
 class MultiCommandExecutionContext {
 
-  public readonly remaining = new Set<PendingMessage>()
   public readonly compiled: CompiledMessage[]
-
-  private logTimeout: Timeout
 
   constructor(
     client: Client,
@@ -25,33 +22,6 @@ class MultiCommandExecutionContext {
     this.compiled = cmds.map(cmd => {
       return cmd.compileMessage(client)
     })
-  }
-
-  public async executeMessage(msg: CompiledMessage): Promise<any> {
-    const pending = msg.execute()
-    this.remaining.add(pending)
-
-    let result;
-    let error: Error
-    try {
-      result = await pending
-    } catch (err) {
-      error = err
-    }
-    this.remaining.delete(pending)
-    clearTimeout(this.logTimeout)
-    if (this.remaining.size) {
-      console.debug(`${this.constructor.name}: ${this.remaining.size} responses remaining`)
-      this.logTimeout = setTimeout(() => {
-        console.debug(`${this.constructor.name}: ${this.remaining.size} responses remaining`, this.remaining)
-      }, 2500)
-    } else {
-      console.debug(`${this.constructor.name} complete`)
-    }
-    if (error) {
-      throw error
-    }
-    return result
   }
 
 }
@@ -67,20 +37,35 @@ export abstract class MultiCommand extends Command {
   public compileMessage(client: Client): CompiledMessage {
     const context = new MultiCommandExecutionContext(client, this.compile())
     const id = `${this.constructor.name}#${this.instanceId}`
-    return new CompiledSimpleMessage(this.processCommands.bind(this, context), id)
+    return new CompiledSimpleMessage(this.processCommands.bind(this, context), true, id)
   }
 
   protected abstract compile(): Command[]
 
-  protected processCommands(context: MultiCommandExecutionContext): Promise<any> {
-    context.compiled.forEach(async msg => {
-      if (this.parallel) {
-        context.executeMessage(msg)
-      } else {
-        const result = await context.executeMessage(msg)
-        // console.log('RESULT?', result)
+  protected async processCommands(context: MultiCommandExecutionContext): Promise<any> {
+    const remaining = new Set<PendingMessage>(context.compiled.map(compiled => compiled.pendingMessage))
+    let logTimeout: Timeout
+    await context.compiled.reduce(async (prev, msg) => {
+      if (!this.parallel) {
+        await prev
       }
-    })
+      const result = msg.execute()
+
+      result.finally(() => {
+        remaining.delete(msg.pendingMessage)
+        clearTimeout(logTimeout)
+        if (remaining.size) {
+          console.debug(`${this.constructor.name}: ${remaining.size} responses remaining`)
+          logTimeout = setTimeout(() => {
+            console.debug(`${this.constructor.name}: ${remaining.size} responses remaining`, remaining)
+          }, 2500)
+        } else {
+          console.debug(`${this.constructor.name} complete`)
+        }
+      })
+
+      return result
+    }, Promise.resolve())
 
     return Promise.all(context.compiled.map(msg => msg.pendingMessage)).then(this.parseResponses.bind(this))
   }

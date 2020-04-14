@@ -1,6 +1,8 @@
 import { DandiApplication, EntryPoint, Inject, Injectable } from '@dandi/core'
 import { tap } from 'rxjs/operators'
-import { Client, Players, ServerModule } from './lib/server'
+
+import { Players, PlayersModule } from './lib/players'
+import { Client, ServerModule } from './lib/server'
 import { MinigameManager, MinigameModule } from './minigames'
 
 require('dotenv').config()
@@ -35,6 +37,7 @@ const app = new DandiApplication({
   providers: [
     Init,
     MinigameModule,
+    PlayersModule,
     ServerModule,
   ]
 })

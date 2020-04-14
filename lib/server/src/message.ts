@@ -1,5 +1,6 @@
 import { Uuid } from '@dandi/common'
-import { Client, ClientMessageFailedResponse, ClientMessageSuccessResponse } from './client'
+
+import { Client, ClientMessageFailedResponse, ClientMessageResponse, ClientMessageSuccessResponse } from './client'
 import { MessageError } from './message-error'
 
 export enum MessageType {
@@ -13,10 +14,17 @@ export interface PendingMessage<TResponse = any> extends Promise<TResponse> {
   sent: Promise<void>
 }
 
+export function extendPendingMessage<TResponse>(pending: PendingMessage, promise: Promise<TResponse>): PendingMessage<TResponse> {
+  return Object.assign(promise, {
+    id: pending.id,
+    sent: pending.sent,
+  })
+}
+
 export type ExecuteFn<TResponse> = () => PendingMessage<TResponse>
 
 export abstract class Message<TResponse extends any = any> {
-  public execute(client: Client): Promise<any> & PendingMessage {
+  public execute(client: Client): PendingMessage<TResponse> {
     return this.compileMessage(client).execute()
   }
   public abstract compileMessage(client: Client): CompiledMessage
@@ -37,17 +45,23 @@ export class CompiledSimpleMessage<TResponse = any> implements CompiledMessage<T
 
   protected onSent: () => void
   protected onSendErr: (err: Error) => void
-  protected onResponse: (response: TResponse) => void
+  protected onResponse: (response?: TResponse) => void
   protected onAborted: (err: Error) => void
 
-  constructor(protected readonly executeFn: ExecuteFn<TResponse>, id?: string | Uuid) {
+  constructor(
+    protected readonly executeFn: ExecuteFn<TResponse>,
+    protected readonly hasResponse: boolean | number,
+    id?: string | Uuid,
+  ) {
     this.id = id || Uuid.create()
     this.sent = new Promise<void>((resolve, reject) => {
-      this.onSent = resolve
+      this.onSent = this.handleSent.bind(this, resolve)
       this.onSendErr = reject
     })
     this.pendingMessage = Object.assign(new Promise<TResponse>((resolve, reject) => {
-      this.onResponse = resolve
+      this.onResponse = (response: TResponse) => {
+        resolve(response)
+      }
       this.onAborted = reject
     }), {
       id: this.id,
@@ -66,6 +80,18 @@ export class CompiledSimpleMessage<TResponse = any> implements CompiledMessage<T
     return this.pendingMessage
   }
 
+  private async handleSent(resolveSent: () => void): Promise<void> {
+    resolveSent()
+    if (this.hasResponse === false) {
+      this.onResponse()
+    }
+    if (typeof this.hasResponse === 'number') {
+      let timeout = setTimeout(() => this.onResponse(), this.hasResponse)
+      await this.pendingMessage
+      clearTimeout(timeout)
+    }
+  }
+
 }
 
 export abstract class SimpleMessage<TResponse extends any = any> extends Message<TResponse> {
@@ -78,16 +104,22 @@ export abstract class SimpleMessage<TResponse extends any = any> extends Message
   public compileMessage(client: Client): CompiledMessage {
     return new CompiledSimpleMessage(
       this.execute.bind(this, client),
+      this.hasResponse,
+      (this as any).id?.toString(),
     )
   }
 
-  public execute(client: Client): Promise<TResponse> & PendingMessage {
+  public execute(client: Client): PendingMessage<TResponse> {
     return this.makeResponse(client.send(this.type, this.getMessageBody(), this.hasResponse))
   }
 
-  private makeResponse(pending: PendingMessage): Promise<TResponse> & PendingMessage {
-    return Object.assign(new Promise<TResponse>(async (resolve, reject) => {
+  private makeResponse(pending: PendingMessage<ClientMessageResponse>): PendingMessage<TResponse> {
+    return extendPendingMessage(pending, new Promise<TResponse>(async (resolve, reject) => {
       const response = await pending
+      if (!response) {
+        // does not require a response, or allows a timed out response
+        return resolve()
+      }
       if (response.success === true) {
         return resolve(this.parseSuccessResponse(response))
       }
@@ -96,7 +128,7 @@ export abstract class SimpleMessage<TResponse extends any = any> extends Message
         return resolve()
       }
       reject(err)
-    }), pending)
+    }))
   }
 
   protected abstract getMessageBody(): string | Uint8Array

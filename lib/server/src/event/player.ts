@@ -2,7 +2,7 @@ import { Uuid } from '@dandi/common'
 
 import { Item } from '../../../types'
 
-import { Player } from '../players'
+import { Player } from '../player'
 
 import { ServerEvent } from './server-event'
 

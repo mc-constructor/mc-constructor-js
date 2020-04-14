@@ -1,0 +1,22 @@
+{
+  "sourceMap": true,
+  "instrument": true,
+  "reporter": [
+    "html",
+    "text"
+  ],
+  "include": [
+    "**/src/**/*.ts"
+  ],
+  "extension": [
+    ".ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/*.*spec.ts",
+    "mocha.config.js",
+    "test",
+    "**/local-token.ts"
+  ],
+  "reportDir": ".coverage"
+}

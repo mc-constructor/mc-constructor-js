@@ -14,10 +14,11 @@ import {
   text,
   time,
   weather,
+  wait,
 } from '@minecraft/core/cmd'
 import { Command, MultiCommand, parallel, series } from '@minecraft/core/command'
 import { randomInt, range } from '@minecraft/core/common'
-import { Players } from '@minecraft/core/server'
+import { Players } from '@minecraft/core/players'
 import { Block, Effect } from '@minecraft/core/types'
 
 import { CommonCommands } from './common'
@@ -54,12 +55,17 @@ export class CodslapInitCommand extends MultiCommand {
   public compile(): Command[] {
     return [
       this.initHoldingArea(),
-      this.initRules(),
-      this.initArena(),
-      this.resetObjectives(),
-      this.initObjectives(),
-      this.initPlayers(),
-      this.removeHoldingArea(),
+      parallel(
+        this.initRules(),
+        this.initArena(),
+        this.resetObjectives(),
+        this.initObjectives(),
+      ),
+      wait(1500),
+      parallel(
+        this.initPlayers(),
+        this.removeHoldingArea(),
+      ),
     ]
   }
 
@@ -69,11 +75,16 @@ export class CodslapInitCommand extends MultiCommand {
       block(Block.whiteWool).fill(
         holding.modify.west(this.common.arenaSize).modify.north(this.common.arenaSize),
         holding.modify.east(this.common.arenaSize).modify.south(this.common.arenaSize),
-      )
+      ),
+      clear('@a'),
+      clearEffect('@a'),
+      giveEffect('@a', Effect.instantHealth, 10),
     )
     return series(
       holdingArea,
+      wait(1500),
       rawCmd(`teleport @a ${holding.modify.up(2)}`),
+      wait(2500),
     )
   }
 
@@ -173,23 +184,16 @@ export class CodslapInitCommand extends MultiCommand {
         platform.end.modify.east(-1).modify.south(-1).modify.up(1),
       )
 
-    return series(
-      parallel(
-        rawCmd(`kill @e[type=!player]`),
-        reset,
-      ),
-      parallel(
-        cage,
-        moatContainer,
-      ),
-      parallel(
-        lava,
-        platform,
-      ),
-      parallel(
-        platformInnerVoid,
-        platformHoleLip,
-      ),
+    return parallel(
+      rawCmd(`kill @e[type=item]`),
+      rawCmd(`kill @e[type=!player]`),
+      reset,
+      cage,
+      moatContainer,
+      lava,
+      platform,
+      platformInnerVoid,
+      platformHoleLip,
       platformHole,
     )
   }
@@ -198,20 +202,14 @@ export class CodslapInitCommand extends MultiCommand {
     const playerTeleports = this.players$.players.map(player =>
       rawCmd(`teleport ${player.name} ${this.common.getRandomSpawn()}`))
 
-    const sheepCount = randomInt(10, 20)
-    const sheep = range(sheepCount).map(() =>
-      rawCmd(`summon sheep ${this.common.getRandomSpawn()} {Attributes:[{Name:generic.maxHealth,Base:2}],Health:2}`))
+    const cowCount = randomInt(10, 20)
+    const cows = range(cowCount).map(() =>
+      rawCmd(`summon cow ${this.common.getRandomSpawn()} {Attributes:[{Name:generic.maxHealth,Base:2}],Health:2}`))
     return parallel(
       ...playerTeleports,
-      // clear only gives a response if something was cleared - need to give something to make sure clear gives a response
-      clear('@a'),
       ...this.common.resetPlayer('@a'),
-
-      clearEffect('@a'),
-      giveEffect('@a', Effect.instantHealth, 10),
       rawCmd(`gamemode adventure @a`, 1500),
-      rawCmd(`kill @e[type=item]`),
-      ...sheep,
+      ...cows,
     )
   }
 

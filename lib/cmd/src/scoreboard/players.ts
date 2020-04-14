@@ -1,4 +1,5 @@
 import { Command } from '../../../command'
+
 import { ScoreboardCommand, ScoreboardSubCommand } from './scoreboard'
 
 enum PlayersSubCommand {

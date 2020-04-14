@@ -4,15 +4,7 @@ import { merge, Observable } from 'rxjs'
 import { map, share, tap } from 'rxjs/operators'
 
 import { listPlayers } from '../../cmd'
-
-import { Client } from './client'
-import { PlayerEvent, ServerEventType } from './event'
-import { eventType, ServerEvents } from './server-events'
-
-export interface Player {
-  name: string
-  uuid: Uuid
-}
+import { Client, eventType, Player, PlayerEvent, ServerEvents, ServerEventType } from '../../server'
 
 @Injectable()
 export class Players {

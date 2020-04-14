@@ -21,14 +21,12 @@ class CompiledSocketMessage extends CompiledSimpleMessage<ClientMessageResponse>
     conn: Socket,
     public readonly type: MessageType,
     public readonly body: Uint8Array | string,
-    public readonly hasResponse: boolean | number,
+    hasResponse: boolean | number,
   ) {
     super(() => {
       this.send(conn)
       return this.pendingMessage
-    })
-
-    this.sent.then(this.handleSent.bind(this))
+    }, hasResponse)
   }
 
   public send(conn: Socket): void {
@@ -53,17 +51,6 @@ class CompiledSocketMessage extends CompiledSimpleMessage<ClientMessageResponse>
 
       this.onSent()
     })
-  }
-
-  protected async handleSent(): Promise<void> {
-    if (this.hasResponse === false) {
-      this.onResponse({ success: true, extras: [] })
-    }
-    if (typeof this.hasResponse === 'number') {
-      let timeout = setTimeout(() => this.onResponse({  success: true, extras: [] }), this.hasResponse)
-      await this.pendingMessage
-      clearTimeout(timeout)
-    }
   }
 
   public respond(responseRaw: string[]) {

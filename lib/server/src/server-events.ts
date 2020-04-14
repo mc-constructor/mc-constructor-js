@@ -16,7 +16,7 @@ import {
   parseAttackedEntityEvent,
   parseEntityEvent
 } from './event/entity'
-import { parseMinigameEvent, parseMinigameStartEvent } from './event/minigame'
+import { parseMinigameStartEvent } from './event/minigame'
 import { parsePlayerEvent } from './event/player-event'
 import { parseMessage, ServerEvent } from './event/server-event'
 import { localToken } from './local-token'

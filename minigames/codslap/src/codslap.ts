@@ -1,8 +1,8 @@
 import { Inject } from '@dandi/core'
-import { actionbar, rawCmd, text, title } from '@minecraft/core/cmd'
-import { addScore, listPlayerScores } from '@minecraft/core/cmd'
+import { actionbar, addScore, listPlayerScores, rawCmd, text, title } from '@minecraft/core/cmd'
 import { Command } from '@minecraft/core/command'
 import { randomInt } from '@minecraft/core/common'
+import { Players } from '@minecraft/core/players'
 import {
   AttackedByPlayerEvent,
   AttackedEntityEvent,
@@ -12,7 +12,6 @@ import {
   EntityEvent,
   eventType,
   PlayerEvent,
-  Players,
   ServerEvents,
   ServerEventType
 } from '@minecraft/core/server'
@@ -138,9 +137,9 @@ export class CodslapMinigame implements Minigame {
     for (let index = 0; index < creeperCount; index++) {
       rawCmd(`summon creeper ${this.common.getRandomSpawn()}`).execute(this.client)
     }
-    const sheepCount = randomInt(10, 20)
-    for (let index = 0; index < sheepCount; index++) {
-      rawCmd(`summon sheep ${this.common.getRandomSpawn()} {Attributes:[{Name:generic.maxHealth,Base:2}],Health:2}`).execute(this.client)
+    const cowCount = randomInt(10, 20)
+    for (let index = 0; index < cowCount; index++) {
+      rawCmd(`summon cow ${this.common.getRandomSpawn()} {Attributes:[{Name:generic.maxHealth,Base:2}],Health:2}`).execute(this.client)
     }
   }
 

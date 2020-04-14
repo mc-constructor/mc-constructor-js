@@ -23,6 +23,8 @@ export type ClientMessage = [Uuid, string[]]
 
 export interface Client {
   send(type: MessageType, buffer?: Uint8Array | string, hasResponse?: boolean | number): PendingMessage<ClientMessageResponse>
+
+  // TODO: move this out to a different interface
   readonly messages$: Observable<ClientMessage>
 }
 
