@@ -18,7 +18,6 @@ class CompiledWaitMessage implements CompiledMessage {
   }
 
   public execute(): PendingMessage {
-    console.debug('wait: waiting', this.duration)
     setTimeout(this.onComplete, this.duration)
     return this.pendingMessage
   }

@@ -11,6 +11,7 @@
   "dependencies": {
     "@dandi/common": "^1.0.0-alpha.54",
     "@dandi/core": "^1.0.0-alpha.54",
+    "colors": "^1.4.0",
     "dotenv": "^8.2.0",
     "luxon": "^1.23.0",
     "rcon-client": "^4.2.0",
@@ -18,6 +19,7 @@
     "uuid": "^7.0.3"
   },
   "devDependencies": {
+    "@dandi/logging": "^1.0.0-alpha.54",
     "@types/chai": "^4.2.11",
     "@types/chai-as-promised": "^7.1.2",
     "@types/mocha": "^7.0.2",

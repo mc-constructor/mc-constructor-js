@@ -1,6 +1,6 @@
-import { InjectionToken, Provider } from '@dandi/core'
+import { InjectionToken, Logger, Provider } from '@dandi/core'
 import { Observable, OperatorFunction } from 'rxjs'
-import { filter, map, share, tap } from 'rxjs/operators'
+import { filter, map, share } from 'rxjs/operators'
 
 import { Client } from './client'
 import {
@@ -80,7 +80,7 @@ export const ServerEvents: InjectionToken<ServerEvents> = localToken.opinionated
 
 export const ServerEventsProvider: Provider<ServerEvents> = {
   provide: ServerEvents,
-  useFactory(client: Client): ServerEvents {
+  useFactory(client: Client, logger: Logger): ServerEvents {
     return client.messages$
       .pipe(
         map(parseMessage),
@@ -88,17 +88,12 @@ export const ServerEventsProvider: Provider<ServerEvents> = {
           if (PARSERS[event.type]) {
             return true
           }
-          console.warn(`No parser for ${event.type}`, event)
+          logger.warn(`No parser for ${event.type}`, event)
           return false
         }),
         map(event => PARSERS[event.type](event)),
-        tap(event => {
-          if (event.type !== ServerEventType.entityLivingAttack && event.type !== ServerEventType.entityLivingDamage) {
-            console.debug.bind(console, 'event:')
-          }
-        }),
         share(),
       )
   },
-  deps: [Client],
+  deps: [Client, Logger],
 }

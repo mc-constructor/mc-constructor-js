@@ -1,7 +1,8 @@
 import { readdirSync, statSync } from 'fs'
 import { resolve, join } from 'path'
 
-import { Injectable, Registerable } from '@dandi/core'
+import { Disposable } from '@dandi/common'
+import { Inject, Injectable, Logger, Registerable } from '@dandi/core'
 
 import { MinigameDescriptor } from './minigame'
 
@@ -25,19 +26,26 @@ export interface GameInfo extends MinigameDescriptor {
 
 export interface LoadedGameInfo extends GameInfo {
   providers: Registerable[]
+  cleanupTasks: (() => void)[]
 }
 
 @Injectable()
-export class MinigameLoader {
+export class MinigameLoader implements Disposable {
+
+  private readonly loadedGames = new Map<string, LoadedGameInfo>()
+
+  constructor(@Inject(Logger) private logger: Logger) {
+  }
 
   public loadMinigame(game: GameInfo): LoadedGameInfo {
-    this.cleanupMinigame(game)
+    this.logger.info('loading game:', game.title)
+    const existingLoadedGame = this.loadedGames.get(game.key)
+    if (existingLoadedGame) {
+      this.cleanupMinigame(existingLoadedGame)
+    }
     const loadedGame = this.getGameInfo(game.key)
-    return Object.assign({
-      providers: [
-        loadedGame.module,
-      ],
-    }, loadedGame)
+    this.loadedGames.set(loadedGame.key, loadedGame)
+    return loadedGame
   }
 
   public listGames(): GameInfo[] {
@@ -54,14 +62,14 @@ export class MinigameLoader {
         try {
           return this.getGameInfo(name)
         } catch (err) {
-          console.warn(err)
+          this.logger.warn(err)
           return undefined
         }
       })
       .filter(game => !!game)
   }
 
-  private getGameInfo(key: string): GameInfo {
+  private getGameInfo(key: string): LoadedGameInfo {
     const relativePath = join('..', key)
     const rootPath = resolve(__dirname, relativePath)
     const descriptor = require(relativePath).default
@@ -69,13 +77,25 @@ export class MinigameLoader {
       key,
       rootPath,
       relativePath,
+      providers: [
+        descriptor.module,
+      ],
+      cleanupTasks: [],
     }, descriptor)
   }
 
-  public cleanupMinigame(info: GameInfo) {
+  public cleanupMinigame(info: LoadedGameInfo) {
+    this.logger.info(`${info.title}: cleaning up previous instance`)
     const gameFiles = findFiles(info.rootPath)
+    info.cleanupTasks.forEach(task => task())
     info.cleanup()
     gameFiles.forEach(file => delete require.cache[file])
+    this.loadedGames.delete(info.key)
+  }
+
+  public dispose(reason: string): void {
+    [...this.loadedGames.values()].forEach(game => this.cleanupMinigame(game))
+    this.loadedGames.clear()
   }
 
 }

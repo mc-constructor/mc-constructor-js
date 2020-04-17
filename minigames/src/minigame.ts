@@ -1,6 +1,7 @@
 import { Constructor } from '@dandi/common'
 import { Injectable, InjectionToken, Module } from '@dandi/core'
 import { Command } from '@minecraft/core/command'
+import { Observable } from 'rxjs'
 
 import { GameScope } from './game-scope'
 import { localToken } from './local-token'
@@ -14,7 +15,7 @@ export interface Minigame {
   readonly init: Command
   validateGameState(): Command
   ready(): Command
-
+  run: Observable<any>
 }
 
 const MinigameToken: InjectionToken<Minigame> = localToken.opinionated<Minigame>('Minigame', {
@@ -26,26 +27,30 @@ export interface MinigameConstructor {
   new (...args: any[]): Minigame
 }
 
-export interface MinigameDescriptor {
+export interface MinigameMetadata {
   readonly key: string
   readonly version: number
   readonly title: string
   readonly description?: string
+
+}
+
+export interface MinigameDescriptor extends MinigameMetadata {
   readonly module: Module
   cleanup(): void
 }
 
-export function getMinigameMeta(target: Constructor<Minigame>): MinigameDescriptor {
+export function getMinigameMeta(target: Constructor<Minigame>): MinigameMetadata {
   return Reflect.get(target, MINIGAME_META)
 }
 
-function MinigameDecorator(descriptor: MinigameDescriptor): ClassDecorator {
+function MinigameDecorator(descriptor: MinigameMetadata): ClassDecorator {
   return function minigameDecorator(target) {
     Injectable(MinigameDecorator)(target)
     Reflect.set(target, MINIGAME_META, descriptor)
   }
 }
 
-export type MinigameDecorator = (descriptor: MinigameDescriptor) => ClassDecorator
+export type MinigameDecorator = (descriptor: MinigameMetadata) => ClassDecorator
 
 export const Minigame: MinigameDecorator = Object.assign(MinigameDecorator, MinigameToken)

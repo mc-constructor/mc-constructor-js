@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@dandi/core'
+import { Inject, Injectable, Logger } from '@dandi/core'
 import {
   Client,
   eventType,
@@ -11,7 +11,7 @@ import { Observable, Observer } from 'rxjs'
 import { switchMapTo, tap } from 'rxjs/operators'
 
 import { register, unregister } from './cmd/register-minigame'
-import { GameInfo, MinigameLoader } from './minigame-loader'
+import { GameInfo, LoadedGameInfo, MinigameLoader } from './minigame-loader'
 import { MinigameRunner } from './minigame-runner'
 
 @Injectable()
@@ -26,6 +26,7 @@ export class MinigameManager {
     @Inject(ServerEvents) events$: ServerEvents,
     @Inject(MinigameLoader) private loader: MinigameLoader,
     @Inject(MinigameRunner) private runner: MinigameRunner,
+    @Inject(Logger) private logger: Logger,
   ) {
     const init$ = new Observable<void>(this.init.bind(this, loader.listGames()))
     this.minigame$ = init$.pipe(
@@ -47,7 +48,7 @@ export class MinigameManager {
     this.runner.runGame(loadedGame)
   }
 
-  protected init(games: GameInfo[], o: Observer<void>): () => void {
+  protected init(games: LoadedGameInfo[], o: Observer<void>): () => void {
     games.forEach(game => {
       register(game).execute(this.client)
       this.games.set(game.key, game)
@@ -55,7 +56,6 @@ export class MinigameManager {
     o.next()
     return () => {
       [...this.games.values()].forEach(game => {
-        this.loader.cleanupMinigame(game)
         unregister(game).execute(this.client)
         this.games.delete(game.key)
       })

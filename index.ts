@@ -1,7 +1,10 @@
-import { DandiApplication, EntryPoint, Inject, Injectable } from '@dandi/core'
-import { tap } from 'rxjs/operators'
+import { DandiApplication, EntryPoint, Inject, Injectable, Logger, LogLevel } from '@dandi/core'
+import { ConsoleLogListener, LoggingModule } from '@dandi/core/logging'
+import { PrettyColorsLogging } from '@dandi/logging'
 
+import { CommonModule, LoggerFactory } from './lib/common'
 import { Players, PlayersModule } from './lib/players'
+import { ScoreboardModule } from './lib/scoreboard'
 import { Client, ServerModule } from './lib/server'
 import { MinigameManager, MinigameModule } from './minigames'
 
@@ -14,30 +17,29 @@ class Init implements EntryPoint {
     @Inject(Players) private players: Players,
     @Inject(Client) private readonly client: Client,
     @Inject(MinigameManager) private readonly minigame: MinigameManager,
+    @Inject(Logger) private logger: Logger,
+    @Inject(LoggerFactory) loggerFactory: LoggerFactory,
   ) {
-    console.log('Init')
+    this.logger.info('ctr')
+    loggerFactory.init()
   }
 
   public async run(): Promise<void> {
-    this.players.players$.pipe(
-      tap(players => {
-        if (players.length) {
-          // this.cmds.commands['game'].exec(['start', 'codslap'])
-          // this.minigame.startGame('codslap')
-        }
-      })
-    )
-      .subscribe(console.log.bind(console, 'Players')) // REQUIRED in order to correctly track players
-    this.minigame.minigame$.subscribe();
+    this.players.players$.subscribe(this.logger.debug.bind(this.logger, 'Players')) // REQUIRED in order to correctly track players
+    this.minigame.minigame$.subscribe()
   }
 
 }
 
 const app = new DandiApplication({
   providers: [
+    CommonModule,
     Init,
+    LoggingModule.use(ConsoleLogListener),
     MinigameModule,
     PlayersModule,
+    PrettyColorsLogging.set({ filter: LogLevel.info}),
+    ScoreboardModule,
     ServerModule,
   ]
 })

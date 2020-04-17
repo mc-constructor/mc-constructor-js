@@ -138,3 +138,5 @@ export abstract class TextCommand extends SimpleArgsCommand {
     return `${this.target} [${this.text}]`;
   }
 }
+
+export type TextComponent = TextBuilder | TextFragmentBuilder

@@ -1,20 +1,16 @@
 import { Inject, Injectable } from '@dandi/core'
 import {
-  addObjective,
   block,
   clear,
   clearEffect,
   FillMethod,
   gamerule,
   giveEffect,
-  ObjectiveDisplaySlot,
   rawCmd,
-  removeObjectives,
-  setObjectiveDisplay,
-  text,
   time,
   weather,
   wait,
+  kill,
 } from '@minecraft/core/cmd'
 import { Command, MultiCommand, parallel, series } from '@minecraft/core/command'
 import { randomInt, range } from '@minecraft/core/common'
@@ -22,22 +18,6 @@ import { Players } from '@minecraft/core/players'
 import { Block, Effect } from '@minecraft/core/types'
 
 import { CommonCommands } from './common'
-
-/*
- * ideas:
- *   - ice platform
- *   - platform shrinks
- *   - randomly spawn creepers / tnt minecart (use data to make it less explosive?)
- *   - collect
- *   - cage and platform made of bedrock / hole in the middle
- *   - collecting food drops increases satiation
- *   - collecting wool heals you
- *   - collecting gunpowder grants/upgrades armor
- *   - can we detect missed attacks?
- *   - increase knockback level with successful slaps (e.g. 10 slaps = level++)
- *   - killing player takes a random piece of armor or fish if it is better
- *
- */
 
 @Injectable()
 export class CodslapInitCommand extends MultiCommand {
@@ -58,8 +38,6 @@ export class CodslapInitCommand extends MultiCommand {
       parallel(
         this.initRules(),
         this.initArena(),
-        this.resetObjectives(),
-        this.initObjectives(),
       ),
       wait(1500),
       parallel(
@@ -108,24 +86,6 @@ export class CodslapInitCommand extends MultiCommand {
     )
   }
 
-  protected resetObjectives(): Command {
-    return removeObjectives('codslap', 'codslap_m_kill', 'codslap_p_kill')
-  }
-
-  protected initObjectives(): Command {
-    return series(
-      parallel(
-        addObjective('codslap', 'dummy', text('CODSLAP!')),
-        addObjective('codslap_m_kill', 'dummy'),
-        addObjective('codslap_p_kill', 'dummy', text('CODSLAP KILL!').bold),
-      ),
-      parallel(
-        setObjectiveDisplay(ObjectiveDisplaySlot.belowName, 'codslap'),
-        setObjectiveDisplay(ObjectiveDisplaySlot.sidebar, 'codslap_p_kill'),
-      ),
-    )
-  }
-
   protected initArena(): Command {
     const baseStart = this.common.baseStart
     const baseEnd = this.common.baseEnd
@@ -138,8 +98,8 @@ export class CodslapInitCommand extends MultiCommand {
       )
     const moatContainer = block(Block.glass)
       .fill(
-        baseStart.modify.up(5),
-        baseEnd,
+        baseStart.modify.up(5).modify.west(1).modify.north(1),
+        baseEnd.modify.east(1).modify.south(1),
         FillMethod.outline,
       )
     const lava = block(Block.lava)
@@ -185,8 +145,8 @@ export class CodslapInitCommand extends MultiCommand {
       )
 
     return parallel(
-      rawCmd(`kill @e[type=item]`),
-      rawCmd(`kill @e[type=!player]`),
+      kill(`@e[type=!player]`),
+      kill(`@e[type=item]`),
       reset,
       cage,
       moatContainer,
@@ -207,7 +167,7 @@ export class CodslapInitCommand extends MultiCommand {
       rawCmd(`summon cow ${this.common.getRandomSpawn()} {Attributes:[{Name:generic.maxHealth,Base:2}],Health:2}`))
     return parallel(
       ...playerTeleports,
-      ...this.common.resetPlayer('@a'),
+      this.common.resetPlayer('@a'),
       rawCmd(`gamemode adventure @a`, 1500),
       ...cows,
     )

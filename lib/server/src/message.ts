@@ -110,10 +110,11 @@ export abstract class SimpleMessage<TResponse extends any = any> extends Message
   }
 
   public execute(client: Client): PendingMessage<TResponse> {
-    return this.makeResponse(client.send(this.type, this.getMessageBody(), this.hasResponse))
+    const body = this.getMessageBody()
+    return this.makeResponse(client.send(this.type, body, this.hasResponse), body)
   }
 
-  private makeResponse(pending: PendingMessage<ClientMessageResponse>): PendingMessage<TResponse> {
+  private makeResponse(pending: PendingMessage<ClientMessageResponse>, body: string | Uint8Array): PendingMessage<TResponse> {
     return extendPendingMessage(pending, new Promise<TResponse>(async (resolve, reject) => {
       const response = await pending
       if (!response) {
@@ -123,7 +124,7 @@ export abstract class SimpleMessage<TResponse extends any = any> extends Message
       if (response.success === true) {
         return resolve(this.parseSuccessResponse(response))
       }
-      const err = this.parseFailedResponse(response)
+      const err = this.parseFailedResponse(response, body)
       if (this.allowedErrorKeys.includes(err.type)) {
         return resolve()
       }
@@ -137,9 +138,9 @@ export abstract class SimpleMessage<TResponse extends any = any> extends Message
     return undefined
   }
 
-  protected parseFailedResponse(response: ClientMessageFailedResponse): MessageError {
+  protected parseFailedResponse(response: ClientMessageFailedResponse, body: string | Uint8Array): MessageError {
     const [key, message] = response.extras
-    return new MessageError(key, message)
+    return new MessageError(key, message, body)
   }
 
 }

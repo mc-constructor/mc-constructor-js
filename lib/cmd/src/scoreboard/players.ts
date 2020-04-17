@@ -4,6 +4,7 @@ import { ScoreboardCommand, ScoreboardSubCommand } from './scoreboard'
 
 enum PlayersSubCommand {
   add = 'add',
+  set = 'set',
   list = 'list',
 }
 
@@ -43,6 +44,22 @@ class ScoreboardAddPlayerScoreCommand extends ScoreboardPlayersCommand {
   }
 }
 
+class ScoreboardSetPlayerScoreCommand extends ScoreboardPlayersCommand {
+  protected readonly subCommand = PlayersSubCommand.set
+
+  constructor(
+    public readonly target: string,
+    public readonly objectiveId: string,
+    public readonly value: number,
+  ) {
+    super()
+  }
+
+  protected formatSubCommandArgs(): string {
+    return [this.target, this.objectiveId, this.value].join(' ')
+  }
+}
+
 export function listScoreboardPlayers(): Command {
   return new ScoreboardPlayerListCommand()
 }
@@ -60,4 +77,8 @@ export function listAllPlayerScores(): Command {
 
 export function addScore(target: string, objectiveId: string, value: number): Command {
   return new ScoreboardAddPlayerScoreCommand(target, objectiveId, value)
+}
+
+export function setScore(target: string, objectiveId: string, value: number): Command {
+  return new ScoreboardSetPlayerScoreCommand(target, objectiveId, value)
 }

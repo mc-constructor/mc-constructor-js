@@ -2,7 +2,7 @@ import { createConnection, Socket } from 'net'
 import { TextEncoder } from 'util'
 
 import { Uuid } from '@dandi/common'
-import { Injectable } from '@dandi/core'
+import { Inject, Injectable, Logger } from '@dandi/core'
 import { Observable } from 'rxjs'
 import { share } from 'rxjs/operators'
 
@@ -18,6 +18,7 @@ const DELIMITER_BUF = enc.encode(DELIMITER)
 class CompiledSocketMessage extends CompiledSimpleMessage<ClientMessageResponse> {
 
   constructor(
+    private logger: Logger,
     conn: Socket,
     public readonly type: MessageType,
     public readonly body: Uint8Array | string,
@@ -42,10 +43,10 @@ class CompiledSocketMessage extends CompiledSimpleMessage<ClientMessageResponse>
       body,
       DELIMITER_BUF
     ])
-    console.log('sending to server:', content.toString('utf-8'))
+    this.logger.debug('sending to server:', content.toString('utf-8'))
     conn.write(content, (err) => {
       if (err) {
-        console.error('error', this, err)
+        this.logger.error(this, err)
         return this.onSendErr(err)
       }
 
@@ -85,18 +86,19 @@ export class SocketClient implements Client {
 
   private buffer = ''
 
-  constructor() {
+  constructor(
+    @Inject(Logger) private logger: Logger,
+  ) {
     this.messages$ = new Observable<[Uuid, string[]]>(o => {
       this.next = o.next.bind(o)
       this.error = o.error.bind(o)
       this.conn = createConnection({ port: PORT }, this.onConnected)
       this.conn.on('end', () => {
-        console.log('connection closed')
+        logger.debug('connection closed')
         o.complete()
       })
       this.conn.on('data', chunk => {
         const data = chunk.toString()
-        // console.log('received chunk', data)
         this.buffer += data
         this.checkBuffer()
       })
@@ -114,7 +116,7 @@ export class SocketClient implements Client {
   }
 
   public send(type: MessageType, buffer?: Uint8Array | string, hasResponse?: boolean | number): PendingMessage {
-    const msg = new CompiledSocketMessage(this.conn, type, buffer, hasResponse)
+    const msg = new CompiledSocketMessage(this.logger, this.conn, type, buffer, hasResponse)
     this.outgoing.push(msg)
     this.checkQueue()
     return msg.pendingMessage
@@ -122,15 +124,13 @@ export class SocketClient implements Client {
 
   private async init(): Promise<void> {
     await this.connected
-    console.log('connected.')
+    this.logger.info('connected.')
     this.isConnected = true
-    // console.log('writing delimiter');
     this.conn.write(DELIMITER + '\n', (err: Error) => {
       if (err) {
         this.error(err)
-        console.error('error writing delimiter', err);
+        this.logger.error('error writing delimiter', err);
       }
-      // console.log('wrote delimiter')
     })
   }
 
@@ -148,17 +148,13 @@ export class SocketClient implements Client {
   }
 
   private checkBuffer(): void {
-    // console.log('checking buffer')
     const responseEndIndex = this.buffer.indexOf(DELIMITER)
     if (responseEndIndex < 0) {
-      // console.log('no delimiter yet')
       return
     }
 
     const response = this.buffer.substring(0, responseEndIndex)
-    // console.log('found response:', response)
     this.buffer = this.buffer.substring(responseEndIndex + DELIMITER.length)
-    // console.log('reassigned buffer', this.buffer)
     this.handleResponse(response)
     setTimeout(this.checkBuffer, 0)
   }
@@ -167,7 +163,7 @@ export class SocketClient implements Client {
     if (!this.isReady) {
       this.isReady = true
       this.onReady()
-      console.log('client ready')
+      this.logger.debug('client ready')
     }
 
     if (!response) {

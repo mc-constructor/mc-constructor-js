@@ -1,3 +1,5 @@
+import { Constructor } from '@dandi/common'
+import { loggerFactory } from '../../common'
 import {
   Client,
   CompiledMessage,
@@ -33,6 +35,7 @@ export abstract class MultiCommand extends Command {
   public readonly instanceId = MultiCommand.nextInstanceId++
 
   protected abstract readonly parallel: boolean
+  private readonly logger = loggerFactory.getLogger(this.constructor as Constructor)
 
   public compileMessage(client: Client): CompiledMessage {
     const context = new MultiCommandExecutionContext(client, this.compile())
@@ -55,12 +58,12 @@ export abstract class MultiCommand extends Command {
         remaining.delete(msg.pendingMessage)
         clearTimeout(logTimeout)
         if (remaining.size) {
-          console.debug(`${this.constructor.name}: ${remaining.size} responses remaining`)
+          this.logger.debug(`${this.constructor.name}: ${remaining.size} responses remaining`)
           logTimeout = setTimeout(() => {
-            console.debug(`${this.constructor.name}: ${remaining.size} responses remaining`, remaining)
+            this.logger.info(`${this.constructor.name}: ${remaining.size} responses remaining`, remaining)
           }, 2500)
         } else {
-          console.debug(`${this.constructor.name} complete`)
+          this.logger.debug(`${this.constructor.name} complete`)
         }
       })
 

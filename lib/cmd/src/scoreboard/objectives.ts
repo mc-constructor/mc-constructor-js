@@ -37,6 +37,16 @@ export enum TeamColor {
   yellow = 'yellow',
 }
 
+export type NonTeamDisplaySlot = Exclude<ObjectiveDisplaySlot, ObjectiveDisplaySlot.sidebarTeam>
+export type SlotTeamColor<TSlot extends ObjectiveDisplaySlot> = TSlot extends ObjectiveDisplaySlot.sidebarTeam ? TeamColor : never
+
+export interface ObjectiveDisplayObj<TSlot extends ObjectiveDisplaySlot> {
+  slot: TSlot
+  color: TSlot extends ObjectiveDisplaySlot.sidebarTeam ? never : TeamColor,
+}
+
+export type ObjectiveDisplay = ObjectiveDisplayObj<any> | ObjectiveDisplaySlot
+
 abstract class ObjectivesCommand<TResponse = void> extends ScoreboardCommand<ObjectivesSubCommand, TResponse> {
   protected readonly scoreboardCommand: ScoreboardSubCommand = ScoreboardSubCommand.objectives
 }
@@ -95,21 +105,19 @@ class UpdateObjectiveDisplayNameCommand extends ObjectiveCommand<boolean> {
 
 class UpdateObjectiveDisplayCommand extends ObjectivesCommand<boolean> {
   protected readonly subCommand = ObjectivesSubCommand.setDisplay
+  protected readonly allowedErrorKeys: string[]
 
+  public readonly slot: ObjectiveDisplaySlot
   public readonly teamColor: TeamColor
   public readonly id: string
 
-  constructor(
-    public readonly slot: ObjectiveDisplaySlot,
-    teamColorOrId?: TeamColor | string,
-    id?: string,
-  ) {
+  constructor({ slot, color, id }: ObjectiveDisplayArgs) {
     super()
-    if (slot === ObjectiveDisplaySlot.sidebarTeam) {
-      this.teamColor = teamColorOrId as TeamColor
-      this.id = id
-    } else {
-      this.id = teamColorOrId
+    this.slot = slot
+    this.teamColor = color
+    this.id = id
+    if (!id) {
+      this.allowedErrorKeys = ['commands.scoreboard.objectives.display.alreadyEmpty']
     }
   }
 
@@ -148,19 +156,52 @@ export function removeObjectives(...ids: string[]): Command {
   )
 }
 
+export interface ObjectiveDisplayArgs {
+  slot: ObjectiveDisplaySlot
+  color?: TeamColor
+  id?: string
+}
+
+export function objectiveDisplayArgs(slot: NonTeamDisplaySlot, id: string): ObjectiveDisplayArgs
+export function objectiveDisplayArgs<TSlot extends ObjectiveDisplaySlot>(display: ObjectiveDisplayObj<TSlot>, id: string): ObjectiveDisplayArgs
+export function objectiveDisplayArgs<TSlot extends ObjectiveDisplaySlot>(slot: TSlot, teamColor: SlotTeamColor<TSlot>, id: string): ObjectiveDisplayArgs
+export function objectiveDisplayArgs<TSlot extends ObjectiveDisplaySlot>(displayOrSlot: TSlot | ObjectiveDisplayObj<TSlot>, teamColorOrId: SlotTeamColor<TSlot> | string, id?: string): ObjectiveDisplayArgs
+export function objectiveDisplayArgs<TSlot extends ObjectiveDisplaySlot>(displayOrSlot: TSlot | ObjectiveDisplayObj<TSlot>, teamColorOrId: SlotTeamColor<TSlot> | string, id?: string): ObjectiveDisplayArgs {
+  let display: ObjectiveDisplayObj<TSlot>
+  if (typeof displayOrSlot === 'object') {
+    display = displayOrSlot
+    id = teamColorOrId
+  } else if (displayOrSlot === ObjectiveDisplaySlot.sidebarTeam) {
+    display = {
+      slot: displayOrSlot,
+      color: teamColorOrId as ObjectiveDisplayObj<TSlot>['color'],
+    }
+  } else {
+    display = {
+      slot: displayOrSlot,
+    } as ObjectiveDisplayObj<TSlot>
+    id = teamColorOrId
+  }
+  return Object.assign(display, { id })
+}
+
 export function setObjectiveDisplayName(id: string, displayName: TextBuilder | TextFragmentBuilder): Command {
   return new UpdateObjectiveDisplayNameCommand(id, displayName);
 }
 
-export function setObjectiveDisplay(slot: Exclude<ObjectiveDisplaySlot, 'sidebarTeam'>, id: string): Command
-export function setObjectiveDisplay(slot: ObjectiveDisplaySlot.sidebarTeam, teamColor: TeamColor, id: string): Command
-export function setObjectiveDisplay(slot: ObjectiveDisplaySlot, teamColorOrId?: TeamColor | string, id?: string): Command {
-  return new UpdateObjectiveDisplayCommand(slot, teamColorOrId, id)
+export function setObjectiveDisplay(slot: NonTeamDisplaySlot, id: string): Command
+export function setObjectiveDisplay<TSlot extends ObjectiveDisplaySlot>(display: ObjectiveDisplay, id: string): Command
+export function setObjectiveDisplay<TSlot extends ObjectiveDisplaySlot>(display: ObjectiveDisplayObj<TSlot>, id: string): Command
+export function setObjectiveDisplay<TSlot extends ObjectiveDisplaySlot>(slot: TSlot, teamColor: SlotTeamColor<TSlot>, id: string): Command
+export function setObjectiveDisplay<TSlot extends ObjectiveDisplaySlot>(displayOrSlot: TSlot | ObjectiveDisplayObj<TSlot>, teamColorOrId: SlotTeamColor<TSlot> | string, id?: string): Command {
+  return new UpdateObjectiveDisplayCommand(objectiveDisplayArgs(displayOrSlot, teamColorOrId, id))
 }
 
-export function clearObjectiveDisplay(slot: ObjectiveDisplaySlot.sidebarTeam, teamColor: TeamColor): Command
-export function clearObjectiveDisplay(slot: Exclude<ObjectiveDisplaySlot, 'sidebarTeam'>, teamColor: TeamColor): Command
-export function clearObjectiveDisplay(slot: ObjectiveDisplaySlot, teamColor?: TeamColor): Command {
-  return new UpdateObjectiveDisplayCommand(slot, teamColor)
+export function clearObjectiveDisplay(slot: NonTeamDisplaySlot): Command
+export function clearObjectiveDisplay(display: ObjectiveDisplay): Command
+export function clearObjectiveDisplay<TSlot extends ObjectiveDisplaySlot>(display: ObjectiveDisplayObj<TSlot>): Command
+export function clearObjectiveDisplay<TSlot extends ObjectiveDisplaySlot>(slot: TSlot, teamColor: SlotTeamColor<TSlot>): Command
+export function clearObjectiveDisplay<TSlot extends ObjectiveDisplaySlot>(displayOrSlot: TSlot, teamColor?: SlotTeamColor<TSlot>): Command {
+  return new UpdateObjectiveDisplayCommand(objectiveDisplayArgs(displayOrSlot, teamColor))
 }
 
