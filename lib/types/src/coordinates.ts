@@ -6,6 +6,7 @@ export interface AxisValueWrapper {
   plus(value: number): this
   minus(value: number): this
   valueOf(): number
+  between(a: number, b: number): boolean
 
 }
 export type AxisValue = AxisValueWrapper & number
@@ -19,7 +20,7 @@ export interface AxisValueConstructor {
   new (value: number): AxisValue
 }
 
-class AxisValueImp extends Number {
+class AxisValueImp extends Number implements AxisValueWrapper {
 
   protected readonly display: string
   protected readonly ctr = this.constructor as any
@@ -45,6 +46,11 @@ class AxisValueImp extends Number {
     return this.make(this.valueOf() - value)
   }
 
+  public between(a: SimpleAxisValue, b: SimpleAxisValue): boolean {
+    return (a > this.value && this.value > b) ||
+      (b > this.value && this.value > a)
+  }
+
   public toString(): string {
     return this.display
   }
@@ -60,33 +66,21 @@ export function axisValue(value: number | AxisValue): AxisValue {
   return typeof value === 'number' ? new AxisValue(value) : value
 }
 
-export class RelativeAxisValue extends AxisValueImp {
-
-  constructor(value) {
-    super(value)
-  }
-
-  protected formatDisplay(value: number): string {
-    return `~${value}`
-  }
-
-}
-
 export type SimpleAxisValue = number | AxisValue
 
 export interface SimpleCoordinateXYZ {
-  x: SimpleAxisValue
-  y: SimpleAxisValue
-  z: SimpleAxisValue
+  readonly x: SimpleAxisValue
+  readonly y: SimpleAxisValue
+  readonly z: SimpleAxisValue
 }
 
 export type Axis = keyof SimpleCoordinateXYZ
 export const Axis: ['x', 'y', 'z'] = ['x', 'y', 'z']
 
 export interface Tuple3<TValue> extends Iterable<TValue>, ArrayLike<TValue> {
-  0: TValue
-  1: TValue
-  2: TValue
+  readonly 0: TValue
+  readonly 1: TValue
+  readonly 2: TValue
   length: 3
   map<U>(
     callbackfn: (value: TValue, index: number, array: any) => U,
@@ -151,12 +145,12 @@ export interface ModifyCoordinates<TReturn> {
 }
 
 export interface Coordinates extends Iterable<AxisValue> {
-  x: AxisValue
-  y: AxisValue
-  z: AxisValue
-  0: AxisValue
-  1: AxisValue
-  2: AxisValue
+  readonly x: AxisValue
+  readonly y: AxisValue
+  readonly z: AxisValue
+  readonly 0: AxisValue
+  readonly 1: AxisValue
+  readonly 2: AxisValue
   modify: ModifyCoordinates<this>
   clone(): this
   join(str: string): string

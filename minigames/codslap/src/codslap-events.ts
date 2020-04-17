@@ -16,6 +16,7 @@ import {
 } from '@minecraft/core/server'
 import { merge, Observable, partition } from 'rxjs'
 import { filter, share, tap } from 'rxjs/operators'
+import { ArenaManager } from './arena-manager'
 
 import { CodslapObjectives } from './codslap-objectives'
 import { CommonCommands, isCodslapper } from './common'
@@ -40,6 +41,7 @@ export class CodslapEvents {
     @Inject(Players) private players$: Players,
     @Inject(CodslapObjectives) private readonly obj: CodslapObjectives,
     @Inject(CommonCommands) private common: CommonCommands,
+    @Inject(ArenaManager) private arena: ArenaManager,
     @Inject(SubscriptionTracker) private subs: SubscriptionTracker,
     @Inject(Logger) private logger: Logger,
   ) {
@@ -102,20 +104,13 @@ export class CodslapEvents {
   }
 
   private onPlayerDeath(event: EntityEvent): void {
-    rawCmd(`spawnpoint ${event.entityId} ${this.common.getRandomSpawn()}`).execute(this.client)
+    rawCmd(`spawnpoint ${event.entityId} ${this.arena.current.getRandomSpawn()}`).execute(this.client)
   }
 
   private onPlayerRespawn(event: PlayerEvent): void {
-    const creeperCount = randomInt(0, 6)
     this.common.resetPlayer(event.player.name).execute(this.client)
-    clearEffect('@').execute(this.client)
-    for (let index = 0; index < creeperCount; index++) {
-      rawCmd(`summon creeper ${this.common.getRandomSpawn()}`).execute(this.client)
-    }
-    const cowCount = randomInt(10, 20)
-    for (let index = 0; index < cowCount; index++) {
-      rawCmd(`summon cow ${this.common.getRandomSpawn()} {Attributes:[{Name:generic.maxHealth,Base:2}],Health:2}`).execute(this.client)
-    }
+    clearEffect(event.player.name).execute(this.client)
+    this.arena.current.onPlayerRespawn().execute(this.client)
   }
 
 }

@@ -16,6 +16,7 @@ import { Command, MultiCommand, parallel, series } from '@minecraft/core/command
 import { randomInt, range } from '@minecraft/core/common'
 import { Players } from '@minecraft/core/players'
 import { Block, Effect } from '@minecraft/core/types'
+import { ArenaManager } from './arena-manager'
 
 import { CommonCommands } from './common'
 
@@ -28,6 +29,7 @@ export class CodslapInitCommand extends MultiCommand {
   constructor(
     @Inject(Players) private players$: Players,
     @Inject(CommonCommands) private common: CommonCommands,
+    @Inject(ArenaManager) private arena: ArenaManager,
   ) {
     super()
   }
@@ -48,7 +50,7 @@ export class CodslapInitCommand extends MultiCommand {
   }
 
   protected initHoldingArea(): Command {
-    const holding = this.common.spawn.modify.up(100)
+    const holding = this.common.center.modify.up(120)
     const holdingArea = parallel(
       block(Block.whiteWool).fill(
         holding.modify.west(this.common.arenaSize).modify.north(this.common.arenaSize),
@@ -67,7 +69,7 @@ export class CodslapInitCommand extends MultiCommand {
   }
 
   protected removeHoldingArea(): Command {
-    const holding = this.common.spawn.modify.up(100)
+    const holding = this.common.center.modify.up(120)
     return block(Block.air).fill(
       holding.modify.west(this.common.arenaSize).modify.north(this.common.arenaSize),
       holding.modify.east(this.common.arenaSize).modify.south(this.common.arenaSize),
@@ -82,14 +84,13 @@ export class CodslapInitCommand extends MultiCommand {
       gamerule.doDaylightCycle.disable,
       gamerule.commandBlockOutput.disable,
       gamerule.sendCommandFeedback.enable,
-      rawCmd(`setworldspawn ${this.common.spawn}`),
+      // rawCmd(`setworldspawn ${this.common.spawn}`),
     )
   }
 
   protected initArena(): Command {
     const baseStart = this.common.baseStart
     const baseEnd = this.common.baseEnd
-    const center = this.common.center
     const cage = block(Block.ironBars)
     // const cage = block(Block.bedrock)
       .box(
@@ -114,36 +115,6 @@ export class CodslapInitCommand extends MultiCommand {
         cage.end.modify.down(25).modify.east(25).modify.south(25),
       )
 
-    const platformHeight = this.common.platformHeight
-    const platformStart = this.common.platformStart
-    const platformEnd = this.common.platformEnd
-    // const platformBlock = block(Block.honeycombBlock)
-    // const platformBlock = block(Block.packedIce)
-    // const platformBlock = block(Block.glass)
-    const platformBlock = block(Block.bedrock)
-    const platform = platformBlock
-      .fill(platformStart, platformEnd)
-
-    const holeSize = this.common.platformHoleSize
-
-    const platformHoleLip = platformBlock
-      .fill(
-        center.modify.west(holeSize + 1).modify.north(holeSize + 1).modify.up(this.common.platformHeight + 1),
-        center.modify.east(holeSize + 1).modify.south(holeSize + 1).modify.up(this.common.platformHeight),
-      )
-
-    const platformHole = block(Block.air)
-      .fill(
-        center.modify.west(holeSize).modify.north(holeSize).modify.up(platformHeight + 1),
-        center.modify.east(holeSize).modify.south(holeSize).modify.up(platformHeight),
-      )
-
-    const platformInnerVoid = block(Block.air)
-      .fill(
-        platform.start.modify.west(-1).modify.north(-1),
-        platform.end.modify.east(-1).modify.south(-1).modify.up(1),
-      )
-
     return parallel(
       kill(`@e[type=!player]`),
       kill(`@e[type=item]`),
@@ -151,24 +122,21 @@ export class CodslapInitCommand extends MultiCommand {
       cage,
       moatContainer,
       lava,
-      platform,
-      platformInnerVoid,
-      platformHoleLip,
-      platformHole,
+      this.arena.current.init(),
     )
   }
 
   protected initPlayers(): Command {
     const playerTeleports = this.players$.players.map(player =>
-      rawCmd(`teleport ${player.name} ${this.common.getRandomSpawn()}`))
+      rawCmd(`teleport ${player.name} ${this.arena.current.getRandomSpawn()}`))
 
     const cowCount = randomInt(10, 20)
     const cows = range(cowCount).map(() =>
-      rawCmd(`summon cow ${this.common.getRandomSpawn()} {Attributes:[{Name:generic.maxHealth,Base:2}],Health:2}`))
+      rawCmd(`summon cow ${this.arena.current.getRandomSpawn()} {Attributes:[{Name:generic.maxHealth,Base:2}],Health:2}`))
     return parallel(
       ...playerTeleports,
       this.common.resetPlayer('@a'),
-      rawCmd(`gamemode adventure @a`, 1500),
+      // rawCmd(`gamemode adventure @a`, 1500),
       ...cows,
     )
   }
