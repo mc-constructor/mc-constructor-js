@@ -2,8 +2,6 @@ import { Disposable } from '@dandi/common'
 import { InjectionToken, Provider } from '@dandi/core'
 import { Subscription } from 'rxjs'
 
-import { localToken } from './local-token'
-
 export type SubscriptionOwner = Disposable
 
 export interface SubscriptionTracker {

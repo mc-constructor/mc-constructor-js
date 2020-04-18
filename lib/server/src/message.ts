@@ -24,6 +24,8 @@ export function extendPendingMessage<TResponse>(pending: PendingMessage, promise
 export type ExecuteFn<TResponse> = () => PendingMessage<TResponse>
 
 export abstract class Message<TResponse extends any = any> {
+  public abstract readonly debug: string
+
   public execute(client: Client): PendingMessage<TResponse> {
     return this.compileMessage(client).execute()
   }
@@ -35,6 +37,7 @@ export interface CompiledMessage<TResponse = any> {
   pendingMessage: PendingMessage
   sent: Promise<void>
   execute: ExecuteFn<TResponse>
+  debug: string
 }
 
 export class CompiledSimpleMessage<TResponse = any> implements CompiledMessage<TResponse> {
@@ -51,6 +54,7 @@ export class CompiledSimpleMessage<TResponse = any> implements CompiledMessage<T
   constructor(
     protected readonly executeFn: ExecuteFn<TResponse>,
     protected readonly hasResponse: boolean | number,
+    public readonly debug: string,
     id?: string | Uuid,
   ) {
     this.id = id || Uuid.create()
@@ -105,6 +109,7 @@ export abstract class SimpleMessage<TResponse extends any = any> extends Message
     return new CompiledSimpleMessage(
       this.execute.bind(this, client),
       this.hasResponse,
+      this.debug,
       (this as any).id?.toString(),
     )
   }
@@ -147,6 +152,10 @@ export abstract class SimpleMessage<TResponse extends any = any> extends Message
 
 export abstract class SimpleArgsMessage<TArgs extends Array<any> = any[], TResponse extends any = any> extends SimpleMessage<TResponse> {
   protected readonly args: TArgs
+
+  public get debug(): string {
+    return this.getMessageBody().toString()
+  }
 
   protected constructor(...args: TArgs) {
     super()

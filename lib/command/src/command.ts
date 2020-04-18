@@ -22,6 +22,10 @@ export abstract class SimpleCommand<TResponse extends any = any> extends SimpleM
     return this.compile()
   }
 
+  public get debug() {
+    return this.toString()
+  }
+
   public get [Symbol.toStringTag](): string {
     return `[${this.constructor.name} ${this.toString()}]`
   }

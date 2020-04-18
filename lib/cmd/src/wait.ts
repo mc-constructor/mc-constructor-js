@@ -6,6 +6,7 @@ class CompiledWaitMessage implements CompiledMessage {
   public readonly id = 'wait'
   public readonly pendingMessage: PendingMessage
   public sent: Promise<void>
+  public readonly debug: string
 
   private onComplete: () => void
   private onSent: () => void
@@ -15,6 +16,7 @@ class CompiledWaitMessage implements CompiledMessage {
       this.onComplete = resolve
     }))
     this.sent = new Promise<void>(resolve => this.onSent = resolve)
+    this.debug = `wait ${this.duration}`
   }
 
   public execute(): PendingMessage {
@@ -24,6 +26,8 @@ class CompiledWaitMessage implements CompiledMessage {
 }
 
 class WaitCommand extends Command {
+  public readonly debug = `wait ${this.duration}`
+  
   constructor(public readonly duration: number) {
     super()
   }
@@ -31,6 +35,7 @@ class WaitCommand extends Command {
   public compileMessage(client: Client): CompiledMessage {
     return new CompiledWaitMessage(this.duration)
   }
+
 }
 
 export function wait(duration: number): Command {

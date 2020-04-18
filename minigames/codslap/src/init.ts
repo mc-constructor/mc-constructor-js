@@ -13,11 +13,10 @@ import {
   kill,
 } from '@minecraft/core/cmd'
 import { Command, MultiCommand, parallel, series } from '@minecraft/core/command'
-import { randomInt, range } from '@minecraft/core/common'
 import { Players } from '@minecraft/core/players'
 import { Block, Effect } from '@minecraft/core/types'
-import { ArenaManager } from './arena-manager'
 
+import { ArenaManager } from './arena-manager'
 import { CommonCommands } from './common'
 
 @Injectable()
@@ -44,7 +43,7 @@ export class CodslapInitCommand extends MultiCommand {
       wait(1500),
       parallel(
         this.initPlayers(),
-        this.removeHoldingArea(),
+        // this.removeHoldingArea(),
       ),
     ]
   }
@@ -69,7 +68,7 @@ export class CodslapInitCommand extends MultiCommand {
   }
 
   protected removeHoldingArea(): Command {
-    const holding = this.common.center.modify.up(120)
+    const holding = this.common.holdingCenter
     return block(Block.air).fill(
       holding.modify.west(this.common.arenaSize).modify.north(this.common.arenaSize),
       holding.modify.east(this.common.arenaSize).modify.south(this.common.arenaSize),
@@ -122,20 +121,13 @@ export class CodslapInitCommand extends MultiCommand {
       cage,
       moatContainer,
       lava,
-      this.arena.current.init(),
     )
   }
 
   protected initPlayers(): Command {
-
-    const cowCount = randomInt(10, 20)
-    const cows = range(cowCount).map(() =>
-      rawCmd(`summon cow ${this.arena.current.getRandomSpawn()} {Attributes:[{Name:generic.maxHealth,Base:2}],Health:2}`))
     return parallel(
-      ...playerTeleports,
       this.common.resetPlayer('@a'),
-      // rawCmd(`gamemode adventure @a`, 1500),
-      ...cows,
+      rawCmd('gamemode adventure @a', 1500),
     )
   }
 

@@ -23,11 +23,12 @@ class CompiledSocketMessage extends CompiledSimpleMessage<ClientMessageResponse>
     public readonly type: MessageType,
     public readonly body: Uint8Array | string,
     hasResponse: boolean | number,
+    debug: string,
   ) {
     super(() => {
       this.send(conn)
       return this.pendingMessage
-    }, hasResponse)
+    }, hasResponse, debug)
   }
 
   public send(conn: Socket): void {
@@ -116,7 +117,7 @@ export class SocketClient implements Client {
   }
 
   public send(type: MessageType, buffer?: Uint8Array | string, hasResponse?: boolean | number): PendingMessage {
-    const msg = new CompiledSocketMessage(this.logger, this.conn, type, buffer, hasResponse)
+    const msg = new CompiledSocketMessage(this.logger, this.conn, type, buffer, hasResponse, buffer?.toString())
     this.outgoing.push(msg)
     this.checkQueue()
     return msg.pendingMessage

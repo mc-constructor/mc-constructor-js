@@ -50,7 +50,7 @@ export class MinigameRunner {
         error: this.logger.error.bind(this.logger),
         complete: resolve,
       }
-      game.run.subscribe(gameObserver)
+      game.run$.subscribe(gameObserver)
     })
   }
 }

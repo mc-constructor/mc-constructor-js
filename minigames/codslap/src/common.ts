@@ -32,7 +32,7 @@ export class CommonCommands {
   public readonly baseStart = this.center.modify.west(this.arenaSize).modify.north(this.arenaSize)
   public readonly baseEnd = this.center.modify.east(this.arenaSize).modify.south(this.arenaSize)
 
-  public readonly holdingCenter = this.center.modify.up(120)
+  public readonly holdingCenter = this.center.modify.up(120).modify.west(100)
 
   constructor(
     @Inject(CodslapObjectives) private objectives: CodslapObjectives,

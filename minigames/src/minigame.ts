@@ -15,7 +15,7 @@ export interface Minigame {
   readonly init: Command
   validateGameState(): Command
   ready(): Command
-  run: Observable<any>
+  run$: Observable<any>
 }
 
 const MinigameToken: InjectionToken<Minigame> = localToken.opinionated<Minigame>('Minigame', {

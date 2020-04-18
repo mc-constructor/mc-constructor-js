@@ -2,7 +2,6 @@ import { block } from '@minecraft/core/cmd'
 import { Command, parallel } from '@minecraft/core/command'
 import { randomInt } from '@minecraft/core/common'
 import { area, Area, Block, Coordinates, loc } from '@minecraft/core/types'
-import { Observable, Observer } from 'rxjs'
 
 import { Arena, ArenaHooks } from './arena'
 
@@ -23,7 +22,7 @@ const NO_SPAWN_BLOCKS: Block[] = [
   Block.water,
 ]
 
-export abstract class PlatformArena extends Observable<any> implements Arena {
+export abstract class PlatformArena implements Arena {
 
   public abstract readonly layers: PlatformLayer[]
   public readonly hooks: ArenaHooks
@@ -58,13 +57,7 @@ export abstract class PlatformArena extends Observable<any> implements Arena {
     ]
   }
 
-  private o: Observer<any>
-
-  protected constructor(public readonly center: Coordinates) {
-    super(o => {
-      this.o = o
-    })
-  }
+  protected constructor(public readonly center: Coordinates) {}
 
   public cleanup(): Command {
     return this.fill(Block.air)
@@ -98,10 +91,6 @@ export abstract class PlatformArena extends Observable<any> implements Arena {
     this.spawnAreas.length = 0
     this.spawnBlacklist.length = 0
     return this.fill()
-  }
-
-  public dispose(reason: string): void {
-    this.o.complete
   }
 
   protected fill(resetBlock?: Block): Command {

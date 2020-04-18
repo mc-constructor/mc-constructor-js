@@ -6,7 +6,6 @@ import {
   CompiledSimpleMessage,
   ClientMessageResponse,
   MessageType,
-  PendingMessage
 } from '../../server'
 
 import { Command } from './command'
@@ -37,6 +36,10 @@ export abstract class MultiCommand extends Command {
   protected abstract readonly parallel: boolean
   private readonly logger = loggerFactory.getLogger(this.constructor as Constructor)
 
+  public get debug(): string {
+    return `${this.constructor.name}#${this.instanceId}`
+  }
+
   public compileMessage(client: Client): CompiledMessage {
     const context = new MultiCommandExecutionContext(client, this.compile())
     const id = `${this.constructor.name}#${this.instanceId}`
@@ -46,24 +49,28 @@ export abstract class MultiCommand extends Command {
   protected abstract compile(): Command[]
 
   protected async processCommands(context: MultiCommandExecutionContext): Promise<any> {
-    const remaining = new Set<PendingMessage>(context.compiled.map(compiled => compiled.pendingMessage))
+    const remaining = new Set<CompiledMessage>(context.compiled.map(compiled => compiled))
     let logTimeout: Timeout
     await context.compiled.reduce(async (prev, msg) => {
       if (!this.parallel) {
         await prev
       }
       const result = msg.execute()
+      let notified = false
 
       result.finally(() => {
-        remaining.delete(msg.pendingMessage)
-        clearTimeout(logTimeout)
+        remaining.delete(msg)
+        clearInterval(logTimeout)
         if (remaining.size) {
           this.logger.debug(`${this.constructor.name}: ${remaining.size} responses remaining`)
-          logTimeout = setTimeout(() => {
-            this.logger.info(`${this.constructor.name}: ${remaining.size} responses remaining`, remaining)
+          logTimeout = setInterval(() => {
+            this.logger.info(`${this.constructor.name}: ${remaining.size} responses remaining:\n  `,
+              [...remaining].map(msg => msg.debug).join('\n  '))
+            notified = true
           }, 2500)
         } else {
-          this.logger.debug(`${this.constructor.name} complete`)
+          const level = notified ? 'info' : 'debug'
+          this.logger[level](`${this.constructor.name} complete`)
         }
       })
 

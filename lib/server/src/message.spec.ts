@@ -1,29 +1,14 @@
 import { stub } from '@dandi/core/testing'
-import { clientFixture, TestCompiledMessage, TestMessage } from '../../../test'
-import { Client, ClientMessageResponse, ClientMessageSuccessResponse } from './client'
-import { CompiledSimpleMessage, MessageType, SimpleMessage } from './message'
 import { expect } from 'chai'
+
+import { clientFixture, TestMessage } from '../testing'
+
+import { SimpleMessage } from './message'
 
 describe('SimpleMessage', () => {
 
 
   describe('execute', () => {
-
-    // it('can wrap a promise', async () => {
-    //   let resolve;
-    //   const promise = new Promise(r => resolve = r)
-    //   const test = Object.assign(promise, {
-    //     foo: 'bar',
-    //   })
-    //   const resolved = stub()
-    //   setTimeout(() => resolve, 10)
-    //
-    //   const getResult = async () => await test
-    //   getResult().then(resolved)
-    //
-    //   await test
-    //   expect()
-    // })
 
     it('works', async () => {
 

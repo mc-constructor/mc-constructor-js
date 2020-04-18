@@ -2,25 +2,18 @@ import { NoopLogger } from '@dandi/core'
 import { expect } from 'chai'
 import { SinonStub, stub } from 'sinon'
 
-import { clientFixture } from '../../../test'
 import { loggerFactory } from '../../common'
+import { stubLoggerFactory } from '../../common/testing'
 
 import { Client, ClientMessageSuccessResponse, CompiledMessage } from '../../server'
+import { clientFixture } from '../../server/testing'
 
 import { SimpleArgsCommand } from './command'
 import { parallel, series } from './multi-command'
 
 describe('MultiCommand', () => {
 
-  let getLogger: SinonStub
-
-  beforeEach(() => {
-    getLogger = stub(loggerFactory, 'getLogger').callsFake(() => new NoopLogger())
-  })
-  afterEach(() => {
-    getLogger.restore()
-    getLogger = undefined
-  })
+  stubLoggerFactory()
 
   type TestCompiledMessage = CompiledMessage & { respond: (response: any) => void }
 

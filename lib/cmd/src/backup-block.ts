@@ -16,6 +16,10 @@ export class BackupBlockCommand<TTargetBlock extends Block> extends Message {
     this.loc = target.loc
   }
 
+  public get debug() {
+    return 'backup block'
+  }
+
   public compileMessage(client: Client): CompiledMessage {
     const backup = new SetCommandBlockCommand(this.target, this.loc.modify(1, 1), CommandBlockType.repeating)
     backup.autoSignal(AutoSignal.alwaysActive)

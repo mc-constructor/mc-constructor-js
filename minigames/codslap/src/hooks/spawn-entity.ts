@@ -5,9 +5,9 @@ import { Mob } from '@minecraft/core/types'
 
 import { Arena } from '../arena/arena'
 
-import { HookHandler } from './hookHandler'
+import { HookHandler } from './hook-handler'
 
-export function summonBehavior(entity: Mob, count: number | (() => number) = 1): HookHandler {
+export function summonBehavior(entity: Mob, count: number | (() => number) = 1): HookHandler<any> {
   return (arena: Arena): Command => {
     const c = typeof count === 'number' ? count : count()
     return parallel(...range(0, c).map(() => rawCmd(`summon ${entity} ${arena.getRandomSpawn()}`)))
