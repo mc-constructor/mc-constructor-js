@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from '@dandi/core'
-import { actionbar, clearEffect, rawCmd, tellraw, text, title } from '@minecraft/core/cmd'
-import { randomInt, SubscriptionTracker } from '@minecraft/core/common'
+import { actionbar, clearEffect, rawCmd, text, title } from '@minecraft/core/cmd'
+import { SubscriptionTracker } from '@minecraft/core/common'
 import { Players } from '@minecraft/core/players'
 import {
   AttackedByPlayerEvent,
@@ -14,10 +14,12 @@ import {
   ServerEvents,
   ServerEventType
 } from '@minecraft/core/server'
+import { MinigameEvents } from '@minecraft/minigames'
 import { merge, Observable, partition } from 'rxjs'
-import { filter, share, tap } from 'rxjs/operators'
-import { ArenaManager } from './arena-manager'
+import { filter, map, scan, share, tap } from 'rxjs/operators'
 
+import { ArenaManager } from './arena-manager'
+import { ArenaAgeEvent } from './arena/arena-age-event'
 import { CodslapObjectives } from './codslap-objectives'
 import { CommonCommands, isCodslapper } from './common'
 
@@ -29,6 +31,7 @@ export class CodslapEvents {
   public readonly codslap$: Observable<PlayerEvent>
   public readonly codslapMobKill$: Observable<AttackedByPlayerEvent>
   public readonly codslapPlayerKill$: Observable<AttackedByPlayerEvent>
+  public readonly age$: Observable<ArenaAgeEvent>
   public readonly run$: Observable<any>
 
   private readonly entityDeath$: Observable<AttackedByPlayerEvent>
@@ -44,6 +47,7 @@ export class CodslapEvents {
     @Inject(ArenaManager) private arena: ArenaManager,
     @Inject(SubscriptionTracker) private subs: SubscriptionTracker,
     @Inject(Logger) private logger: Logger,
+    @Inject(MinigameEvents) private minigameEvents: MinigameEvents,
   ) {
     this.entityDeath$ = events$.pipe(
       eventType(ServerEventType.entityLivingDeath),
@@ -72,6 +76,13 @@ export class CodslapEvents {
     this.codslapPlayerKill$ = codslapPlayerKill$.pipe(tap(this.onCodslapPlayerKill.bind(this)))
     this.codslapMobKill$ = codslapMobKill$.pipe(tap(this.onCodslapMobKill.bind(this)))
 
+    this.age$ = this.minigameEvents.age$.pipe(
+      map(event => Object.assign({ arenaAge: 0 }, event)),
+      scan((result, event) => Object.assign({}, event, {
+          arenaAge: (result.arenaAge || 0) + 1,
+        }, event)),
+    )
+
     this.run$ = merge(
       this.playerDeath$,
       this.playerRespawn$,
@@ -79,6 +90,7 @@ export class CodslapEvents {
       this.codslap$,
       this.codslapPlayerKill$,
       this.codslapMobKill$,
+      this.age$,
     )
   }
 
@@ -110,7 +122,6 @@ export class CodslapEvents {
   private onPlayerRespawn(event: PlayerEvent): void {
     this.common.resetPlayer(event.player.name).execute(this.client)
     clearEffect(event.player.name).execute(this.client)
-    this.arena.current.onPlayerRespawn().execute(this.client)
   }
 
 }

@@ -50,7 +50,7 @@ export class CodslapInitCommand extends MultiCommand {
   }
 
   protected initHoldingArea(): Command {
-    const holding = this.common.center.modify.up(120)
+    const holding = this.common.holdingCenter
     const holdingArea = parallel(
       block(Block.whiteWool).fill(
         holding.modify.west(this.common.arenaSize).modify.north(this.common.arenaSize),
@@ -127,8 +127,6 @@ export class CodslapInitCommand extends MultiCommand {
   }
 
   protected initPlayers(): Command {
-    const playerTeleports = this.players$.players.map(player =>
-      rawCmd(`teleport ${player.name} ${this.arena.current.getRandomSpawn()}`))
 
     const cowCount = randomInt(10, 20)
     const cows = range(cowCount).map(() =>

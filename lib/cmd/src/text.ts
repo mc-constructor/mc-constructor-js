@@ -140,3 +140,7 @@ export abstract class TextCommand extends SimpleArgsCommand {
 }
 
 export type TextComponent = TextBuilder | TextFragmentBuilder
+
+export function isTextComponent(obj: any): obj is TextComponent {
+  return obj instanceof TextBuilder || obj instanceof TextFragmentBuilder
+}

@@ -1,7 +1,9 @@
 import { Inject, Injectable } from '@dandi/core'
 import { clear, rawCmd } from '@minecraft/core/cmd'
 import { Command, parallel } from '@minecraft/core/command'
+import { Players } from '@minecraft/core/players'
 import { Coordinates, Item, loc } from '@minecraft/core/types'
+import { Arena } from './arena/arena'
 
 import { CodslapObjectives } from './codslap-objectives'
 
@@ -30,8 +32,11 @@ export class CommonCommands {
   public readonly baseStart = this.center.modify.west(this.arenaSize).modify.north(this.arenaSize)
   public readonly baseEnd = this.center.modify.east(this.arenaSize).modify.south(this.arenaSize)
 
+  public readonly holdingCenter = this.center.modify.up(120)
+
   constructor(
     @Inject(CodslapObjectives) private objectives: CodslapObjectives,
+    @Inject(Players) private players$: Players,
   ) {}
 
   public equip(target: string, weapon?: Item): Command {
@@ -53,6 +58,14 @@ export class CommonCommands {
 
   public resetPlayer(target: string): Command {
     return this.equip(target)
+  }
+
+  public movePlayersToHolding(): Command {
+    return rawCmd(`teleport @a ${this.holdingCenter.modify.up(2)}`)
+  }
+
+  public movePlayersToArena(arena: Arena): Command {
+    return parallel(...this.players$.players.map(player => rawCmd(`teleport ${player.name} ${arena.getRandomSpawn()}`)))
   }
 
   // public getRandomSpawn(): Coordinates {

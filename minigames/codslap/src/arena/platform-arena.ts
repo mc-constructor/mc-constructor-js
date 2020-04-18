@@ -2,11 +2,9 @@ import { block } from '@minecraft/core/cmd'
 import { Command, parallel } from '@minecraft/core/command'
 import { randomInt } from '@minecraft/core/common'
 import { area, Area, Block, Coordinates, loc } from '@minecraft/core/types'
-import { Observable } from 'rxjs'
+import { Observable, Observer } from 'rxjs'
 
-import { Behavior } from '../behaviors/behavior'
-
-import { Arena } from './arena'
+import { Arena, ArenaHooks } from './arena'
 
 export interface PlatformLayer {
   block: Block
@@ -25,10 +23,10 @@ const NO_SPAWN_BLOCKS: Block[] = [
   Block.water,
 ]
 
-export abstract class PlatformArena implements Arena {
+export abstract class PlatformArena extends Observable<any> implements Arena {
 
   public abstract readonly layers: PlatformLayer[]
-  public readonly playerRespawnBehaviors: Behavior[]
+  public readonly hooks: ArenaHooks
 
   protected readonly spawnAreas: Area[] = []
   protected readonly spawnBlacklist: Area[] = []
@@ -60,7 +58,12 @@ export abstract class PlatformArena implements Arena {
     ]
   }
 
-  constructor(public readonly center: Coordinates) {
+  private o: Observer<any>
+
+  protected constructor(public readonly center: Coordinates) {
+    super(o => {
+      this.o = o
+    })
   }
 
   public cleanup(): Command {
@@ -91,20 +94,14 @@ export abstract class PlatformArena implements Arena {
     return this.spawnBlacklist.some(blacklisted => blacklisted.contains(spawn))
   }
 
-  public onPlayerRespawn(): Command {
-    if (!this.playerRespawnBehaviors) {
-      return
-    }
-
-    return parallel(...this.playerRespawnBehaviors.map(behavior => behavior(this)))
-  }
-
-  public abstract run(): Observable<any>
-
   public init(): Command {
     this.spawnAreas.length = 0
     this.spawnBlacklist.length = 0
     return this.fill()
+  }
+
+  public dispose(reason: string): void {
+    this.o.complete
   }
 
   protected fill(resetBlock?: Block): Command {

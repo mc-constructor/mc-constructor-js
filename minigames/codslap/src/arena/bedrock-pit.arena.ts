@@ -1,17 +1,24 @@
-import { Inject, Injectable } from '@dandi/core'
+import { Inject } from '@dandi/core'
+import { text } from '@minecraft/core/cmd/src/text'
 import { randomIntGenerator } from '@minecraft/core/common'
-import { Block, loc } from '@minecraft/core/types'
-import { Mob } from '@minecraft/core/types/src/mob'
-import { Observable } from 'rxjs'
+import { Block, loc, Mob } from '@minecraft/core/types'
+import { take } from 'rxjs/operators'
 
-import { Behavior } from '../behaviors/behavior'
 import { summonBehavior } from '../behaviors/spawn-entity'
 import { CommonCommands } from '../common'
 
+import { Arena, ArenaHooks } from './arena'
 import { PlatformArena, PlatformLayer } from './platform-arena'
 
-@Injectable()
+@Arena()
 export class BedrockPitArena extends PlatformArena {
+
+  public static readonly title = text('Bedrock Pit').bold
+  public static readonly description = text('Mind the gap...')
+  public static readonly requirements = [
+    event$ => event$.codslapPlayerKill$.pipe(take(50)),
+    event$ => event$.codslap$.pipe(take(250)),
+  ]
 
   public readonly radius: number = 11
   public readonly gapRadius: number = 3
@@ -54,19 +61,16 @@ export class BedrockPitArena extends PlatformArena {
     }
   ]
 
-  public readonly playerRespawnBehaviors: Behavior[] = [
-    summonBehavior(Mob.cow, randomIntGenerator(10, 20)),
-    summonBehavior(Mob.creeper, randomIntGenerator(0, 6)),
-  ]
+  public readonly hooks: ArenaHooks = {
+    playerRespawn$: [
+      summonBehavior(Mob.cow, randomIntGenerator(10, 20)),
+      summonBehavior(Mob.creeper, randomIntGenerator(0, 6)),
+    ],
+  }
 
   constructor(
     @Inject(CommonCommands) private common: CommonCommands,
   ) {
     super(common.center)
   }
-
-  public run(): Observable<any> {
-    return new Observable<any>()
-  }
-
 }
