@@ -15,9 +15,13 @@ export class BedrockPitArena extends PlatformArena {
 
   public static readonly title = text('Bedrock Pit').bold
   public static readonly description = text('Mind the gap...')
-  public static readonly requirements = [
+  public static readonly entryRequirements = [
     event$ => event$.codslapPlayerKill$.pipe(take(50)),
     event$ => event$.codslap$.pipe(take(250)),
+  ]
+  public static readonly exitRequirements = [
+    event$ => event$.codslapPlayerKill$.pipe(take(100)),
+    event$ => event$.codslap$.pipe(take(500)),
   ]
 
   public readonly radius: number = 11
