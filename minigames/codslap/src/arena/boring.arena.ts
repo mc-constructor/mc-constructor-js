@@ -17,7 +17,7 @@ class BoringArena extends PlatformArena {
   public static readonly entryRequirements = Arena.requirements.none
   public static readonly exitRequirements = [
     // Arena.requirements.minAge(300), // 5 min
-    Arena.requirements.minAge(10),
+    Arena.requirements.minAge(30),
   ]
 
   public readonly floor: PlatformLayer = {

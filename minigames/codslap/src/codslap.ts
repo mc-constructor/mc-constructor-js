@@ -1,14 +1,13 @@
-import { Disposable } from '@dandi/common'
 import { Inject, Logger } from '@dandi/core'
 
 import { actionbar, clearEffect, rawCmd, text, title } from '@minecraft/core/cmd'
 import { Command } from '@minecraft/core/command'
-import { SubscriptionTracker } from '@minecraft/core/common'
 import { Players } from '@minecraft/core/players'
 import { AttackedByPlayerEvent, Client, EntityEvent, PlayerEvent } from '@minecraft/core/server'
 import { Minigame } from '@minecraft/minigames'
 
 import { combineLatest, merge, Observable } from 'rxjs'
+import { tap } from 'rxjs/operators'
 
 import { ArenaManager } from './arena-manager'
 import { Arena } from './arena/arena'
@@ -23,7 +22,7 @@ import { CodslapInitCommand } from './init'
  */
 
 @Minigame(Codslap)
-export class CodslapMinigame implements Minigame, Disposable {
+export class CodslapMinigame implements Minigame {
 
   public readonly run$: Observable<any>
 
@@ -35,17 +34,19 @@ export class CodslapMinigame implements Minigame, Disposable {
     @Inject(CodslapInitCommand) public readonly init: CodslapInitCommand,
     @Inject(CodslapObjectives) private readonly obj: CodslapObjectives,
     @Inject(ArenaManager) private readonly arena: ArenaManager,
-    @Inject(SubscriptionTracker) private readonly subs: SubscriptionTracker,
     @Inject(Logger) private readonly logger: Logger,
   ) {
-    this.events.codslap$.subscribe(this.onCodslap.bind(this))
-    this.events.codslapPlayerKill$.subscribe(this.onCodslapPlayerKill.bind(this))
-    this.events.codslapMobKill$.subscribe(this.onCodslapMobKill.bind(this))
-    this.events.playerRespawn$.subscribe(this.onPlayerRespawn.bind(this))
+    const onPlayerDeath$ = combineLatest([this.events.playerDeath$, this.arena.arenaStart$])
 
-    combineLatest([this.events.playerDeath$, this.arena.arenaStart$]).subscribe(this.onPlayerDeath.bind(this))
-
-    this.run$ = merge(this.events.run$, this.arena.run$)
+    this.run$ = merge(
+      this.events.codslap$.pipe(tap(this.onCodslap.bind(this))),
+      onPlayerDeath$.pipe(tap(this.onPlayerDeath.bind(this))),
+      this.events.codslapPlayerKill$.pipe(tap(this.onCodslapPlayerKill.bind(this))),
+      this.events.codslapMobKill$.pipe(tap(this.onCodslapMobKill.bind(this))),
+      this.events.playerRespawn$.pipe(tap(this.onPlayerRespawn.bind(this))),
+      this.events.run$,
+      this.arena.run$
+    )
   }
 
   public validateGameState(): Command {
@@ -54,10 +55,6 @@ export class CodslapMinigame implements Minigame, Disposable {
 
   public ready(): Command {
     return title('@a', text('Get ready!'), text('May the best codslapper win!').bold)
-  }
-
-  public dispose(reason: string): void {
-    this.subs.release(this)
   }
 
   private onCodslap(event: PlayerEvent): void {

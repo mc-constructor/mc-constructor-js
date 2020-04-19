@@ -1,7 +1,7 @@
 import { Constructor, Disposable } from '@dandi/common'
 import { Inject, Injectable, Injector, Logger } from '@dandi/core'
 import { Client } from '@minecraft/core/server'
-import { Observer } from 'rxjs'
+import { Observable, Observer } from 'rxjs'
 
 import { createGameScope } from './game-scope'
 import { getMinigameMeta, Minigame } from './minigame'
@@ -25,11 +25,21 @@ export class MinigameRunner {
       Disposable.dispose(gameInjector, 'cleanup')
     })
     await Disposable.useAsync(gameInjector, async gameInjector => {
-      await gameInjector.invoke(this as MinigameRunner, 'run')
+      const game$: Observable<void> = await gameInjector.invoke(this as MinigameRunner, 'run')
+
+      await new Promise<void>(resolve => {
+        const gameObserver: Observer<any> = {
+          next: () => {},
+          error: this.logger.error.bind(this.logger),
+          complete: resolve,
+        }
+        const sub = game$.subscribe(gameObserver)
+        minigame.cleanupTasks.push(sub.unsubscribe.bind(sub))
+      })
     })
   }
 
-  public async run(@Inject(Minigame) game: Minigame): Promise<void> {
+  public async run(@Inject(Minigame) game: Minigame): Promise<Observable<void>> {
     const validate = game.validateGameState()
     const gameInfo = getMinigameMeta(game.constructor as Constructor<Minigame>)
     if (validate) {
@@ -44,13 +54,6 @@ export class MinigameRunner {
     this.logger.info(`${gameInfo.title}: ready`)
     await game.ready().execute(this.client)
 
-    return new Promise<void>(resolve => {
-      const gameObserver: Observer<any> = {
-        next: () => {},
-        error: this.logger.error.bind(this.logger),
-        complete: resolve,
-      }
-      game.run$.subscribe(gameObserver)
-    })
+    return game.run$
   }
 }

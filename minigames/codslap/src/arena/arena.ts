@@ -4,7 +4,7 @@ import { isTextComponent, TextComponent } from '@minecraft/core/cmd'
 import { Command } from '@minecraft/core/command'
 import { Coordinates } from '@minecraft/core/types'
 import { Observable, of } from 'rxjs'
-import { filter, take } from 'rxjs/operators'
+import { filter, take, tap } from 'rxjs/operators'
 
 import { HookHandler } from '../hooks'
 import { CodslapEvents } from '../codslap-events'
@@ -35,6 +35,10 @@ export type ArenaConstructor<TArena extends Arena> = Constructor<TArena> & Arena
 
 export interface ArenaDecorator {
   (): ClassDecorator
+}
+
+export function arenaDescriptor(arena: Arena): ArenaDescriptor {
+  return arena.constructor as unknown as ArenaDescriptor
 }
 
 export type NoRequirements = [() => Observable<any>]
@@ -77,6 +81,7 @@ export const Arena: ArenaStatic = Object.assign(ArenaDecorator, {
     minAge: (age: number) =>
       (events: CodslapEvents) =>
         events.age$.pipe(
+          tap(age => console.log('age', age)),
           filter(event => event.arenaAge >= age),
           take(1),
         )

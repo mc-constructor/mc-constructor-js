@@ -14,6 +14,12 @@
     using game-based objective criteria would require a server side score check on each server tick
     other options could include using command blocks to send a custom command once a threshold is reached?
 
+## Minigames
+- what subscriptions aren't getting cleaned up between instances? (e.g. codslap level check is leaking)
+
+## Arenas
+- 
+
 ## Codslap
  - how does the codslapper level up?
  - give codslappers tiered dmg vs mobs, no dmg vs players
