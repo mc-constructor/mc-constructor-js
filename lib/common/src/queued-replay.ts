@@ -2,19 +2,32 @@ import { Observable, Observer, OperatorFunction } from 'rxjs'
 
 export function queuedReplay<T>(dequeueTrigger: Observable<T>): OperatorFunction<T, T> {
   return (source: Observable<T>) => {
+    let cleanupSubs: () => void
     const buffer: T[] = []
-    const observers: Observer<T>[] = []
+    const observers = new Set<Observer<T>>()
+
+    const cleanup = (reason: string): void => {
+      console.log('queuedReplay cleanup', reason)
+      buffer.length = 0
+      observers.clear()
+      if (cleanupSubs) {
+        cleanupSubs()
+        cleanupSubs = undefined
+      }
+    }
+
     const observersObserver: Observer<T> = {
       next: (value: T): void => observers.forEach(o => o.next(value)),
       error: (err: any): void => {
         observers.forEach(o => o.error(err))
-        cleanup()
+        cleanup('observers after error')
       },
       complete: (): void => {
         observers.forEach(o => o.complete())
-        cleanup()
+        cleanup('observers after complete')
       },
     }
+
     const sourceObserver: Observer<T> = {
       next: (value: T): void => {
         buffer.push(value)
@@ -23,6 +36,7 @@ export function queuedReplay<T>(dequeueTrigger: Observable<T>): OperatorFunction
       error: observersObserver.error,
       complete: observersObserver.complete,
     }
+
     const dequeueObserver: Observer<T> = {
       next: (value): void => {
         const index = buffer.indexOf(value)
@@ -33,19 +47,28 @@ export function queuedReplay<T>(dequeueTrigger: Observable<T>): OperatorFunction
       error: observersObserver.error,
       complete: observersObserver.complete,
     }
-    const sourceSub = source.subscribe(sourceObserver)
-    const dequeueSub = dequeueTrigger.subscribe(dequeueObserver)
-    const cleanup = (): void => {
-      sourceSub.unsubscribe()
-      dequeueSub.unsubscribe()
-      buffer.length = 0
-      observers.length = 0
-    }
 
     return new Observable<T>(o => {
-      observers.push(o)
+      console.log('queuedReplay onSubscribe')
+      observers.add(o)
       buffer.forEach(value => o.next(value))
-      return () => {}
+
+      if (!cleanupSubs) {
+        console.log('queuedReplay inner subscribing')
+        const sourceSub = source.subscribe(sourceObserver)
+        const dequeueSub = dequeueTrigger.subscribe(dequeueObserver)
+        cleanupSubs = (): void => {
+          sourceSub.unsubscribe()
+          dequeueSub.unsubscribe()
+        }
+      }
+      return () => {
+        console.log('queuedReplay subscriber done')
+        observers.delete(o)
+        if (!observers.size) {
+          cleanup('no more observers')
+        }
+      }
     })
   }
 }

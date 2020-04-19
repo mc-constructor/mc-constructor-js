@@ -51,11 +51,11 @@ export class ArenaManager {
 
   private availableArena(): Observable<Arena> {
     // start with "of" so that the entry requirements aren't created until a subscription actually happens
-    return of([]).pipe(
+    return of(undefined).pipe(
       // this will emit any time an arena's entry requirements have all been met
       switchMap(() => merge(...this.arenas.map(arena => this.arenaEntryRequirements(arena)))),
-      tap(arena => console.log('ARENA AVAILABLE', arena.constructor.name)),
       queuedReplay(this.arenaStart$),
+      tap(arena => console.log('ARENA AVAILABLE', arena.constructor.name)),
       share(),
     )
   }
@@ -71,6 +71,7 @@ export class ArenaManager {
       // being played. It will not continue until its inner Observable emits, which allows arenas to be played until
       // their exit requirements are met.
       concatMap(([prevArena, arena]) => {
+        console.log('runArena - in concatMap')
         // set up the new arena (includes moving players into it once it's done)
         return this.initArena([prevArena, arena]).pipe(
           switchMap(() => {
@@ -157,7 +158,11 @@ export class ArenaManager {
     const reqs$ = requirements.map(req => req(this.events).pipe(
       finalize(() => console.log(`${type} req complete`, arena.constructor.name, req))),
     )
-    return forkJoin(...reqs$).pipe(map(() => arena))
+    return forkJoin(...reqs$).pipe(
+      map(() => arena),
+      tap(arena => console.log(`${type} reqs complete`, arena.constructor.name)),
+      share(),
+    )
   }
 
   private execute<TResponse>(cmd: Command<TResponse>): Observable<TResponse> {

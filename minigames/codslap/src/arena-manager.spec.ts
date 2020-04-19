@@ -80,7 +80,7 @@ describe('ArenaManager', () => {
       subs.track(harness as any, manager.run$.subscribe())
     })
 
-    it('starts the first arena', async () => {
+    it.only('starts the first arena', async () => {
       const arenaStart = stub()
       client.send.returns(Promise.resolve())
 
@@ -88,6 +88,7 @@ describe('ArenaManager', () => {
         manager.arenaStart$.subscribe(arenaStart),
         manager.run$.subscribe(),
       )
+      console.log('after subscribe')
 
       await new Promise(resolve => setTimeout(resolve, 1))
 

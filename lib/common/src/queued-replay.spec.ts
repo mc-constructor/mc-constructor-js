@@ -42,8 +42,10 @@ describe('queuedReplay', () => {
     )
   }
 
-  it('emits values queued before subscription', () => {
+  it('emits values queued before second subscription', () => {
     const test$ = testStream()
+    test$.subscribe()
+
     source$.next('a')
 
     test$.subscribe(testObserver)
@@ -51,8 +53,10 @@ describe('queuedReplay', () => {
     expect(onNext).to.have.been.calledOnceWithExactly('a')
   })
 
-  it('emits multiple values queued before subscription', () => {
+  it('emits multiple values queued before second subscription', () => {
     const test$ = testStream()
+    test$.subscribe()
+
     source$.next('a')
     source$.next('b')
 
@@ -74,8 +78,9 @@ describe('queuedReplay', () => {
     expect(onNext).to.have.been.calledOnceWithExactly('a')
   })
 
-  it('does not emit values dequeued before subscription', () => {
+  it('does not emit values dequeued before second subscription', () => {
     const test$ = testStream()
+    test$.subscribe()
     source$.next('a')
     source$.next('b')
     dequeue$.next('a')
