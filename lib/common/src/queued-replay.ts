@@ -35,7 +35,7 @@ export function queuedReplay<T>(dequeueTrigger: Observable<T>): OperatorFunction
       },
       complete: (): void => {
         observers.forEach(o => o.complete())
-        cleanup()
+        observers.clear()
       },
     }
 
@@ -47,6 +47,7 @@ export function queuedReplay<T>(dequeueTrigger: Observable<T>): OperatorFunction
       error: observersObserver.error,
       complete: () => {
         sourceComplete = true
+        observersObserver.complete()
         checkCompleteness()
       },
     }
@@ -56,6 +57,10 @@ export function queuedReplay<T>(dequeueTrigger: Observable<T>): OperatorFunction
         const index = buffer.indexOf(value)
         if (index >= 0) {
           buffer.splice(index, 1)
+        }
+        if (sourceComplete && !buffer.length) {
+          dequeueComplete = true
+          checkCompleteness()
         }
       },
       error: observersObserver.error,

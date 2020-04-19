@@ -98,6 +98,8 @@ describe('ArenaManager', () => {
       expect(arena).to.be.instanceof(Boring)
 
       runSub.unsubscribe()
+
+      // FIXME: first arena gets repeated due to queuedReplay behavior - how should that be fixed?
     })
 
   })

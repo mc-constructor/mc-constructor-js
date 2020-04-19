@@ -110,14 +110,56 @@ describe('queuedReplay', () => {
     expect(onError).to.have.been.calledOnceWithExactly('oh noooo')
   })
 
-  it('completes when both the source and dequeue observables complete', () => {
+  it('completes when there is a buffered value and both the source and dequeue observables complete', () => {
     const test$ = testStream()
     test$.subscribe(testObserver)
+    source$.next('a')
 
     source$.complete()
     dequeue$.complete()
 
     expect(onComplete).to.have.been.calledOnce
+  })
+
+  it('completes when the source observable completes', () => {
+    const test$ = testStream()
+    test$.subscribe()
+    source$.next('a')
+
+    test$.subscribe(testObserver)
+
+    expect(onNext).to.have.been.calledOnceWithExactly('a')
+    expect(onComplete).not.to.have.been.called
+
+    source$.complete()
+
+    expect(onComplete).to.have.been.calledOnce
+  })
+
+  it('remains subscribed to the dequeue trigger if the source completes, but there are buffered values', () => {
+    const test$ = testStream()
+    const sub = test$.subscribe()
+    source$.next('a')
+
+    sub.unsubscribe()
+    expect(dequeue$.observers.length).to.equal(1)
+
+    source$.complete()
+    expect(dequeue$.observers.length).to.equal(1)
+  })
+
+  it('unsubscribes from the dequeue trigger when the source observable completes and all remaining buffered values are dequeued', () => {
+    const test$ = testStream()
+    test$.subscribe()
+    source$.next('a')
+
+    test$.subscribe(testObserver)
+
+    source$.complete()
+    expect(dequeue$.observers.length).to.equal(1)
+
+    dequeue$.next('a')
+    expect(dequeue$.observers.length).to.equal(0)
   })
 
   it('emits queued values after resubscription when initial subscribers have unsubscribed', () => {
