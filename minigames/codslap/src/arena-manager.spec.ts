@@ -80,7 +80,7 @@ describe('ArenaManager', () => {
       subs.track(harness as any, manager.run$.subscribe())
     })
 
-    it.only('starts the first arena', async () => {
+    it('starts the first arena', async () => {
       const arenaStart = stub()
       client.send.returns(Promise.resolve())
 

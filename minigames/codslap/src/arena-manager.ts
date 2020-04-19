@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@dandi/core'
 import { title } from '@minecraft/core/cmd'
 import { Command } from '@minecraft/core/command'
+import { queuedReplay } from '@minecraft/core/common'
 import { Client } from '@minecraft/core/server'
 import { combineLatest, forkJoin, from, merge, Observable, of, OperatorFunction, Subject } from 'rxjs'
 import {
@@ -54,6 +55,7 @@ export class ArenaManager {
       // this will emit any time an arena's entry requirements have all been met
       switchMap(() => merge(...this.arenas.map(arena => this.arenaEntryRequirements(arena)))),
       tap(arena => console.log('ARENA AVAILABLE', arena.constructor.name)),
+      queuedReplay(this.arenaStart$),
       share(),
     )
   }

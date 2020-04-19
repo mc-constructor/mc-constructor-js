@@ -1,11 +1,10 @@
 import { ClientMessageResponse, CompiledSimpleMessage } from '../..'
 
 export class TestCompiledMessage extends CompiledSimpleMessage {
-
   constructor(
     hasResponse: boolean | number,
   ) {
-    super(() => this.pendingMessage, hasResponse)
+    super(() => this.pendingMessage, hasResponse, 'test')
   }
 
   public respond(responseRaw: string[]) {

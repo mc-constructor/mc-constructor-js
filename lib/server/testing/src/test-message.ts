@@ -2,6 +2,7 @@ import { ClientMessageSuccessResponse, MessageType, SimpleMessage } from '../..'
 
 export class TestMessage extends SimpleMessage {
   public readonly type = MessageType.cmd
+  public readonly debug = 'test'
 
   constructor() {
     super()
