@@ -90,15 +90,6 @@ describe('queuedReplay', () => {
     expect(onNext).to.have.been.calledOnceWithExactly('b')
   })
 
-  it('completes when the source observable completes', () => {
-    const test$ = testStream()
-    test$.subscribe(testObserver)
-
-    source$.complete()
-
-    expect(onComplete).to.have.been.calledOnce
-  })
-
   it('errors when the source observable errors', () => {
     const test$ = testStream()
     test$.subscribe(testObserver)
@@ -109,13 +100,57 @@ describe('queuedReplay', () => {
     expect(onError).to.have.been.calledOnceWithExactly('oh noooo')
   })
 
-  it('completes when the dequeue observable completes', () => {
+  it('errors when the dequeue observable errors', () => {
+    const test$ = testStream()
+    test$.subscribe(testObserver)
+
+    dequeue$.error('oh noooo')
+
+    expect(onComplete).not.to.have.been.called
+    expect(onError).to.have.been.calledOnceWithExactly('oh noooo')
+  })
+
+  it('completes when both the source and dequeue observables complete', () => {
     const test$ = testStream()
     test$.subscribe(testObserver)
 
     source$.complete()
+    dequeue$.complete()
 
     expect(onComplete).to.have.been.calledOnce
+  })
+
+  it('emits queued values after resubscription when initial subscribers have unsubscribed', () => {
+    const test$ = testStream()
+    const initSub = test$.subscribe()
+
+    source$.next('a')
+    source$.next('b')
+
+    initSub.unsubscribe()
+
+    test$.subscribe(testObserver)
+
+    expect(onNext).to.have.been
+      .calledTwice
+      .calledWithExactly('a')
+      .calledWithExactly('b')
+  })
+
+  it('dequeues values when initial subscribers have unsubscribed', () => {
+    const test$ = testStream()
+    const initSub = test$.subscribe()
+
+    source$.next('a')
+    source$.next('b')
+
+    initSub.unsubscribe()
+
+    dequeue$.next('a')
+
+    test$.subscribe(testObserver)
+
+    expect(onNext).to.have.been.calledOnceWithExactly('b')
   })
 
 })

@@ -54,6 +54,7 @@ export class ArenaManager {
     return of(undefined).pipe(
       // this will emit any time an arena's entry requirements have all been met
       switchMap(() => merge(...this.arenas.map(arena => this.arenaEntryRequirements(arena)))),
+      tap(arena => console.log('after entry reqs', arena.constructor.name)),
       queuedReplay(this.arenaStart$),
       tap(arena => console.log('ARENA AVAILABLE', arena.constructor.name)),
       share(),
@@ -75,13 +76,16 @@ export class ArenaManager {
         // set up the new arena (includes moving players into it once it's done)
         return this.initArena([prevArena, arena]).pipe(
           switchMap(() => {
+            console.log('runArena - after initArena switchMap')
             // set up the arena's hooks to listen for their events
             return of(undefined).pipe(
               // emit arenaStart$ - note that this must come AFTER initArenaHooks so that any arenaStart$ behaviors on the
               // newly initialized arena can receive the event
               tap(() => {
-                console.log('arena start', arena.constructor.name)
-                setTimeout(() => this.arenaStart$$.next(arena), 10)
+                setTimeout(() => {
+                  console.log('arena start', arena.constructor.name)
+                  this.arenaStart$$.next(arena)
+                }, 1)
               }),
               switchMap(() => this.initArenaHooks(arena)),
 
@@ -155,10 +159,12 @@ export class ArenaManager {
   }
 
   private arenaRequirements(arena: Arena, type: string, requirements: ArenaRequirement[]): Observable<any> {
-    const reqs$ = requirements.map(req => req(this.events).pipe(
-      finalize(() => console.log(`${type} req complete`, arena.constructor.name, req))),
-    )
+    console.log('creating', type, 'reqs', arena.constructor.name)
+      const reqs$ = requirements.map(req => req(this.events).pipe(
+        finalize(() => console.log(`${type} req complete`, arena.constructor.name, req))),
+      )
     return forkJoin(...reqs$).pipe(
+      tap(() => console.log('after forkJoin', type, arena.constructor.name)),
       map(() => arena),
       tap(arena => console.log(`${type} reqs complete`, arena.constructor.name)),
       share(),

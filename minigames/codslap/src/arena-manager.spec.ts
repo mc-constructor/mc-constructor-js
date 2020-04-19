@@ -5,7 +5,7 @@ import { Players } from '@minecraft/core/players'
 import { playersFixture, PlayersFixture } from '@minecraft/core/players/testing'
 import { Client } from '@minecraft/core/server'
 import { clientFixture, ClientFixture } from '@minecraft/core/server/testing'
-import { of } from 'rxjs'
+import { of, Subscription } from 'rxjs'
 
 import * as rxOps from 'rxjs/operators'
 
@@ -80,21 +80,24 @@ describe('ArenaManager', () => {
       subs.track(harness as any, manager.run$.subscribe())
     })
 
-    it.only('starts the first arena', async () => {
+    it('starts the first arena', async () => {
       const arenaStart = stub()
       client.send.returns(Promise.resolve())
 
+      const runSub = manager.run$.subscribe()
       subs.track(harness as any,
         manager.arenaStart$.subscribe(arenaStart),
-        manager.run$.subscribe(),
+        runSub,
       )
       console.log('after subscribe')
 
-      await new Promise(resolve => setTimeout(resolve, 1))
+      await new Promise(resolve => setTimeout(resolve, 10))
 
       expect(arenaStart).to.have.been.called
       const arena = arenaStart.firstCall.lastArg
       expect(arena).to.be.instanceof(Boring)
+
+      runSub.unsubscribe()
     })
 
   })

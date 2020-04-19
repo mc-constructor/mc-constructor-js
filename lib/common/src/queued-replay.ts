@@ -5,9 +5,11 @@ export function queuedReplay<T>(dequeueTrigger: Observable<T>): OperatorFunction
     let cleanupSubs: () => void
     const buffer: T[] = []
     const observers = new Set<Observer<T>>()
+    let sourceComplete: boolean = false
+    let dequeueComplete: boolean = false
+    let complete: boolean = false
 
-    const cleanup = (reason: string): void => {
-      console.log('queuedReplay cleanup', reason)
+    const cleanup = (): void => {
       buffer.length = 0
       observers.clear()
       if (cleanupSubs) {
@@ -16,15 +18,24 @@ export function queuedReplay<T>(dequeueTrigger: Observable<T>): OperatorFunction
       }
     }
 
+    const checkCompleteness = (): boolean => {
+      if (sourceComplete && dequeueComplete) {
+        observersObserver.complete()
+        cleanup()
+        complete = true
+      }
+      return complete
+    }
+
     const observersObserver: Observer<T> = {
       next: (value: T): void => observers.forEach(o => o.next(value)),
       error: (err: any): void => {
         observers.forEach(o => o.error(err))
-        cleanup('observers after error')
+        cleanup()
       },
       complete: (): void => {
         observers.forEach(o => o.complete())
-        cleanup('observers after complete')
+        cleanup()
       },
     }
 
@@ -34,7 +45,10 @@ export function queuedReplay<T>(dequeueTrigger: Observable<T>): OperatorFunction
         observersObserver.next(value)
       },
       error: observersObserver.error,
-      complete: observersObserver.complete,
+      complete: () => {
+        sourceComplete = true
+        checkCompleteness()
+      },
     }
 
     const dequeueObserver: Observer<T> = {
@@ -45,16 +59,22 @@ export function queuedReplay<T>(dequeueTrigger: Observable<T>): OperatorFunction
         }
       },
       error: observersObserver.error,
-      complete: observersObserver.complete,
+      complete: () => {
+        dequeueComplete = true
+        checkCompleteness()
+      },
     }
 
     return new Observable<T>(o => {
-      console.log('queuedReplay onSubscribe')
-      observers.add(o)
       buffer.forEach(value => o.next(value))
 
+      if (complete) {
+        o.complete()
+        return () => {}
+      }
+
+      observers.add(o)
       if (!cleanupSubs) {
-        console.log('queuedReplay inner subscribing')
         const sourceSub = source.subscribe(sourceObserver)
         const dequeueSub = dequeueTrigger.subscribe(dequeueObserver)
         cleanupSubs = (): void => {
@@ -63,11 +83,7 @@ export function queuedReplay<T>(dequeueTrigger: Observable<T>): OperatorFunction
         }
       }
       return () => {
-        console.log('queuedReplay subscriber done')
         observers.delete(o)
-        if (!observers.size) {
-          cleanup('no more observers')
-        }
       }
     })
   }
