@@ -36,6 +36,7 @@ export class CodslapMinigame implements Minigame {
     @Inject(ArenaManager) private readonly arena: ArenaManager,
     @Inject(Logger) private readonly logger: Logger,
   ) {
+    this.logger.debug('ctr', )
     const onPlayerDeath$ = combineLatest([this.events.playerDeath$, this.arena.arenaStart$])
 
     this.run$ = merge(
@@ -79,6 +80,7 @@ export class CodslapMinigame implements Minigame {
   }
 
   private onPlayerDeath([event, arena]: [EntityEvent, Arena]): void {
+    this.logger.debug('onPlayerDeath', event)
     rawCmd(`spawnpoint ${event.entityId} ${arena.getRandomSpawn()}`).execute(this.client)
   }
 

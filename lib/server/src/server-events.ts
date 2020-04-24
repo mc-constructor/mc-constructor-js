@@ -61,16 +61,24 @@ export function isEventType<TEvent extends ServerEventType>(type: TEvent, event:
   return event.type === type
 }
 
+export function isEventTypeFn<TEvent extends ServerEventType>(type: TEvent): (event: ServerEvent) => event is ServerEventTypes[TEvent] {
+  return (event: ServerEvent): event is ServerEventTypes[TEvent] => isEventType(type, event)
+}
+
 export function eventType<TEvent extends ServerEventType>(type: TEvent): OperatorFunction<ServerEvent, ServerEventTypes[TEvent]> {
-  return filter<ServerEvent, ServerEventTypes[TEvent]>(isEventType.bind(undefined, type))
+  return filter<ServerEvent, ServerEventTypes[TEvent]>(isEventTypeFn(type))
 }
 
 export function isAttackerTypeEvent<TAttackerType extends AttackerType>(attackerType: TAttackerType, event: AttackedEntityEvent): event is AttackedByEntityEventType[TAttackerType] {
   return event.attackerType === attackerType
 }
 
+export function isAttackTypeEventFn<TAttackerType extends AttackerType>(attackerType: TAttackerType): (event: AttackedEntityEvent) => event is AttackedByEntityEventType[TAttackerType] {
+  return (event: AttackedEntityEvent): event is AttackedByEntityEventType[TAttackerType] => isAttackerTypeEvent(attackerType, event)
+}
+
 export function entityAttackerType<TAttackerType extends AttackerType>(attackerType: TAttackerType): OperatorFunction<AttackedEntityEvent, AttackedByEntityEventType[TAttackerType]> {
-  return filter<AttackedEntityEvent, AttackedByEntityEventType[TAttackerType]>(isAttackerTypeEvent.bind(undefined, attackerType))
+  return filter<AttackedEntityEvent, AttackedByEntityEventType[TAttackerType]>(isAttackTypeEventFn(attackerType))
 }
 
 export type ServerEvents = Observable<ServerEvent>

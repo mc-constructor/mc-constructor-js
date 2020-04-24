@@ -38,6 +38,7 @@ export class CommandBlockData extends BlockDataBase {
       return this.setData('Command', `"${cmd.replace(/"/g, '\\"')}"`)
     }
     this.setData('Command', cmd)
+    return this
   }
 }
 

@@ -4,7 +4,7 @@ import { isTextComponent, TextComponent } from '@minecraft/core/cmd'
 import { Command } from '@minecraft/core/command'
 import { Coordinates } from '@minecraft/core/types'
 import { Observable, of } from 'rxjs'
-import { filter, take, tap } from 'rxjs/operators'
+import { filter, take } from 'rxjs/operators'
 
 import { HookHandler } from '../hooks'
 import { CodslapEvents } from '../codslap-events'
@@ -12,7 +12,7 @@ import { CodslapEvents } from '../codslap-events'
 export type ArenaHookEvents = { [THook in keyof CodslapEvents]: CodslapEvents[THook] extends Observable<infer TEvent> ? TEvent : never }
 export type ArenaHooks = { [THook in keyof ArenaHookEvents]?: HookHandler<ArenaHookEvents[THook]>[] }
 
-export type ArenaRequirement = (events: CodslapEvents) => Observable<any>
+export type ArenaRequirement<TArena extends Arena = Arena> = (events: CodslapEvents, arena: TArena) => Observable<any>
 
 export interface ArenaDescriptor {
   title: TextComponent
@@ -22,7 +22,6 @@ export interface ArenaDescriptor {
 }
 
 export interface Arena {
-
   readonly hooks?: ArenaHooks
 
   init(): Command
@@ -41,11 +40,14 @@ export function arenaDescriptor(arena: Arena): ArenaDescriptor {
   return arena.constructor as unknown as ArenaDescriptor
 }
 
-export type NoRequirements = [() => Observable<any>]
+export type NoRequirements = [() => Observable<void>]
+export const NoRequirements: NoRequirements = [() => of(undefined)]
 
 export interface ArenaRequirementsStatic {
   none: NoRequirements
-  minAge(age: number): ArenaRequirement
+  count(hook: keyof CodslapEvents, count: number): ArenaRequirement
+  minArenaAge(age: number): ArenaRequirement
+  minGameAge(age: number): ArenaRequirement
 }
 
 export interface ArenaStatic extends ArenaDecorator {
@@ -58,10 +60,10 @@ function isArenaDescriptor(obj: any): obj is ArenaDescriptor {
     isTextComponent(obj.description) &&
     Array.isArray(obj.entryRequirements) &&
     obj.entryRequirements.length &&
-    obj.entryRequirements.every(req => typeof req === 'function') &&
+    obj.entryRequirements.every((req: any) => typeof req === 'function') &&
     Array.isArray(obj.exitRequirements) &&
     obj.exitRequirements.length &&
-    obj.exitRequirements.every(req => typeof req === 'function')
+    obj.exitRequirements.every((req: any) => typeof req === 'function')
 }
 
 function ArenaDecorator(): ClassDecorator {
@@ -77,13 +79,21 @@ function ArenaDecorator(): ClassDecorator {
 
 export const Arena: ArenaStatic = Object.assign(ArenaDecorator, {
   requirements: {
-    none: [() => of(undefined)] as NoRequirements,
-    minAge: (age: number) =>
+    none: NoRequirements,
+    count: (hook: keyof CodslapEvents, count: number): ArenaRequirement =>
+      (events: CodslapEvents) =>
+        (events[hook] as Observable<any>).pipe(take(count)),
+    minArenaAge: (age: number): ArenaRequirement =>
       (events: CodslapEvents) =>
         events.age$.pipe(
-          tap(age => console.log('age', age)),
           filter(event => event.arenaAge >= age),
           take(1),
-        )
+        ),
+    minGameAge: (age: number): ArenaRequirement =>
+      (events: CodslapEvents) =>
+        events.age$.pipe(
+          filter(event => event.minigameAge >= age),
+          take(1),
+        ),
   },
 })

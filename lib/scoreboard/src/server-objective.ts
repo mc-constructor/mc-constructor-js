@@ -10,7 +10,7 @@ import {
   TextComponent
 } from '../../cmd'
 import { parallel } from '../../command'
-import { SubscriptionTracker } from '../../common'
+import { SubscriptionTracker } from '../../common/rxjs'
 import { Client } from '../../server'
 
 import { Objective, ScoreOperation } from './objective'

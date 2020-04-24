@@ -27,7 +27,15 @@ type BlockDataConstructorMap = {
   [TBlock in keyof BlockData]: TBlock extends keyof BlockDataCustomConstructorMap ? BlockDataCustomConstructorMap[TBlock] : new () => BlockData[TBlock]
 }
 
+function blockHasCustomBlockDataConstructor(block: Block): block is keyof BlockDataMap {
+  return !!BlockDataMap[block as keyof BlockDataMap]
+}
+
 export const BlockData: BlockDataConstructorMap = Object.values(Block).reduce((result, block) => {
-  result[block] = BlockDataMap[block] || BlockDataBase
+  if (blockHasCustomBlockDataConstructor(block)) {
+    result[block] = BlockDataMap[block]
+  } else {
+    result[block] = BlockDataBase
+  }
   return result
-}, {}) as BlockDataConstructorMap
+}, {} as BlockDataConstructorMap)

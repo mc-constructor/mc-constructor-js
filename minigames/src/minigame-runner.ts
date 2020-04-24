@@ -25,7 +25,9 @@ export class MinigameRunner {
       Disposable.dispose(gameInjector, 'cleanup')
     })
     await Disposable.useAsync(gameInjector, async gameInjector => {
+      this.logger.debug('invoking game')
       const game$: Observable<void> = await gameInjector.invoke(this as MinigameRunner, 'run')
+      this.logger.debug('got game instance, ready to subscribe to event stream')
 
       await new Promise<void>(resolve => {
         const gameObserver: Observer<any> = {
@@ -40,6 +42,7 @@ export class MinigameRunner {
   }
 
   public async run(@Inject(Minigame) game: Minigame): Promise<Observable<void>> {
+    this.logger.debug('run')
     const validate = game.validateGameState()
     const gameInfo = getMinigameMeta(game.constructor as Constructor<Minigame>)
     if (validate) {

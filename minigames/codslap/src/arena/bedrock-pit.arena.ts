@@ -2,9 +2,8 @@ import { Inject } from '@dandi/core'
 import { text } from '@minecraft/core/cmd/src/text'
 import { randomIntGenerator } from '@minecraft/core/common'
 import { Block, loc, Mob } from '@minecraft/core/types'
-import { take } from 'rxjs/operators'
 
-import { summonBehavior } from '../hooks/spawn-entity'
+import { summonBehavior } from '../hooks'
 import { CommonCommands } from '../common'
 
 import { Arena, ArenaConstructor, ArenaHooks } from './arena'
@@ -16,13 +15,13 @@ class BedrockPitArena extends PlatformArena {
   public static readonly title = text('Bedrock Pit').bold
   public static readonly description = text('Mind the gap...')
   public static readonly entryRequirements = [
-    // event$ => event$.codslapPlayerKill$.pipe(take(50)),
-    event$ => event$.codslap$.pipe(take(10)),
+    // Arena.requirements.count('codslapPlayerKill$', 50),
+    Arena.requirements.count('codslap$', 10),
   ]
   public static readonly exitRequirements = [
     // event$ => event$.codslapPlayerKill$.pipe(take(100)),
     // event$ => event$.codslap$.pipe(take(500)),
-    Arena.requirements.minAge(5),
+    Arena.requirements.minArenaAge(5),
   ]
   // public static readonly entryRequirements = [
   //   event$ => event$.codslapPlayerKill$.pipe(take(50)),

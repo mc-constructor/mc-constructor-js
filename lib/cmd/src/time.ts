@@ -63,7 +63,7 @@ export const time: TimeCommandBuilder = Object.defineProperties(timeFn, {
       Object.values(TimeSpec).reduce((result, spec) => {
         result[spec] = { get: () => timeFn(TimeSubCommand.set, spec) }
         return result
-      }, {}),
+      }, {} as any),
     )
   },
 })

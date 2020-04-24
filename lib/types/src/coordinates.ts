@@ -142,6 +142,7 @@ export interface ModifyCoordinates<TReturn> {
   west(value: number): TReturn
   up(value: number): TReturn
   down(value: number): TReturn
+  offset(loc: SimpleCoordinatesOptions): TReturn
 }
 
 export interface Coordinates extends Iterable<AxisValue> {
@@ -217,6 +218,14 @@ class CoordinatesImpl implements Iterable<any> {
       north: { value: (value: number) => this.modify(2, this.z.minus(value)) },
       up: { value: (value: number) => this.modify(1, this.y.plus(value)) },
       down: { value: (value: number) => this.modify(1, this.y.minus(value)) },
+      offset: { value: (loc: SimpleCoordinatesOptions) => {
+        const offset = simpleCoordinatesXYZ(loc)
+          return new CoordinatesImpl(
+            this.x + (offset.x || 0),
+            this.y + (offset.y || 0),
+            this.z + (offset.z || 0),
+          )
+      }}
     })
   }
 

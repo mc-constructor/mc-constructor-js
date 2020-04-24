@@ -38,7 +38,7 @@ const app = new DandiApplication({
     LoggingModule.use(ConsoleLogListener),
     MinigameModule,
     PlayersModule,
-    PrettyColorsLogging.set({ filter: LogLevel.info}),
+    PrettyColorsLogging.set({ filter: LogLevel.debug }),
     ScoreboardModule,
     ServerModule,
   ]

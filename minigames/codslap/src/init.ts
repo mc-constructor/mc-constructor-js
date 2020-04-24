@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@dandi/core'
+import { Inject, Injectable, Logger } from '@dandi/core'
 import {
   block,
   clear,
@@ -29,8 +29,10 @@ export class CodslapInitCommand extends MultiCommand {
     @Inject(Players) private players$: Players,
     @Inject(CommonCommands) private common: CommonCommands,
     @Inject(ArenaManager) private arena: ArenaManager,
+    @Inject(Logger) logger: Logger,
   ) {
-    super()
+    super(logger)
+    this.logger.debug('ctr')
   }
 
   public compile(): Command[] {

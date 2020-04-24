@@ -36,5 +36,5 @@ export const weather: WeatherCommandBuilder = Object.defineProperties(weatherFn,
       }
     }
     return result
-  }, {})
+  }, {} as any)
 )

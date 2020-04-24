@@ -27,7 +27,15 @@ type BlockStateConstructorMap = {
   [TBlock in keyof BlockState]: TBlock extends keyof BlockStateCustomConstructorMap ? BlockStateCustomConstructorMap[TBlock] : new () => BlockState[TBlock]
 }
 
+function blockHasCustomBlockStateConstructor(block: Block): block is keyof BlockStateMap {
+  return !!BlockStateMap[block as keyof BlockStateMap]
+}
+
 export const BlockState: BlockStateConstructorMap = Object.values(Block).reduce((result, block) => {
-  result[block] = BlockStateMap[block] || BlockStateBase
+  if (blockHasCustomBlockStateConstructor(block)) {
+    result[block] = BlockStateMap[block]
+  } else {
+    result[block] = BlockStateBase
+  }
   return result
-}, {}) as BlockStateConstructorMap
+}, {} as BlockStateConstructorMap)

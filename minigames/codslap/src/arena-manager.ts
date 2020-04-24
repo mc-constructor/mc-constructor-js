@@ -1,9 +1,8 @@
-import { Inject, Injectable } from '@dandi/core'
+import { Inject, Injectable, Logger } from '@dandi/core'
 import { title } from '@minecraft/core/cmd'
-import { Command } from '@minecraft/core/command'
-import { queuedReplay } from '@minecraft/core/common'
+import { CommandOperator, CommandOperatorFn, dequeueReplay } from '@minecraft/core/common/rxjs'
 import { Client } from '@minecraft/core/server'
-import { combineLatest, forkJoin, from, merge, Observable, of, OperatorFunction, Subject } from 'rxjs'
+import { combineLatest, forkJoin, merge, Observable, of, ReplaySubject } from 'rxjs'
 import {
   buffer,
   concatMap,
@@ -17,7 +16,7 @@ import {
   tap
 } from 'rxjs/operators'
 
-import { Arena, arenaDescriptor, ArenaRequirement } from './arena/arena'
+import { Arena, arenaDescriptor, ArenaHooks, ArenaRequirement } from './arena/arena'
 import { CodslapEvents } from './codslap-events'
 import { CommonCommands } from './common'
 import { Accessor, EventsAccessor } from './events-accessor'
@@ -26,10 +25,10 @@ import { HookHandler } from './hooks'
 @Injectable()
 export class ArenaManager {
 
-  public readonly availableArena$: Observable<Arena>
-  public readonly runArena$: Observable<Arena>
+  public readonly arenaAvailable$: Observable<Arena>
+  public readonly arenaComplete$: Observable<Arena>
 
-  private readonly arenaStart$$ = new Subject<Arena>()
+  private readonly arenaStart$$ = new ReplaySubject<Arena>(1)
   public readonly arenaStart$ = this.arenaStart$$.asObservable()
 
   public readonly run$: Observable<any>
@@ -41,28 +40,30 @@ export class ArenaManager {
     @Inject(Arena) private arenas: Arena[],
     @Inject(EventsAccessor) eventsAccessor: Accessor<CodslapEvents>,
     @Inject(CommonCommands) private readonly common: CommonCommands,
+    @Inject(CommandOperator) private readonly command: CommandOperatorFn,
+    @Inject(Logger) private readonly logger: Logger,
   ) {
-    this.availableArena$ = this.availableArena()
-    this.runArena$ = this.runArena()
+    this.logger.debug('ctr')
+    this.arenaAvailable$ = this.arenaAvailable()
+    this.arenaComplete$ = this.runArenas()
     eventsAccessor(this, 'events')
 
-    this.run$ = this.runArena$
+    this.run$ = this.arenaComplete$
   }
 
-  private availableArena(): Observable<Arena> {
+  private arenaAvailable(): Observable<Arena> {
     // start with "of" so that the entry requirements aren't created until a subscription actually happens
     return of(undefined).pipe(
+      tap(() => this.logger.debug('starting arenas', this.arenas.map(arena => arenaDescriptor(arena).title.toString()))),
       // this will emit any time an arena's entry requirements have all been met
       switchMap(() => merge(...this.arenas.map(arena => this.arenaEntryRequirements(arena)))),
-      tap(arena => console.log('after entry reqs', arena.constructor.name)),
-      queuedReplay(this.arenaStart$),
-      tap(arena => console.log('ARENA AVAILABLE', arena.constructor.name)),
-      share(),
+      tap(arena => this.logger.debug('arena available:', arena.constructor.name)),
+      dequeueReplay(this.arenaStart$),
     )
   }
 
-  private runArena(): Observable<Arena> {
-    return this.availableArena$.pipe(
+  private runArenas(): Observable<Arena> {
+    return this.arenaAvailable$.pipe(
       // Use pairwise so the previous arena is emitted, allowing the arena switching / cleanup logic to be triggered
       // once the next arena is ready. Use startWith so that the first arena emits with no previous arena.
       startWith(undefined as Arena),
@@ -72,18 +73,16 @@ export class ArenaManager {
       // being played. It will not continue until its inner Observable emits, which allows arenas to be played until
       // their exit requirements are met.
       concatMap(([prevArena, arena]) => {
-        console.log('runArena - in concatMap')
         // set up the new arena (includes moving players into it once it's done)
         return this.initArena([prevArena, arena]).pipe(
           switchMap(() => {
-            console.log('runArena - after initArena switchMap')
             // set up the arena's hooks to listen for their events
             return of(undefined).pipe(
               // emit arenaStart$ - note that this must come AFTER initArenaHooks so that any arenaStart$ behaviors on the
               // newly initialized arena can receive the event
               tap(() => {
                 setTimeout(() => {
-                  console.log('arena start', arena.constructor.name)
+                  this.logger.debug('arena start', arena.constructor.name)
                   this.arenaStart$$.next(arena)
                 }, 1)
               }),
@@ -95,7 +94,7 @@ export class ArenaManager {
               buffer(
                 combineLatest([
                   this.arenaExitRequirements(arena),
-                  this.availableArena$,
+                  this.arenaAvailable$,
                 ]),
               ),
             )
@@ -108,7 +107,7 @@ export class ArenaManager {
   }
 
   private initArena([prevArena, arena]: [Arena, Arena]): Observable<Arena> {
-    console.log('initArena', arena.constructor.name)
+    this.logger.debug('initArena', arena.constructor.name)
     const descriptor = arenaDescriptor(arena)
     return of(undefined).pipe(
       switchMap(() => {
@@ -117,23 +116,22 @@ export class ArenaManager {
         }
         return of(undefined)
       }),
-      this.cmdStep(arena.init()),
+      this.command(arena.init()),
       delay(500),
-      this.cmdStep(this.common.movePlayersToArena(arena)),
-      this.cmdStep(title('@a', descriptor.title, descriptor.description)),
+      this.command(this.common.movePlayersToArena(arena)),
+      this.command(title('@a', descriptor.title, descriptor.description)),
       map(() => arena),
-      tap(arena => console.log('initArena complete', arena.constructor.name)),
+      tap(arena => this.logger.debug('initArena complete', arena.constructor.name)),
     )
   }
 
   private initArenaHooks(arena: Arena): Observable<any> {
-    console.log('initArenaHooks', arena.constructor.name)
-    const events$ = this.events
-    const hooks = [...Object.keys(arena.hooks)].map(hook => {
-      const handlers = arena.hooks[hook]
+    const hooks = [...Object.keys(arena.hooks)].map((hook: keyof ArenaHooks) => {
+      const handlers = arena.hooks[hook] as HookHandler<any>[]
       return merge(...handlers.map((handler: HookHandler<any>) => {
-        return events$[hook].pipe(tap(event => {
-          console.log('arena hook:', arena.constructor.name, hook, handler)
+        const hook$ = this.events[hook] as Observable<any>
+        return hook$.pipe(tap(event => {
+          this.logger.debug('arena hook:', arena.constructor.name, hook, handler)
           const cmd = handler(arena, event)
           cmd.execute(this.client)
         }))
@@ -144,9 +142,9 @@ export class ArenaManager {
 
   private clearArena(arena: Arena): Observable<Arena> {
     return of(undefined).pipe(
-      this.cmdStep(this.common.movePlayersToHolding()),
+      this.command(this.common.movePlayersToHolding()),
       delay(500),
-      this.cmdStep(arena.cleanup()),
+      this.command(arena.cleanup()),
     )
   }
 
@@ -159,24 +157,14 @@ export class ArenaManager {
   }
 
   private arenaRequirements(arena: Arena, type: string, requirements: ArenaRequirement[]): Observable<any> {
-    console.log('creating', type, 'reqs', arena.constructor.name)
-      const reqs$ = requirements.map(req => req(this.events).pipe(
-        finalize(() => console.log(`${type} req complete`, arena.constructor.name, req))),
-      )
+    const reqs$ = requirements.map(req => req(this.events, arena).pipe(
+      finalize(() => this.logger.debug(`${type} req complete`, arena.constructor.name, req))),
+    )
     return forkJoin(...reqs$).pipe(
-      tap(() => console.log('after forkJoin', type, arena.constructor.name)),
       map(() => arena),
-      tap(arena => console.log(`${type} reqs complete`, arena.constructor.name)),
+      tap(arena => this.logger.debug(`${type} reqs complete`, arena.constructor.name)),
       share(),
     )
-  }
-
-  private execute<TResponse>(cmd: Command<TResponse>): Observable<TResponse> {
-    return from(cmd.execute(this.client))
-  }
-
-  private cmdStep<TResponse>(cmd: Command<TResponse>): OperatorFunction<any, TResponse> {
-    return switchMap(() => this.execute(cmd))
   }
 
 }

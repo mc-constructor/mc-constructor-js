@@ -151,5 +151,5 @@ export const gamerule: GameRuleCommandBuilder = Object.defineProperties(
       }
     }
     return result
-  }, {})
+  }, {} as any)
 )

@@ -13,7 +13,9 @@ export class CodslapObjectives implements Disposable {
   constructor(
     @Inject(Scoreboard) private scoreboard: Scoreboard,
     @Inject(Logger) private logger: Logger,
-  ) {}
+  ) {
+    this.logger.debug('ctr')
+  }
 
   public dispose(reason: string): void {
     this.logger.info('Removing objectives...')

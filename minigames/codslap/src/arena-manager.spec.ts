@@ -5,13 +5,12 @@ import { Players } from '@minecraft/core/players'
 import { playersFixture, PlayersFixture } from '@minecraft/core/players/testing'
 import { Client } from '@minecraft/core/server'
 import { clientFixture, ClientFixture } from '@minecraft/core/server/testing'
-import { of, Subscription } from 'rxjs'
 
+import { of } from 'rxjs'
 import * as rxOps from 'rxjs/operators'
 
 import { expect } from 'chai'
-import { codslapEventsFixture, CodslapEventsFixture } from '../testing'
-import { codslapObjectivesFixture } from '../testing/src/codslap-objectives.fixture'
+import { codslapEventsFixture, CodslapEventsFixture, codslapObjectivesFixture } from '../testing'
 
 import { ArenaManager } from './arena-manager'
 import { Boring } from './arena/boring.arena'
@@ -89,11 +88,10 @@ describe('ArenaManager', () => {
         manager.arenaStart$.subscribe(arenaStart),
         runSub,
       )
-      console.log('after subscribe')
 
       await new Promise(resolve => setTimeout(resolve, 10))
 
-      expect(arenaStart).to.have.been.called
+      expect(arenaStart).to.have.been.calledOnce
       const arena = arenaStart.firstCall.lastArg
       expect(arena).to.be.instanceof(Boring)
 

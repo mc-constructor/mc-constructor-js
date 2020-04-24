@@ -14,10 +14,15 @@ class BoringArena extends PlatformArena {
 
   public static readonly title = text('Boring Arena').bold
   public static readonly description = text(`Give me a break, it's just the first level...`)
-  public static readonly entryRequirements = Arena.requirements.none
+
+  // public static readonly entryRequirements = Arena.requirements.none
+  public static readonly entryRequirements = [
+    Arena.requirements.count('codslap$', 5),
+  ]
+
   public static readonly exitRequirements = [
     // Arena.requirements.minAge(300), // 5 min
-    Arena.requirements.minAge(30),
+    Arena.requirements.minArenaAge(30),
   ]
 
   public readonly floor: PlatformLayer = {

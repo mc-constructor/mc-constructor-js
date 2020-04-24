@@ -14,7 +14,7 @@ class GiveCommand<TItem extends Item> extends SimpleCommand<GiveResult<TItem>> {
   protected readonly command: string = 'give'
 
   constructor(
-    public readonly target,
+    public readonly target: string,
     public readonly item: ItemBuilder<TItem>,
     public readonly count: number = 1,
     public readonly playerCheck?: string,
@@ -31,7 +31,7 @@ class GiveCommand<TItem extends Item> extends SimpleCommand<GiveResult<TItem>> {
   }
 
   protected parseSuccessResponse(response: ClientMessageSuccessResponse): GiveResult<TItem> {
-    const [key, countRaw, entityIdRaw, playerName] = response.extras
+    const [, countRaw, entityIdRaw, playerName] = response.extras
     const count = parseInt(countRaw)
     const entityId = entityIdRaw.substring(1, entityIdRaw.length - 1)
     const item = fromEntityId(entityId)

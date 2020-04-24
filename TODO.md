@@ -20,6 +20,11 @@
 ## Arenas
 - 
 
+## Arena Ideas
+- ice floor - with polar bears?
+- "king of the hill" - with step block (may require adding support to set block facing direction?)
+- "virtual insanity" - platform "moves"
+
 ## Codslap
  - how does the codslapper level up?
  - give codslappers tiered dmg vs mobs, no dmg vs players
@@ -28,7 +33,6 @@
  - ice platform
  - platform shrinks
  - randomly spawn creepers / tnt minecart (use data to make it less explosive?)
- - cage and platform made of bedrock / hole in the middle
  - collecting food drops increases satiation
  - collecting leather can grant random armor piece
  - collecting gunpowder can upgrades armor

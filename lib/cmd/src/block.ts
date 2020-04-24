@@ -85,7 +85,7 @@ class BlockCommandBuilderImpl<
     this.stateModifiers = this.getModifiers(BlockState)
     this.dataModifiers = this.getModifiers(BlockData)
 
-    const modifiers = new Map<any, (args?: any) => any>()
+    const modifiers = new Map<any, (...args: any[]) => any>()
     modifiers.set('set', this.setBlockCommand.bind(this))
     modifiers.set('fill', this.fillBlockCommand.bind(this))
     modifiers.set('box', this.boxBlockCommand.bind(this))

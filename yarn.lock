@@ -177,20 +177,20 @@
     lodash "^4.17.13"
     to-fast-properties "^2.0.0"
 
-"@dandi/common@^1.0.0-alpha.54":
-  version "1.0.0-alpha.54"
-  resolved "https://registry.yarnpkg.com/@dandi/common/-/common-1.0.0-alpha.54.tgz#deb039b1bf32bdb9c3e043e5de9cc964fc667ce3"
-  integrity sha512-cuX23NupbWxTSR7bQAhWHI85fTI/21xPiOilf5O07GKpUmnLFp0qBdO2J4SB/Wua++tpiiBEVV16zvebwxgdxQ==
+"@dandi/common@^1.0.0-alpha.55":
+  version "1.0.0-alpha.55"
+  resolved "https://registry.yarnpkg.com/@dandi/common/-/common-1.0.0-alpha.55.tgz#91d79f539bcd02ed3c1cb3d1fd6edcd9fa7e1696"
+  integrity sha512-TZ+CIMRJLImmIO0jmlwG86x1OsrWwlv4JUsnqjOBpHpY5B0miW9ibkc6Sx4h/XY9FBZPpqJqmW6DX+umvoAeug==
 
-"@dandi/core@^1.0.0-alpha.54":
-  version "1.0.0-alpha.54"
-  resolved "https://registry.yarnpkg.com/@dandi/core/-/core-1.0.0-alpha.54.tgz#73872374ea5f703caa4cb68ad7b33b52c713982a"
-  integrity sha512-uEuhT7WBK3bpLfygmRybKqppKZOv/ANo058ywWvo/xmPrg/ggGoNpIzUve7qHvJUmhVTe0pJUjk5xKVnUzH/bQ==
+"@dandi/core@^1.0.0-alpha.55":
+  version "1.0.0-alpha.55"
+  resolved "https://registry.yarnpkg.com/@dandi/core/-/core-1.0.0-alpha.55.tgz#60cb51e0ecefe86e369753fb3c08191fa131f1f1"
+  integrity sha512-6WytUDwaWnhycJ7qbnyB4IITbuSMsIO+HImIOTQ158zjp26LNeLuThJPjMy+xse+TZOIoJqFXiP+EsFwyNJpJw==
 
-"@dandi/logging@^1.0.0-alpha.54":
-  version "1.0.0-alpha.54"
-  resolved "https://registry.yarnpkg.com/@dandi/logging/-/logging-1.0.0-alpha.54.tgz#e81a9a9be4dfe0b7bb38265130bc973d4d7f8bce"
-  integrity sha512-0/Ui7IQKtID/IJ9+pZmRRf+8sQuVjkD6y2taCWp8v6QPDk7t0Eozw0OZY74TBfirmQCrTH0xk3c7MxIrFY7LGA==
+"@dandi/logging@^1.0.0-alpha.55":
+  version "1.0.0-alpha.55"
+  resolved "https://registry.yarnpkg.com/@dandi/logging/-/logging-1.0.0-alpha.55.tgz#2318c2e87ffe828f74a2a103f03ff20515877f50"
+  integrity sha512-wZ1//fE/OmGg28eNw/BX6sb2QbpxI7wt4CEZ06cZ9UfAul33FYrqJ7TSq5I7J/u04VmZEwx7BdMwuDz7VnQJog==
   optionalDependencies:
     colors "^1.3.0"
 

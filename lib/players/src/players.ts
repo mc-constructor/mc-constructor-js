@@ -1,5 +1,5 @@
 import { Uuid } from '@dandi/common'
-import { Inject, Injectable } from '@dandi/core'
+import { Inject, Injectable, Logger } from '@dandi/core'
 import { merge, Observable } from 'rxjs'
 import { map, share, tap } from 'rxjs/operators'
 
@@ -17,6 +17,7 @@ export class Players {
   constructor(
     @Inject(Client) client: Client,
     @Inject(ServerEvents) events$: ServerEvents,
+    @Inject(Logger) private logger: Logger,
   ) {
     const playerJoin$ = events$.pipe(
       eventType(ServerEventType.playerJoined),
@@ -46,6 +47,9 @@ export class Players {
   }
 
   public hasNamedPlayer(name: string): boolean {
+    if (!this.playersByName.has(name)) {
+      this.logger.debug('no player named', name)
+    }
     return this.playersByName.has(name)
   }
 

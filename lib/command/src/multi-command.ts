@@ -1,11 +1,12 @@
 import { Constructor } from '@dandi/common'
+import { Logger } from '@dandi/core'
 import { loggerFactory } from '../../common'
 import {
   Client,
   CompiledMessage,
   CompiledSimpleMessage,
   ClientMessageResponse,
-  MessageType,
+  MessageType, PendingMessage,
 } from '../../server'
 
 import { Command } from './command'
@@ -34,11 +35,18 @@ export abstract class MultiCommand extends Command {
   public readonly instanceId = MultiCommand.nextInstanceId++
 
   protected abstract readonly parallel: boolean
-  private readonly logger = loggerFactory.getLogger(this.constructor as Constructor)
+  protected readonly logger: Logger
 
   public get debug(): string {
     return `${this.constructor.name}#${this.instanceId}`
   }
+
+  protected constructor(logger?: Logger) {
+    super()
+
+    this.logger = logger || loggerFactory.getLogger(this.constructor as Constructor)
+  }
+
 
   public compileMessage(client: Client): CompiledMessage {
     const context = new MultiCommandExecutionContext(client, this.compile())
@@ -48,10 +56,10 @@ export abstract class MultiCommand extends Command {
 
   protected abstract compile(): Command[]
 
-  protected async processCommands(context: MultiCommandExecutionContext): Promise<any> {
+  protected processCommands(context: MultiCommandExecutionContext): PendingMessage {
     const remaining = new Set<CompiledMessage>(context.compiled.map(compiled => compiled))
     let logTimeout: Timeout
-    await context.compiled.reduce(async (prev, msg) => {
+    context.compiled.reduce(async (prev, msg) => {
       if (!this.parallel) {
         await prev
       }
@@ -77,7 +85,11 @@ export abstract class MultiCommand extends Command {
       return result
     }, Promise.resolve())
 
-    return Promise.all(context.compiled.map(msg => msg.pendingMessage)).then(this.parseResponses.bind(this))
+    const result = Promise.all(context.compiled.map(msg => msg.pendingMessage)).then(this.parseResponses.bind(this))
+    return Object.assign(result, {
+      id: `${this.constructor.name}#${this.instanceId}`,
+      sent: undefined,
+    })
   }
 
   protected parseResponses(responses: ClientMessageResponse[]): any {

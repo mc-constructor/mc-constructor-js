@@ -1,8 +1,9 @@
 import { ModuleBuilder, Registerable } from '@dandi/core'
 
+import { CommandOperatorProvider, SubscriptionTrackerProvider } from '../rxjs'
+
 import { localToken } from './local-token'
 import { LoggerFactory } from './logger'
-import { SubscriptionTrackerProvider } from './subscription-tracker'
 
 export class CommonModuleBuilder extends ModuleBuilder<CommonModuleBuilder> {
   constructor(...entries: Registerable[]) {
@@ -11,6 +12,8 @@ export class CommonModuleBuilder extends ModuleBuilder<CommonModuleBuilder> {
 }
 
 export const CommonModule = new CommonModuleBuilder(
-  LoggerFactory,
+  CommandOperatorProvider,
   SubscriptionTrackerProvider,
+
+  LoggerFactory,
 )
