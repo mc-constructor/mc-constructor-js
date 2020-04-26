@@ -1,5 +1,5 @@
 import { Constructor } from '@dandi/common'
-import { Injectable, Multi } from '@dandi/core'
+import { Injectable, InjectionToken, Multi } from '@dandi/core'
 import { isTextComponent, TextComponent } from '@minecraft/core/cmd'
 import { Command } from '@minecraft/core/command'
 import { Coordinates } from '@minecraft/core/types'
@@ -8,6 +8,7 @@ import { filter, take } from 'rxjs/operators'
 
 import { HookHandler } from '../hooks'
 import { CodslapEvents } from '../codslap-events'
+import { localToken } from './local-token'
 
 export type ArenaHookEvents = { [THook in keyof CodslapEvents]: CodslapEvents[THook] extends Observable<infer TEvent> ? TEvent : never }
 export type ArenaHooks = { [THook in keyof ArenaHookEvents]?: HookHandler<ArenaHookEvents[THook]>[] }
@@ -30,13 +31,13 @@ export interface Arena {
   getRandomSpawn(): Coordinates
 }
 
-export type ArenaConstructor<TArena extends Arena> = Constructor<TArena> & ArenaDescriptor
+export type ArenaConstructor<TArena extends Arena = Arena> = Constructor<TArena> & ArenaDescriptor
 
 export interface ArenaDecorator {
   (): ClassDecorator
 }
 
-export function arenaDescriptor(arena: Arena): ArenaDescriptor {
+export function arenaDescriptor(arena: Arena | ConfiguredArena): ArenaDescriptor {
   return arena.constructor as unknown as ArenaDescriptor
 }
 
@@ -54,28 +55,40 @@ export interface ArenaStatic extends ArenaDecorator {
   requirements: ArenaRequirementsStatic
 }
 
+function areValidRequirements(obj: any): obj is ArenaRequirement[] {
+  return Array.isArray(obj) && obj.every((req: any) => typeof req === 'function')
+}
+
 function isArenaDescriptor(obj: any): obj is ArenaDescriptor {
   return obj &&
     isTextComponent(obj.title) &&
     isTextComponent(obj.description) &&
-    Array.isArray(obj.entryRequirements) &&
-    obj.entryRequirements.length &&
-    obj.entryRequirements.every((req: any) => typeof req === 'function') &&
-    Array.isArray(obj.exitRequirements) &&
-    obj.exitRequirements.length &&
-    obj.exitRequirements.every((req: any) => typeof req === 'function')
+
+    areValidRequirements(obj.entryRequirements) &&
+    areValidRequirements(obj.exitRequirements)
 }
 
 function ArenaDecorator(): ClassDecorator {
   return function arenaDecorator(target: Function): void {
     if (!isArenaDescriptor(target)) {
-      throw new Error(`${target.name} must statically implement ArenaDescriptor, and both the entryRequirements and ` +
-        'exitRequirements arrays must each contain at least one entry. Use Arena.requirements.none if there are no ' +
-        'requirements')
+      throw new Error(`${target.name} must statically implement ArenaDescriptor`)
     }
     Injectable(Arena, Multi)(target)
   }
 }
+
+export interface ArenaConfiguration {
+  entry: [ArenaRequirement, ...ArenaRequirement[]]
+  exit: [ArenaRequirement, ...ArenaRequirement[]]
+}
+
+export interface ConfiguredArena {
+  instance: Arena
+  config: ArenaConfiguration
+}
+export const ConfiguredArenas: InjectionToken<ConfiguredArena[]> = localToken.opinionated('ConfiguredArenas', {
+  multi: false,
+})
 
 export const Arena: ArenaStatic = Object.assign(ArenaDecorator, {
   requirements: {

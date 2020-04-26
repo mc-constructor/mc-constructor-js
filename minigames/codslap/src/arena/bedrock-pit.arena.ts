@@ -1,4 +1,5 @@
 import { Inject } from '@dandi/core'
+import { block } from '@minecraft/core/cmd'
 import { text } from '@minecraft/core/cmd/src/text'
 import { randomIntGenerator } from '@minecraft/core/common'
 import { Block, loc, Mob } from '@minecraft/core/types'
@@ -40,7 +41,7 @@ class BedrockPitArena extends PlatformArena {
 
     // outer lip
     {
-      block: Block.bedrock,
+      block: block(Block.bedrock),
       radius: this.radius + 1,
       depth: 2,
       centerOffset: this.centerOffset,
@@ -48,7 +49,7 @@ class BedrockPitArena extends PlatformArena {
 
     // inner space
     {
-      block: Block.air,
+      block: block(Block.air),
       radius: this.radius,
       depth: 1,
       centerOffset: this.centerOffset.modify.up(1),
@@ -57,7 +58,7 @@ class BedrockPitArena extends PlatformArena {
 
     // inner lip
     {
-      block: Block.bedrock,
+      block: block(Block.bedrock),
       radius: this.gapRadius + 1,
       depth: 2,
       centerOffset: this.centerOffset,
@@ -66,7 +67,7 @@ class BedrockPitArena extends PlatformArena {
 
     // inner void
     {
-      block: Block.air,
+      block: block(Block.air),
       radius: this.gapRadius,
       depth: 2,
       centerOffset: this.centerOffset,

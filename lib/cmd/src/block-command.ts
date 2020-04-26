@@ -4,7 +4,7 @@ import { Block } from '../../types'
 import { BlockState } from './block-state'
 import { BlockData } from './block-data'
 
-export abstract class BlockCommand<TBlock extends Block> extends SimpleCommand {
+export abstract class BlockCommand<TBlock extends Block = Block> extends SimpleCommand {
 
   protected constructor(
     public readonly block: TBlock,

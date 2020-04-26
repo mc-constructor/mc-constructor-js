@@ -11,24 +11,35 @@
  * @param dequeueTrigger An {@link Observable} that emits values to be removed from the internal queue of events
  */
 import { MonoTypeOperatorFunction, Observable, Operator, Subscriber, Subscription, TeardownLogic } from 'rxjs'
-import { DequeueReplaySubject } from './dequeue-replay-subject'
+import { DequeueReplaySubject, TriggerSelectorFn } from './dequeue-replay-subject'
 
 
-export function dequeueReplay<T>(dequeueTrigger: Observable<T>, ): MonoTypeOperatorFunction<T> {
-  return (source: Observable<T>) => source.lift(new DequeueReplayOperator(dequeueTrigger));
+export function dequeueReplay<TStream>(dequeueTrigger: Observable<TStream>, ): MonoTypeOperatorFunction<TStream>
+export function dequeueReplay<TStream, TTrigger>(
+  dequeueTrigger: Observable<TTrigger>,
+  selectorFn: TriggerSelectorFn<TStream, TTrigger>,
+): MonoTypeOperatorFunction<TStream>
+export function dequeueReplay<TStream, TTrigger>(
+  dequeueTrigger: Observable<TTrigger>,
+  selectorFn?: TriggerSelectorFn<TStream, TTrigger>,
+): MonoTypeOperatorFunction<TStream>
+{
+  return (source: Observable<TStream>) => source.lift(new DequeueReplayOperator(
+    dequeueTrigger, selectorFn
+  ));
 }
 
-class DequeueReplayOperator<T> implements Operator<T, T> {
+class DequeueReplayOperator<TStream, TTrigger> implements Operator<TStream, TStream> {
 
-  private readonly subject: DequeueReplaySubject<T>;
+  private readonly subject: DequeueReplaySubject<TStream, TTrigger>;
   private readonly sources: Set<any> = new Set<any>();
   private sourceSub: Subscription | undefined = undefined;
 
-  constructor(dequeueTrigger: Observable<T>) {
-    this.subject = new DequeueReplaySubject<T>(dequeueTrigger);
+  constructor(dequeueTrigger: Observable<TTrigger>, selectorFn?: TriggerSelectorFn<TStream, TTrigger>) {
+    this.subject = new DequeueReplaySubject<TStream, TTrigger>(dequeueTrigger, selectorFn);
   }
 
-  call(subscriber: Subscriber<T>, source: any): TeardownLogic {
+  call(subscriber: Subscriber<TStream>, source: any): TeardownLogic {
     this._addSource(source);
     return this.subject.subscribe(subscriber);
   }

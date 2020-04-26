@@ -1,4 +1,6 @@
 import { Command, MultiCommand, parallel, SimpleArgsCommand } from '../../command'
+import { Ticks, ticksFromSeconds } from '../../types'
+
 import { TextBuilder, TextFragmentBuilder } from './text'
 
 // https://minecraft.gamepedia.com/Commands/title
@@ -13,14 +15,13 @@ export enum TitleSubcommand {
 }
 
 export interface TitleTimesTicks {
-  fadeIn: number
-  display: number
-  fadeOut: number
+  fadeIn: Ticks
+  display: Ticks
+  fadeOut: Ticks
 }
 
 export class TitleTimes {
 
-  private static readonly TICKS_PER_SECOND = 20
 
   public readonly ticks: TitleTimesTicks
 
@@ -30,9 +31,9 @@ export class TitleTimes {
     public readonly fadeOutSeconds: number = 1,
   ) {
     this.ticks = {
-      fadeIn: this.fadeInSeconds * TitleTimes.TICKS_PER_SECOND,
-      display: this.displaySeconds * TitleTimes.TICKS_PER_SECOND,
-      fadeOut: this.fadeOutSeconds * TitleTimes.TICKS_PER_SECOND,
+      fadeIn: ticksFromSeconds(this.fadeInSeconds),
+      display: ticksFromSeconds(this.displaySeconds),
+      fadeOut: ticksFromSeconds(this.fadeOutSeconds),
     }
   }
 }

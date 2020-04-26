@@ -1,12 +1,14 @@
 import { Block } from '../../types'
 
 import { BlockDataBase } from './block-extras'
+import { TntBlockData } from './blocks/tnt'
 import { CommandBlockData } from './command-block'
 
 type BlockDataMap = {
   [Block.chainCommandBlock]: CommandBlockData
   [Block.commandBlock]: CommandBlockData
   [Block.repeatingCommandBlock]: CommandBlockData
+  [Block.tnt]: TntBlockData,
 }
 
 export type BlockData = {
@@ -21,6 +23,7 @@ const BlockDataMap: BlockDataCustomConstructorMap = {
   [Block.chainCommandBlock]: CommandBlockData,
   [Block.commandBlock]: CommandBlockData,
   [Block.repeatingCommandBlock]: CommandBlockData,
+  [Block.tnt]: TntBlockData,
 }
 
 type BlockDataConstructorMap = {
@@ -33,7 +36,7 @@ function blockHasCustomBlockDataConstructor(block: Block): block is keyof BlockD
 
 export const BlockData: BlockDataConstructorMap = Object.values(Block).reduce((result, block) => {
   if (blockHasCustomBlockDataConstructor(block)) {
-    result[block] = BlockDataMap[block]
+    result[block] = BlockDataMap[block] as any
   } else {
     result[block] = BlockDataBase
   }

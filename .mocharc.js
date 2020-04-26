@@ -11,7 +11,9 @@ module.exports = {
     '.server'
   ],
   require: [
-    resolve(__dirname, './test/ts-node.js'),
+    'tsconfig-paths/register',
+    'ts-node/register',
+    // resolve(__dirname, './test/ts-node.js'),
     'ts-custom-error-shim',
     resolve(__dirname, './test/mocha.config'),
   ],

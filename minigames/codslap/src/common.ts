@@ -3,8 +3,8 @@ import { clear, rawCmd } from '@minecraft/core/cmd'
 import { Command, parallel } from '@minecraft/core/command'
 import { Players } from '@minecraft/core/players'
 import { Coordinates, Item, loc } from '@minecraft/core/types'
-import { Arena } from './arena/arena'
 
+import { Arena } from './arena'
 import { CodslapObjectives } from './codslap-objectives'
 
 export type Codslapper = Item.codslapper | Item.diamondCodslapper | Item.goldCodslapper | Item.ironCodslapper | Item.stoneCodslapper | Item.woodenCodslapper

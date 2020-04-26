@@ -36,7 +36,7 @@ export interface BlockCommandBuilderCommands<TBlock extends Block> {
 export type BlockCommandBuilder<TBlock extends Block> =
   BlockCommandBuilderCommands<TBlock> &
   BlockCommandStateModifiers<TBlock> &
-  BlockCommandDataModifiers<TBlock>
+  BlockCommandDataModifiers<TBlock> & { readonly block: Block }
 
 const IGNORED_MODS = [
   'constructor',
@@ -85,6 +85,7 @@ class BlockCommandBuilderImpl<
     this.stateModifiers = this.getModifiers(BlockState)
     this.dataModifiers = this.getModifiers(BlockData)
 
+    // FIXME: make the builder immutable - these should all return new instances
     const modifiers = new Map<any, (...args: any[]) => any>()
     modifiers.set('set', this.setBlockCommand.bind(this))
     modifiers.set('fill', this.fillBlockCommand.bind(this))

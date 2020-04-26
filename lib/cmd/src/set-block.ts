@@ -5,7 +5,7 @@ import { BlockCommand } from './block-command'
 import { BlockData } from './block-data'
 import { BlockState } from './block-state'
 
-export class SetBlockCommand<TBlock extends Block> extends BlockCommand<TBlock> {
+export class SetBlockCommand<TBlock extends Block = Block> extends BlockCommand<TBlock> {
 
   protected readonly command: string = 'setblock'
 

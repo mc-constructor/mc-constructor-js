@@ -18,21 +18,19 @@
 - what subscriptions aren't getting cleaned up between instances? (e.g. codslap level check is leaking)
 
 ## Arenas
-- 
+- Entry/Exit requirements - make arena specified reqs optional, add global reqs (to help with ordering)                                                                                                                                                                                                                                                                                                                                                                                                                                                    
 
 ## Arena Ideas
 - ice floor - with polar bears?
-- "king of the hill" - with step block (may require adding support to set block facing direction?)
-- "virtual insanity" - platform "moves"
+- "virtual insanity" - platform "moves", splits, etc
+- replace random blocks with primed tnt
+- something involving a volcano?
 
 ## Codslap
  - how does the codslapper level up?
  - give codslappers tiered dmg vs mobs, no dmg vs players
 
 ### Ideas:
- - ice platform
- - platform shrinks
- - randomly spawn creepers / tnt minecart (use data to make it less explosive?)
  - collecting food drops increases satiation
  - collecting leather can grant random armor piece
  - collecting gunpowder can upgrades armor

@@ -13,6 +13,18 @@
     "noImplicitAny": true,
     "noImplicitReturns": true,
     "noImplicitThis": true,
-    "strictBindCallApply": true
+    "strictBindCallApply": true,
+
+    "baseUrl": ".",
+    "paths": {
+      "@minecraft/core/*": ["./lib/*"],
+      "@minecraft/minigames": ["./minigames"],
+      "@rxjs-marbles": ["./rxjs-marbles"],
+      "@rxjs-marbles/*": ["./rxjs-marbles/*"]
+    },
+    "typeRoots": [
+      "./node_modules/@types",
+      "./rxjs-marbles/@types"
+    ]
   }
 }

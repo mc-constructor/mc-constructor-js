@@ -13,7 +13,10 @@ export class RangeIterator implements Iterator<number> {
       return this.return(this.current)
     }
 
-    if (this._current >= this.range.end) {
+    if (
+      (this.range.direction > 0 && (this._current >= this.range.end || this._current < this.range.start)) ||
+      (this.range.direction < 0 && (this._current <= this.range.end || this._current > this.range.start))
+    ) {
       return this.return()
     }
 
@@ -31,7 +34,15 @@ export class RangeIterator implements Iterator<number> {
 
 
 export class Range implements Iterable<number> {
-  constructor(public readonly start: number, public readonly end: number, public readonly increment: number = 1) {}
+
+  public readonly direction: 1 | -1
+
+  constructor(public readonly start: number, public readonly end: number, public readonly increment?: number) {
+    this.direction = start < end ? 1 : -1
+    if (typeof increment === 'undefined') {
+      this.increment = this.direction
+    }
+  }
 
   public by(increment: number): Range {
     return new Range(this.start, this.end, increment)
@@ -52,7 +63,6 @@ export class Range implements Iterable<number> {
     return result
   }
 
-  public reduce<T>(fn: (previousValue: number, currentValue: number, currentIndex: number) => T): T
   public reduce<T>(fn: (previousValue: T, currentValue: number, currentIndex: number) => T, initialValue?: T): T {
     let result = initialValue
     let index = 0

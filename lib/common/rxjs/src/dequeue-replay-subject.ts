@@ -1,6 +1,14 @@
 import { Observable, PartialObserver, Subject, Subscription } from 'rxjs'
 import { toSubscriber } from 'rxjs/internal-compatibility'
 
+export type TriggerSelectorFn<TStream, TTrigger> = (trigger: TTrigger, event: TStream) => boolean
+
+function defaultSelectorFn<TStream, TTrigger>(trigger: TTrigger, event: TStream): boolean {
+  return event as any === trigger as any
+}
+
+export const defaultSelector: TriggerSelectorFn<any, any> = defaultSelectorFn
+
 /**
  * A variant of {@link Subject} that "replays" old values to new subscribers by emitting them when they first subscribe.
  *
@@ -18,30 +26,32 @@ import { toSubscriber } from 'rxjs/internal-compatibility'
  *
  * @see {@link dequeueReplay}
  */
-
-export class DequeueReplaySubject<T> extends Subject<T> {
-  private readonly _events: T[] = [];
+export class DequeueReplaySubject<TStream, TTrigger = TStream> extends Subject<TStream> {
+  private readonly _events: TStream[] = [];
   private _dequeueSub: Subscription | undefined = undefined;
 
-  constructor(private dequeueTrigger: Observable<T>) {
+  constructor(
+    private dequeueTrigger: Observable<TTrigger>,
+    private selectorFn: TriggerSelectorFn<TStream, TTrigger> = defaultSelector
+  ) {
     super();
   }
 
-  next(value: T): void {
+  next(value: TStream): void {
     this._dequeue();
     this._events.push(value);
     super.next(value);
   }
 
-  subscribe(observer?: PartialObserver<T>): Subscription;
+  subscribe(observer?: PartialObserver<TStream>): Subscription;
   /** @deprecated Use an observer instead of a complete callback */
   subscribe(next: null | undefined, error: null | undefined, complete: () => void): Subscription;
   /** @deprecated Use an observer instead of an error callback */
   subscribe(next: null | undefined, error: (error: any) => void, complete?: () => void): Subscription;
   /** @deprecated Use an observer instead of a complete callback */
-  subscribe(next: (value: T) => void, error: null | undefined, complete: () => void): Subscription;
-  subscribe(next?: (value: T) => void, error?: (error: any) => void, complete?: () => void): Subscription;
-  subscribe(observerOrNext?: PartialObserver<T> | ((value: T) => void) | null,
+  subscribe(next: (value: TStream) => void, error: null | undefined, complete: () => void): Subscription;
+  subscribe(next?: (value: TStream) => void, error?: (error: any) => void, complete?: () => void): Subscription;
+  subscribe(observerOrNext?: PartialObserver<TStream> | ((value: TStream) => void) | null,
             error?: ((error: any) => void) | null,
             complete?: (() => void) | null): Subscription {
     const sink = toSubscriber(observerOrNext, error, complete);
@@ -60,11 +70,9 @@ export class DequeueReplaySubject<T> extends Subject<T> {
   }
 
   /** @internal */
-  _dequeueNext(event: T): void {
-    const index = this._events.indexOf(event);
-    if (index >= 0) {
-      this._events.splice(index, 1);
-    }
+  _dequeueNext(trigger: TTrigger): void {
+    const matched = this._events.filter(this.selectorFn.bind(undefined, trigger));
+    matched.forEach(event => this._events.splice(this._events.indexOf(event), 1))
     if (this.isStopped && !this._events.length && this._dequeueSub) {
       this._dequeueSub.unsubscribe();
     }

@@ -1,5 +1,7 @@
 export * from './src/block-extras'
 export * from './src/block'
+export * from './src/block-data'
+export * from './src/block-state'
 export * from './src/clear'
 export * from './src/command-block'
 export * from './src/effect'

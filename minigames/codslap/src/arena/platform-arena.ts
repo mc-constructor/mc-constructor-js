@@ -1,13 +1,13 @@
-import { block } from '@minecraft/core/cmd'
+import { block, BlockCommandBuilder } from '@minecraft/core/cmd'
 import { Command, parallel } from '@minecraft/core/command'
 import { randomInt } from '@minecraft/core/common'
 import { area, Area, Block, Coordinates, loc } from '@minecraft/core/types'
 
-import { Arena, ArenaHooks } from './arena'
+import { Arena, ArenaHooks, ArenaRequirement } from './arena'
 
-export interface PlatformLayer {
-  block: Block
-  radius: number
+export interface PlatformLayer<TBlock extends Block = Block> {
+  block: BlockCommandBuilder<TBlock>
+  radius: number | [number, number] // x,z
   depth: number
   centerOffset?: Coordinates
   preventSpawn?: boolean
@@ -24,6 +24,9 @@ const NO_SPAWN_BLOCKS: Block[] = [
 
 export abstract class PlatformArena implements Arena {
 
+  public static readonly entryRequirements: ArenaRequirement[] = []
+  public static readonly exitRequirements: ArenaRequirement[] = []
+
   public abstract readonly layers: PlatformLayer[]
   public readonly hooks: ArenaHooks
 
@@ -32,20 +35,25 @@ export abstract class PlatformArena implements Arena {
 
   protected getLayerCenter(layer: PlatformLayer): Coordinates {
     if (layer.centerOffset) {
-      return this.center
-        .modify.east(layer.centerOffset.x)
-        .modify.up(layer.centerOffset.y)
-        .modify.south(layer.centerOffset.z)
+      return this.center.modify.offset(layer.centerOffset)
     }
     return this.center
   }
 
   protected getLayerStart(layer: PlatformLayer, center: Coordinates): Coordinates {
-    return center.modify.west(layer.radius).modify.north(layer.radius).modify.up(layer.depth - 1)
+    if (Array.isArray(layer.radius)) {
+      const [x, z] = layer.radius
+      return center.modify.offset(loc(x, layer.depth - 1, z))
+    }
+    return center.modify.east(layer.radius).modify.south(layer.radius).modify.up(layer.depth - 1)
   }
 
   protected getLayerEnd(layer: PlatformLayer, center: Coordinates): Coordinates {
-    return center.modify.east(layer.radius).modify.south(layer.radius)
+    if (Array.isArray(layer.radius)) {
+      const [x, z] = layer.radius
+      return center.modify.offset(loc(-x, 0, -z))
+    }
+    return center.modify.west(layer.radius).modify.north(layer.radius)
   }
 
   protected getLayerArea(layer: PlatformLayer): [Coordinates, Coordinates, Coordinates] {
@@ -97,13 +105,13 @@ export abstract class PlatformArena implements Arena {
     return parallel(...this.layers.map(layer => {
       const [, start, end] = this.getLayerArea(layer)
       if (!resetBlock && !layer.ignoreForSpawn) {
-        if (layer.preventSpawn || NO_SPAWN_BLOCKS.includes(layer.block)) {
+        if (layer.preventSpawn || NO_SPAWN_BLOCKS.includes(layer.block.block)) {
           this.spawnBlacklist.push(area(start.modify.up(5), end.modify.down(2)))
         } else {
           this.spawnAreas.push(area(start.modify.up(2), end.modify.up(2)))
         }
       }
-      return block(resetBlock || layer.block).fill(start, end)
+      return (resetBlock ? block(resetBlock) : layer.block).fill(start, end)
     }))
   }
 

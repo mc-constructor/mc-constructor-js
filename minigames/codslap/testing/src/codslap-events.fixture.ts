@@ -1,8 +1,9 @@
-import { AttackedByPlayerEvent, AttackedEntityEvent, PlayerEvent } from '@minecraft/core/server'
+import { AttackedByPlayerEvent, EntityEvent, Player, PlayerEvent } from '@minecraft/core/server'
+import { stub } from '@dandi/core/testing'
+import { MinigameAgeEvent } from '@minecraft/minigames'
 import { Observable, Subject } from 'rxjs'
 
-import { Arena } from '../../src/arena/arena'
-import { ArenaAgeEvent } from '../../src/arena/arena-age-event'
+import { ArenaAgeEvent, ConfiguredArena } from '../../src/arena'
 import { CodslapEvents } from '../../src/codslap-events'
 
 export type CodslapEventsFixture = {
@@ -12,13 +13,19 @@ export type CodslapEventsFixture = {
 export function codslapEventsFixture(): CodslapEventsFixture {
   return {
     age$: new Subject<ArenaAgeEvent>(),
-    arenaStart$: new Subject<Arena>(),
+    arenaAvailable$: new Subject<ConfiguredArena>(),
+    arenaStart$: new Subject<ConfiguredArena>(),
     codslap$: new Subject<PlayerEvent>(),
     codslapMobKill$: new Subject<AttackedByPlayerEvent>(),
     codslapPlayerKill$: new Subject<AttackedByPlayerEvent>(),
-    playerDeath$: new Subject<AttackedEntityEvent>(),
+    minigameAge$: new Subject<MinigameAgeEvent>(),
+    playerDeath$: new Subject<EntityEvent>(),
     playerRespawn$: new Subject<PlayerEvent>(),
+    playerReady$: new Subject<Player>(),
 
     run$: new Subject<any>(),
+
+    timedPlayerReadyEvent: stub(),
+    waitForPlayerReady: stub(),
   }
 }

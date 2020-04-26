@@ -1,5 +1,5 @@
 import { Inject } from '@dandi/core'
-import { text } from '@minecraft/core/cmd'
+import { text, block } from '@minecraft/core/cmd'
 import { randomIntGenerator } from '@minecraft/core/common'
 import { Block, loc, Mob } from '@minecraft/core/types'
 
@@ -27,7 +27,7 @@ class BoringArena extends PlatformArena {
 
   public readonly floor: PlatformLayer = {
     radius: 15,
-    block: Block.grassBlock,
+    block: block(Block.grassBlock),
     centerOffset: loc(0, 25, 0),
     depth: 1,
   }

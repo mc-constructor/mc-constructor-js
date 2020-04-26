@@ -1,8 +1,7 @@
 import { ModuleBuilder, Registerable } from '@dandi/core'
-import { MinigameEvents } from '@minecraft/minigames'
 
+import { ArenasModule } from './arena'
 import { ArenaManager } from './arena-manager'
-import { Arenas } from './arena/arenas'
 import { CodslapMinigame } from './codslap'
 import { CodslapEvents } from './codslap-events'
 import { CodslapObjectives } from './codslap-objectives'
@@ -18,8 +17,7 @@ export class CodslapModuleBuilder extends ModuleBuilder<CodslapModuleBuilder> {
 }
 
 export const CodslapModule = new CodslapModuleBuilder(
-  Arenas,
-
+  ArenasModule,
   ArenaManager,
   CodslapEvents,
   CodslapInitCommand,
@@ -27,5 +25,4 @@ export const CodslapModule = new CodslapModuleBuilder(
   CodslapObjectives,
   CommonCommands,
   EventsAccessorProvider,
-  MinigameEvents,
 )

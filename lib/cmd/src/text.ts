@@ -1,3 +1,5 @@
+import { inspect } from 'util'
+
 import { SimpleArgsCommand } from '../../command'
 
 // https://minecraft.gamepedia.com/Raw_JSON_text_format
@@ -99,6 +101,15 @@ export class TextBuilder {
 
   public toString(): string {
     return JSON.stringify(this)
+  }
+
+  [inspect.custom](): string {
+    return this.fragments.map(frag => {
+      if (typeof frag === 'string') {
+        return frag
+      }
+      return frag.text
+    }).join('')
   }
 
 }

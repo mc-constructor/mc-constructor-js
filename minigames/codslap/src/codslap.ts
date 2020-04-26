@@ -9,8 +9,8 @@ import { Minigame } from '@minecraft/minigames'
 import { combineLatest, merge, Observable } from 'rxjs'
 import { tap } from 'rxjs/operators'
 
+import { ConfiguredArena } from './arena'
 import { ArenaManager } from './arena-manager'
-import { Arena } from './arena/arena'
 import { CodslapEvents } from './codslap-events'
 import { Codslap } from './codslap-metadata'
 import { CodslapObjectives } from './codslap-objectives'
@@ -79,9 +79,9 @@ export class CodslapMinigame implements Minigame {
     title(event.attacker.name, text('CODSLAP KILL')).execute(this.client)
   }
 
-  private onPlayerDeath([event, arena]: [EntityEvent, Arena]): void {
+  private onPlayerDeath([event, arena]: [EntityEvent, ConfiguredArena]): void {
     this.logger.debug('onPlayerDeath', event)
-    rawCmd(`spawnpoint ${event.entityId} ${arena.getRandomSpawn()}`).execute(this.client)
+    rawCmd(`spawnpoint ${event.entityId} ${arena.instance.getRandomSpawn()}`).execute(this.client)
   }
 
   private onPlayerRespawn(event: PlayerEvent): void {

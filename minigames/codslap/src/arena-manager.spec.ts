@@ -1,5 +1,6 @@
 import { stub, testHarness } from '@dandi/core/testing'
-import { CommonModule, SubscriptionTracker } from '@minecraft/core/common'
+import { CommonModule } from '@minecraft/core/common'
+import { SubscriptionTracker } from '@minecraft/core/common/rxjs'
 import { stubLoggerFactory } from '@minecraft/core/common/testing'
 import { Players } from '@minecraft/core/players'
 import { playersFixture, PlayersFixture } from '@minecraft/core/players/testing'
@@ -12,6 +13,7 @@ import * as rxOps from 'rxjs/operators'
 import { expect } from 'chai'
 import { codslapEventsFixture, CodslapEventsFixture, codslapObjectivesFixture } from '../testing'
 
+import { Arena, ArenasModuleBuilder } from './arena'
 import { ArenaManager } from './arena-manager'
 import { Boring } from './arena/boring.arena'
 import { CodslapEvents } from './codslap-events'
@@ -24,6 +26,13 @@ describe('ArenaManager', () => {
   stubLoggerFactory()
 
   let harness = testHarness(
+    new ArenasModuleBuilder()
+      .arena(Boring, {
+        entry: Arena.requirements.none,
+        exit: [
+          Arena.requirements.minArenaAge(30),
+        ],
+      }),
     ArenaManager,
     Boring,
     CommonCommands,
