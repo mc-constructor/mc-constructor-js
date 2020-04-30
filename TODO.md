@@ -18,7 +18,8 @@
 - what subscriptions aren't getting cleaned up between instances? (e.g. codslap level check is leaking)
 
 ## Arenas
-- Entry/Exit requirements - make arena specified reqs optional, add global reqs (to help with ordering)                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+- Entry/Exit requirements - make arena specified reqs optional, add global reqs (to help with ordering)
+- Default/global hooks (e.g. cow spawning)                                                                                                                                                                                                                                                                                                                                                                                                                                                    
 
 ## Arena Ideas
 - ice floor - with polar bears?
@@ -29,6 +30,18 @@
 ## Codslap
  - how does the codslapper level up?
  - give codslappers tiered dmg vs mobs, no dmg vs players
+ 
+## Bugs
+- spawn blacklist on bedrock pit
+- spawn blacklist on removed rows of shrinky dinks
+- primed and ready - fix general tnt logic
+- hooks stop working on the last arena after exit reqs are met
+
+## Balance/Gameplay fixes
+- scale random spawns with # of players
+- enabled limiting hook-based spawns (e.g. total number of cows spawned)
+- heal/feed player on moving to arena
+- remove fire effect?
 
 ### Ideas:
  - collecting food drops increases satiation

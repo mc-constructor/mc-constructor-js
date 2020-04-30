@@ -1,7 +1,7 @@
 import { Inject } from '@dandi/core'
 import { block } from '@minecraft/core/cmd'
 import { text } from '@minecraft/core/cmd/src/text'
-import { randomIntGenerator } from '@minecraft/core/common'
+import { randomInt, randomIntGenerator } from '@minecraft/core/common'
 import { Block, loc, Mob } from '@minecraft/core/types'
 
 import { summonBehavior } from '../hooks'
@@ -15,23 +15,10 @@ class BedrockPitArena extends PlatformArena {
 
   public static readonly title = text('Bedrock Pit').bold
   public static readonly description = text('Mind the gap...')
-  public static readonly entryRequirements = [
-    // Arena.requirements.count('codslapPlayerKill$', 50),
-    Arena.requirements.count('codslap$', 10),
-  ]
+
   public static readonly exitRequirements = [
-    // event$ => event$.codslapPlayerKill$.pipe(take(100)),
-    // event$ => event$.codslap$.pipe(take(500)),
-    Arena.requirements.minArenaAge(5),
+    Arena.requirements.count('codslapPlayerKill$', 100),
   ]
-  // public static readonly entryRequirements = [
-  //   event$ => event$.codslapPlayerKill$.pipe(take(50)),
-  //   event$ => event$.codslap$.pipe(take(250)),
-  // ]
-  // public static readonly exitRequirements = [
-  //   event$ => event$.codslapPlayerKill$.pipe(take(100)),
-  //   event$ => event$.codslap$.pipe(take(500)),
-  // ]
 
   public readonly radius: number = 11
   public readonly gapRadius: number = 3
@@ -78,6 +65,10 @@ class BedrockPitArena extends PlatformArena {
     playerRespawn$: [
       summonBehavior(Mob.cow, randomIntGenerator(10, 20)),
       summonBehavior(Mob.creeper, randomIntGenerator(0, 6)),
+      summonBehavior([Mob.creeper, '{powered:1}'], () => {
+        const probs = [0, 0, 0, 0, 1]
+        return probs[randomInt(0, probs.length - 1)]
+      })
     ],
     arenaStart$: [
       summonBehavior(Mob.cow, randomIntGenerator(10, 20)),

@@ -52,14 +52,16 @@ export class ArenaManager {
   }
 
   private arenaAvailable(): Observable<ConfiguredArena> {
+    console.log('arenaAvailable')
     // start with "defer" so that the entry requirements aren't created until the game is started (by subscribing to
     // this observable)
     return defer(() => {
+      console.log('arenaAvailable defer', this.arenas)
       this.logger.debug('starting arenas', this.arenas.map(arena => arenaDescriptor(arena.instance).title.toString()))
       // this will emit any time an arena's entry requirements have all been met
       return merge(...this.arenas.map(arena => this.arenaEntryRequirements(arena)))
     }).pipe(
-      tap(arena => this.logger.debug('arena available:', arena.constructor.name)),
+      tap(arena => this.logger.debug('arena available:', arenaDescriptor(arena.instance).title)),
       dequeueReplay(this.arenaStart$),
       // note: share is not needed here because dequeueReplay effectively accomplishes the same thing
     )
@@ -77,9 +79,11 @@ export class ArenaManager {
       // their exit requirements are met, even when one or more new arenas have become available (emitted from
       // arenaAvailable$)
       concatMap(([prevArena, arena]) => {
+        console.log('in concatMap')
         // set up the new arena (includes moving players into it once it's done)
         return this.initArena([prevArena, arena]).pipe(
           switchMap(() => {
+            console.log('after initArena')
             // set up the arena's hooks to listen for their events
             return merge(
               defer(() => this.initArenaHooks(arena)),
@@ -87,22 +91,22 @@ export class ArenaManager {
               // arenaStart$ behaviors on the newly initialized arena can receive the event
               defer(() => timer(5)).pipe(
                 tap(() => {
-                  this.logger.debug('arena start', arena.constructor.name)
+                  console.log('arenaStart', arena.instance.constructor.name)
+                  this.logger.debug('arena start', arena.instance.constructor.name)
                   this.arenaStart$$.next(arena)
-                })
-              ),
-
-              // buffer until exit requirements are complete, and at least one new arena is available
-              // this allows the current arena's hooks to continue receiving events until all exit requirements are
-              // completed and a new arena is ready to be started
-              buffer(
-                combineLatest([
-                  this.arenaExitRequirements(arena),
-                  this.arenaAvailable$,
-                ]),
+                }),
               ),
             )
           }),
+          // buffer until exit requirements are complete, and at least one new arena is available
+          // this allows the current arena's hooks to continue receiving events until all exit requirements are
+          // completed and a new arena is ready to be started
+          buffer(
+            combineLatest([
+              this.arenaExitRequirements(arena),
+              this.arenaAvailable$,
+            ]),
+          ),
           map(() => arena),
         )
       }),
@@ -113,14 +117,17 @@ export class ArenaManager {
   private initArena([prevArena, arena]: [ConfiguredArena, ConfiguredArena]): Observable<ConfiguredArena> {
     const descriptor = arenaDescriptor(arena.instance)
     return defer(() => {
+      console.log('initArena')
       this.logger.debug('initArena', descriptor.title.toString())
       if (prevArena) {
         return this.clearArena(prevArena)
       }
       return of(undefined)
     }).pipe(
+      tap(() => console.log('initArena after defer')),
       this.command(arena.instance.init()),
-      delay(500),
+      tap(() => console.log('initArena after init command')),
+      // delay(500),
       this.command(this.common.movePlayersToArena(arena.instance)),
       this.command(title('@a', descriptor.title, descriptor.description)),
       map(() => arena),
@@ -129,7 +136,7 @@ export class ArenaManager {
   }
 
   private initArenaHooks(arena: ConfiguredArena): Observable<any> {
-    const hooks = [...Object.keys(arena.instance.hooks)].map((hook: keyof ArenaHooks) => {
+    const hooks = [...Object.keys(arena.instance.hooks || {})].map((hook: keyof ArenaHooks) => {
       const handlers = arena.instance.hooks[hook] as HookHandler<any>[]
       return merge(...handlers.map((handler: HookHandler<any>) => {
         const hook$ = this.events[hook] as Observable<any>
@@ -146,7 +153,7 @@ export class ArenaManager {
   private clearArena(arena: ConfiguredArena): Observable<ConfiguredArena> {
     return defer(() => of(this.common.movePlayersToHolding())).pipe(
       this.command(),
-      delay(500),
+      // delay(500),
       this.command(arena.instance.cleanup()),
     )
   }
@@ -160,14 +167,23 @@ export class ArenaManager {
   }
 
   private arenaRequirements(arena: ConfiguredArena, type: 'entry' | 'exit', requirements: ArenaRequirement[]): Observable<ConfiguredArena> {
+
+    console.log('arenaRequirements', arenaDescriptor(arena.instance).title)
     const reqs$ = requirements
       .concat(arena.config[type])
       .map(req => req(this.events, arena.instance).pipe(
-        finalize(() => this.logger.debug(`${type} req complete`, arena.constructor.name, req))),
+        finalize(() => {
+          console.log(`arenaRequirements ${type} req complete`, arenaDescriptor(arena.instance).title)
+          this.logger.debug(`${type} req complete`, arena.constructor.name, req)
+        })),
+        share(),
     )
     return forkJoin(...reqs$).pipe(
       map(() => arena),
-      tap(arena => this.logger.debug(`${type} reqs complete`, arena.constructor.name)),
+      tap(arena => {
+        console.log(`arenaRequirements ${type} complete`, arenaDescriptor(arena.instance).title)
+        this.logger.debug(`${type} reqs complete`, arena.constructor.name)
+      }),
       share(),
     )
   }

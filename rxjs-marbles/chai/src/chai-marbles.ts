@@ -1,4 +1,5 @@
 import * as Chai from 'chai'
+import { expect } from 'chai'
 import { isObservable } from 'rxjs'
 
 import { MarblesHelpers } from '../..'
@@ -10,6 +11,11 @@ export const chaiMarbles = (chai: Chai.ChaiStatic, utils: Chai.ChaiUtils) => {
     const obj = utils.flag(this, 'object')
     const marbles = utils.flag(utils, 'marbles')
     marbles.expectSubscriptions(obj).toBe(subscriptionMarbles)
+  })
+
+
+  utils.addMethod(chai.Assertion.prototype, 'marbleValues', function (this: any, values: any) {
+    utils.flag(this, 'marbleValues', values)
   })
 
   utils.addChainableMethod(chai.Assertion.prototype, 'subscription', function (this: any, subscriptionMarbles: string) {
@@ -30,3 +36,5 @@ export const chaiMarbles = (chai: Chai.ChaiStatic, utils: Chai.ChaiUtils) => {
   })
 
 }
+
+export const assertDeepEqual = (actual: any, expected: any) => expect(actual).to.deep.equal(expected)

@@ -7,9 +7,10 @@ import { Arena } from '../arena/arena'
 
 import { HookHandler } from './hook-handler'
 
-export function summonBehavior(entity: Mob, count: number | (() => number) = 1): HookHandler<any> {
+export function summonBehavior(entityOrStuff: Mob | [Mob, string], count: number | (() => number) = 1): HookHandler<any> {
   return (arena: Arena): Command => {
+    const [entity, extras] = Array.isArray(entityOrStuff) ? entityOrStuff : [entityOrStuff]
     const c = typeof count === 'number' ? count : count()
-    return parallel(...range(0, c).map(() => rawCmd(`summon ${entity} ${arena.getRandomSpawn()}`)))
+    return parallel(...range(0, c).map(() => rawCmd(`summon ${entity} ${arena.getRandomSpawn()}${extras ? ' ' : ''}${extras || ''}`)))
   }
 }

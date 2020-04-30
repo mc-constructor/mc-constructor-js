@@ -5,6 +5,7 @@ declare global {
     interface Assertion {
       subscribedWith(subscriptionMarbles: string): Assertion
       subscription(subscriptionMarbles: string): Assertion
+      marbleValues(values: any): Assertion
     }
   }
 }

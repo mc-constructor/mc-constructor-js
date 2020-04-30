@@ -24,12 +24,14 @@ declare global {
     interface SuiteFunction {
       marbles: MarblesSuiteFunction
     }
+
   }
 
   export namespace Chai {
     interface Assertion {
       subscribedWith(subscriptionMarbles: string): Assertion
       subscription(subscriptionMarbles: string): Assertion
+      marbleValues(values: any): Assertion
     }
   }
 }

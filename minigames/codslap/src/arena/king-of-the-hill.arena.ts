@@ -33,12 +33,6 @@ class KingOfTheHillArena extends PlatformArena {
   public static readonly title = text('King of the Hill').bold
   public static readonly description = text('Mmmmmhm.')
 
-  public static readonly entryRequirements = Arena.requirements.none
-
-  public static readonly exitRequirements = [
-    Arena.requirements.minArenaAge(600),
-  ]
-
   private readonly stairs = STAIRS.slice(0).sort(() => Math.random() - 0.5)
 
   public readonly layers: PlatformLayer[] = range(1, 15).reduce((layers, radius) => {

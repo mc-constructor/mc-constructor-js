@@ -1,3 +1,4 @@
-import { chaiMarbles } from './src/chai-marbles'
+import { assertDeepEqual, chaiMarbles } from './src/chai-marbles'
 
 module.exports = chaiMarbles
+module.exports.assertDeepEqual = assertDeepEqual

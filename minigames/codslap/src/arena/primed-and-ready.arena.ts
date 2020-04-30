@@ -1,14 +1,16 @@
 import { Inject, Logger } from '@dandi/core'
-import { block, text, title } from '@minecraft/core/cmd'
-import { Command, parallel } from '@minecraft/core/command'
+import { block, rawCmd, text, title } from '@minecraft/core/cmd'
+import { Command, parallel, series } from '@minecraft/core/command'
+import { randomIntGenerator } from '@minecraft/core/common'
 import { CommandOperator, CommandOperatorFn, RandomIntervalScheduler } from '@minecraft/core/common/rxjs'
 import { Players } from '@minecraft/core/players'
-import { area, Area, Block, Coordinates, loc } from '@minecraft/core/types'
-import { combineLatest, Observable, of, timer } from 'rxjs'
-import { map, repeat, switchMap, switchMapTo, tap } from 'rxjs/operators'
+import { area, Area, Block, Coordinates, loc, Mob } from '@minecraft/core/types'
+import { combineLatest, defer, Observable, of, timer } from 'rxjs'
+import { delay, map, repeat, switchMap, switchMapTo, tap } from 'rxjs/operators'
 
 import { CodslapEvents } from '../codslap-events'
 import { CommonCommands } from '../common'
+import { summonBehavior } from '../hooks'
 
 import { Arena, ArenaConstructor } from './arena'
 import { PlatformArena, PlatformLayer } from './platform-arena'
@@ -16,13 +18,8 @@ import { PlatformArena, PlatformLayer } from './platform-arena'
 @Arena()
 class PrimedAndReadyArena extends PlatformArena {
 
-  public static readonly title = text('Shrinky Dinks!').bold
-  public static readonly description = text(`Keep an eye on the edges...`)
-
-  // public static readonly entryRequirements = [
-  //   Arena.requirements.minArenaAge(300),
-  // ]
-  public static readonly entryRequirements = Arena.requirements.none
+  public static readonly title = text('Primed and Ready').bold
+  public static readonly description = text(`Watch me exploooooooode!!!`)
 
   public static readonly exitRequirements = [
     (events: CodslapEvents, arena: PrimedAndReadyArena) => arena.run(events)
@@ -41,6 +38,15 @@ class PrimedAndReadyArena extends PlatformArena {
       centerOffset: loc(0, 25, 0),
     },
   ]
+
+  public readonly hooks = {
+    arenaStart$: [
+      summonBehavior(Mob.cow, randomIntGenerator(10, 20)),
+    ],
+    playerRespawn$: [
+      summonBehavior(Mob.cow, randomIntGenerator(10, 20)),
+    ],
+  }
 
   private static readonly minDelay = 20 // seconds
 
@@ -64,15 +70,16 @@ class PrimedAndReadyArena extends PlatformArena {
 
       switchMap(() =>
 
-        // next explosion location
-        of(this.getRandomSpawn()).pipe(
+        // next explosion location - down 2 because spawn locations are up 2 from the floor
+        defer(() => of(this.getRandomSpawn().modify.down(2))).pipe(
           events.timedPlayerReadyEvent(this.getTimer.bind(this)),
 
           map(loc => this.getTntCommand(loc)),
           switchMap(([cmd, tntState]) => combineLatest([this.command()(of(cmd)), of(tntState)])),
+          delay(5000),
           map(([,tntState]) => this.replaceBlock(tntState)),
+          this.command(),
       )),
-
       repeat(PrimedAndReadyArena.explosionCount),
     )
   }
@@ -87,7 +94,11 @@ class PrimedAndReadyArena extends PlatformArena {
 
   private getTntCommand(coords: Coordinates): [Command, [Coordinates, Area]] {
     const cmd = parallel(
-      block(Block.tnt).set(coords),
+      series(
+        block(Block.air).set(coords),
+        block(Block.bedrock).set(coords.modify.down(1)),
+        rawCmd(`summon ${Block.tnt} ${coords} {"Fuse":80}`),
+      ),
       title('@a', text('Watch out!')),
     )
     const blacklistArea = area(

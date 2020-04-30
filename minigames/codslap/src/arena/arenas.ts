@@ -54,36 +54,42 @@ export const ArenasModule = new ArenasModuleBuilder()
     .arena(Boring, {
       entry: Arena.requirements.none,
       exit: [
-        Arena.requirements.minArenaAge(30),
+        // Arena.requirements.minArenaAge(30),
+        Arena.requirements.minArenaAge(15),
       ],
     })
     .arena(KingOfTheHill, {
-      entry: [
-        Arena.requirements.count('codslap$', 30),
-      ],
+      entry: Arena.requirements.none,
+      // entry: [
+      //   // Arena.requirements.count('codslap$', 30),
+      //   Arena.requirements.count('codslap$', 15),
+      // ],
       exit: [
         Arena.requirements.minArenaAge(20),
       ],
     })
-    .arena(PrimedAndReady, {
-      entry: [
-        Arena.requirements.count('codslap$', 50),
-      ],
-      exit: [
-        Arena.requirements.minArenaAge(20),
-      ],
-    })
+    // .arena(PrimedAndReady, {
+    //   entry: Arena.requirements.none,
+    //   // entry: [
+    //   //   Arena.requirements.count('codslap$', 30),
+    //   // ],
+    //   exit: [
+    //     Arena.requirements.minArenaAge(20),
+    //   ],
+    // })
     .arena(ShrinkyDinks, {
       entry: [
-        Arena.requirements.count('codslap$', 70),
+        // Arena.requirements.count('codslap$', 5),
+        Arena.requirements.count('codslap$', 45),
       ],
       exit: [
         Arena.requirements.minArenaAge(20),
       ],
     })
     .arena(BedrockPit, {
+      // entry: Arena.requirements.none,
       entry: [
-        Arena.requirements.count('codslap$', 90),
+        Arena.requirements.count('codslap$', 500),
       ],
       exit: [
         Arena.requirements.minArenaAge(20),

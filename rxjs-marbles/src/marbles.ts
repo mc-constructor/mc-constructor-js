@@ -11,15 +11,17 @@ export interface MarblesHelpers {
   readonly expectObservable: typeof TestScheduler.prototype.expectObservable
   readonly expectSubscriptions: typeof TestScheduler.prototype.expectSubscriptions
   readonly hot: typeof TestScheduler.prototype.createHotObservable
+  readonly scheduler: TestScheduler
 }
 
 export interface MarblesHelpersStatic extends MarblesHelpers {
   init(assertDeepEqual: AssertDeepEqualFn): void
   createTestScheduler(): TestScheduler
+  run(fn: (helpers?: MarblesHelpers) => void): void
 }
 
-type MarblesHelpersInternal = { -readonly [TProp in keyof MarblesHelpers]: MarblesHelpers[TProp] }
-const MarblesHelpersInternal: MarblesHelpersInternal = {} as MarblesHelpers
+type MarblesHelpersInternal = { -readonly [TProp in keyof MarblesHelpers]: MarblesHelpers[TProp] } & { scheduler: TestScheduler }
+const MarblesHelpersInternal: MarblesHelpersInternal = {} as any
 
 class MarblesHelpersImpl implements MarblesHelpersStatic {
 
@@ -41,6 +43,10 @@ class MarblesHelpersImpl implements MarblesHelpersStatic {
     return (marbles: string) => MarblesHelpersInternal.hot(marbles)
   }
 
+  public get scheduler(): TestScheduler {
+    return MarblesHelpersInternal.scheduler
+  }
+
   public init(assertDeepEqual: AssertDeepEqualFn): void {
     this.assertDeepEqual = assertDeepEqual
   }
@@ -49,15 +55,20 @@ class MarblesHelpersImpl implements MarblesHelpersStatic {
     return new TestScheduler(this.assertDeepEqual)
   }
 
+  public run(fn: (helpers?: MarblesHelpers) => void): void {
+    return MarblesHelpersInternal.scheduler.run(function(this: any) {
+      return fn.call(this, MarblesHelpers)
+    })
+  }
+
 }
 
 export const MarblesHelpers: MarblesHelpersStatic = new MarblesHelpersImpl()
 
 export function marblesTesting(): void {
-  let scheduler: TestScheduler
 
   beforeEach(() => {
-    scheduler = MarblesHelpers.createTestScheduler()
+    const scheduler = MarblesHelpers.createTestScheduler()
     const cold = scheduler.createColdObservable.bind(scheduler)
     const hot = scheduler.createHotObservable.bind(scheduler)
     const expectObservable = scheduler.expectObservable.bind(scheduler)
@@ -67,14 +78,15 @@ export function marblesTesting(): void {
       expectObservable,
       expectSubscriptions,
       hot,
+      scheduler,
     })
   })
   afterEach(() => {
-    scheduler = undefined
     delete MarblesHelpersInternal.cold
     delete MarblesHelpersInternal.expectObservable
     delete MarblesHelpersInternal.expectSubscriptions
     delete MarblesHelpersInternal.hot
+    delete MarblesHelpersInternal.scheduler
   })
 
 }

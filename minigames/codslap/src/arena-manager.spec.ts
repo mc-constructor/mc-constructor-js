@@ -1,3 +1,4 @@
+import { ConsoleLogListener } from '@dandi/core/logging'
 import { stub, testHarness } from '@dandi/core/testing'
 import { CommonModule } from '@minecraft/core/common'
 import { SubscriptionTracker } from '@minecraft/core/common/rxjs'
@@ -21,7 +22,7 @@ import { CodslapObjectives } from './codslap-objectives'
 import { CommonCommands } from './common'
 import { EventsAccessorProvider } from './events-accessor-provider'
 
-describe('ArenaManager', () => {
+describe.marbles('ArenaManager', ({ cold, ...helper }) => {
 
   stubLoggerFactory()
 
@@ -34,9 +35,9 @@ describe('ArenaManager', () => {
         ],
       }),
     ArenaManager,
-    Boring,
     CommonCommands,
     CommonModule,
+    ConsoleLogListener,
     EventsAccessorProvider,
     {
       provide: Client,
@@ -88,22 +89,29 @@ describe('ArenaManager', () => {
       subs.track(harness as any, manager.run$.subscribe())
     })
 
-    it('starts the first arena', async () => {
-      const arenaStart = stub()
+    it('starts the first arena', () => {
       client.send.returns(Promise.resolve())
+      const values = {
+        a: Boring
+      }
+
+      const expectedRun = 'a'
+      const startSub = '^'
 
       const runSub = manager.run$.subscribe()
-      subs.track(harness as any,
-        manager.arenaStart$.subscribe(arenaStart),
-        runSub,
-      )
 
-      await new Promise(resolve => setTimeout(resolve, 10))
+      expect(manager.arenaStart$).with.subscription(startSub).and.marbleValues(values).to.equal(expectedRun)
 
-      expect(arenaStart).to.have.been.calledOnce
-      const arena = arenaStart.firstCall.lastArg
-      expect(arena).to.be.instanceof(Boring)
+      // const runSub = manager.run$.subscribe()
+      // subs.track(harness as any,
+      //   manager.arenaStart$.subscribe(arenaStart),
+      //   runSub,
+      // )
 
+      // expect(arenaStart).to.have.been.calledOnce
+      // const arena = arenaStart.firstCall.lastArg
+      // expect(arena).to.be.instanceof(Boring)
+      //
       runSub.unsubscribe()
 
       // FIXME: first arena gets repeated due to queuedReplay behavior - how should that be fixed?

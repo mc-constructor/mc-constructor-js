@@ -21,11 +21,6 @@ class ShrinkyDinksArena extends PlatformArena {
   public static readonly title = text('Shrinky Dinks!').bold
   public static readonly description = text(`Keep an eye on the edges...`)
 
-  public static readonly entryRequirements = [
-    Arena.requirements.minArenaAge(300),
-  ]
-  // public static readonly entryRequirements = Arena.requirements.none
-
   public static readonly exitRequirements = [
     (events: CodslapEvents, arena: ShrinkyDinksArena) => arena.run(events)
   ]
