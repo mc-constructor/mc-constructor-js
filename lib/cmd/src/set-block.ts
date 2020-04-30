@@ -7,6 +7,8 @@ import { BlockState } from './block-state'
 
 export class SetBlockCommand<TBlock extends Block = Block> extends BlockCommand<TBlock> {
 
+  // public readonly allowedErrorKeys = ['commands.setblock.failed']
+
   protected readonly command: string = 'setblock'
 
   public constructor(

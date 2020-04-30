@@ -4,7 +4,7 @@ import { Command, SimpleArgsCommand } from '../../command'
 
 class ClearCommand extends SimpleArgsCommand {
   protected readonly command = 'clear'
-  protected readonly allowedErrorKeys: string[] = ['clear.failed.single']
+  protected readonly allowedErrorKeys: string[] = ['clear.failed.single', 'clear.failed.multiple']
 
   // TODO: implement the rest of the arguments
   constructor(public readonly target: string) {

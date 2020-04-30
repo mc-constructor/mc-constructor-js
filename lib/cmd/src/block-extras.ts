@@ -50,8 +50,10 @@ export class BlockStateBase extends BlockExtras {
   public _generate(block?: SetBlockCommand<any>): string {
     if (block) {
       const direction = this.getData('facing')
-      if (typeof direction !== 'string') {
-        this.setData('facing', facing(direction, block.loc))
+      if (direction) {
+        if (typeof direction !== 'string') {
+          this.setData('facing', facing(direction, block.loc))
+        }
       }
     }
     return super._generate(block)

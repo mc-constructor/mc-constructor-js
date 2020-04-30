@@ -19,10 +19,10 @@ class ListPlayersCommand extends SimpleArgsCommand<UuidsArgs, ListPlayersResult>
   }
 
   protected parseSuccessResponse(response: ClientMessageResponse): ListPlayersResult {
-    const [key, connectedRaw, maxRaw, ...playersRaw] = response.extras
+    const [key, connectedRaw, maxRaw, playersRaw] = response.extras
     const connectedPlayers = parseInt(connectedRaw)
     const maxPlayers = parseInt(maxRaw)
-    const players = playersRaw
+    const players = playersRaw.split(', ')
       .filter(player => !!player)
       .map(entry => {
         const [name, uuidRaw] = entry.split(' ')
