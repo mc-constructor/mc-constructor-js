@@ -1,4 +1,5 @@
-import { Disposable } from '@dandi/common'
+import { combineLatest, EMPTY, Observable } from 'rxjs'
+import { filter, mapTo, mergeMap, pluck, share, skip, startWith } from 'rxjs/operators'
 
 import {
   addObjective,
@@ -9,15 +10,12 @@ import {
   setScore,
   TextComponent
 } from '../../cmd'
-import { parallel } from '../../command'
-import { SubscriptionTracker } from '../../common/rxjs'
+import { Command, parallel } from '../../command'
 import { Client } from '../../server'
 
-import { Objective, ScoreOperation } from './objective'
+import { Objective, ObjectiveEvent, ScoreOperation } from './objective'
 
-export class ServerObjective extends Objective implements Disposable {
-
-  public readonly ready: Promise<void> = this.init()
+export class ServerObjective extends Objective {
 
   public constructor(
     private readonly client: Client,
@@ -28,7 +26,7 @@ export class ServerObjective extends Objective implements Disposable {
     super(id)
   }
 
-  private async init(): Promise<void> {
+  protected init(): Observable<ObjectiveEvent> {
     const initCmds = [
       removeObjectives(this.id),
       addObjective(this.id, 'dummy', this.displayName)
@@ -36,19 +34,40 @@ export class ServerObjective extends Objective implements Disposable {
     if (this.display) {
       initCmds.push(setObjectiveDisplay(this.display, this.id))
     }
-    await parallel(...initCmds).execute(this.client)
 
-    SubscriptionTracker.instance.track(this, this.subscribe(async event => {
-      await this.ready
-      switch (event.operation) {
-        case ScoreOperation.add: return addScore(event.player, this.id, event.value).execute(this.client)
-        case ScoreOperation.set: return setScore(event.player, this.id, event.value).execute(this.client)
-      }
-    }))
-  }
+    // objectives need to be added to the server before we can start operating on them
+    const initCmd = parallel(...initCmds).execute(this.client)
 
-  public dispose(reason: string): void {
-    SubscriptionTracker.instance.release(this)
+    return combineLatest([
+      // this ensures that we start queueing up events to get handled right away, but don't handle them until all the
+      // objectives have been created on the server
+      // startWith(undefined) to make sure that the objective init commands are sent right away, without having to wait
+      // for an objective event
+      super.init().pipe(startWith(undefined as ObjectiveEvent)),
+      initCmd.pipe(mapTo(true)),
+    ]).pipe(
+      skip(1),  // skips the undefined "startWith" event
+      pluck(0), // get rid of the dummy "true" value from the init
+      mergeMap(event => {
+        let cmd: Command
+        switch (event.operation) {
+          case ScoreOperation.add:
+            cmd = addScore(event.player, this.id, event.value)
+            break
+          case ScoreOperation.set:
+            cmd = setScore(event.player, this.id, event.value)
+            break
+        }
+
+        if (cmd) {
+          // merge with empty observable so that the command executes, but doesn't add its result into the stream
+          return cmd.execute(this.client).pipe(filter(() => false))
+        }
+        return EMPTY
+      }),
+      share(),
+    )
+
   }
 
 }

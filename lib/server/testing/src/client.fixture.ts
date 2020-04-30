@@ -15,7 +15,7 @@ export function clientFixture(): ClientFixture {
     messages$: undefined,
     send: stub().callsFake((type, cmd, hasResponse) => {
       clientCompiled = new TestCompiledMessage(hasResponse)
-      return clientCompiled.pendingMessage
+      return clientCompiled.pendingMessage$
     }),
     lastSent() { return clientCompiled },
   }

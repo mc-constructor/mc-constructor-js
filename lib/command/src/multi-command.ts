@@ -1,17 +1,35 @@
 import { Constructor } from '@dandi/common'
 import { Logger } from '@dandi/core'
+import { interval, merge, Observable, of } from 'rxjs'
+import {
+  bufferTime,
+  concatAll,
+  delay,
+  filter,
+  map,
+  mergeAll,
+  mergeMap,
+  share,
+  switchMap,
+  takeUntil,
+  takeWhile,
+  tap,
+  toArray,
+} from 'rxjs/operators'
 import { loggerFactory } from '../../common'
+import { dequeueReplay } from '../../common/rxjs'
 import {
   Client,
   CompiledMessage,
   CompiledSimpleMessage,
   ClientMessageResponse,
-  MessageType, PendingMessage,
+  MessageType,
+  PendingMessage,
 } from '../../server'
 
 import { Command } from './command'
 
-import Timeout = NodeJS.Timeout
+const DEBUG_TIMEOUT = 2500
 
 class MultiCommandExecutionContext {
 
@@ -57,38 +75,77 @@ export abstract class MultiCommand extends Command {
   protected abstract compile(): Command[]
 
   protected processCommands(context: MultiCommandExecutionContext): PendingMessage {
-    const remaining = new Set<CompiledMessage>(context.compiled.map(compiled => compiled))
-    let logTimeout: Timeout
-    context.compiled.reduce(async (prev, msg) => {
-      if (!this.parallel) {
-        await prev
-      }
-      const result = msg.execute()
-      let notified = false
+    interface MessageState {
+      compiled: CompiledMessage
+    }
+    interface CompletedMessageState extends MessageState {
+      result: any
+    }
+    type CompletedMessageState$ = Observable<CompletedMessageState> & MessageState
+    interface CommandExecutionState {
+      remaining: number
+    }
 
-      result.finally(() => {
-        remaining.delete(msg)
-        clearInterval(logTimeout)
-        if (remaining.size) {
-          this.logger.debug(`${this.constructor.name}: ${remaining.size} responses remaining`)
-          logTimeout = setInterval(() => {
-            this.logger.info(`${this.constructor.name}: ${remaining.size} responses remaining:\n  `,
-              [...remaining].map(msg => msg.debug).join('\n  '))
-            notified = true
-          }, 2500)
-        } else {
-          const level = notified ? 'info' : 'debug'
-          this.logger[level](`${this.constructor.name} complete`)
-        }
-      })
+    const source: CompletedMessageState$[] = context.compiled.map(compiled =>
+      Object.assign(compiled.pendingMessage$.pipe(
+        map(result => ({ compiled, result })),
+        share(),
+      ), { compiled })
+    )
 
-      return result
-    }, Promise.resolve())
+    const source$: Observable<CompletedMessageState$[]> = of(source)
 
-    const result = Promise.all(context.compiled.map(msg => msg.pendingMessage)).then(this.parseResponses.bind(this))
-    return Object.assign(result, {
+    const complete$: Observable<CompletedMessageState> = source$.pipe(
+      switchMap(messages => {
+        const execState: CommandExecutionState = { remaining: messages.length }
+
+        // actual processing of messages
+        const msgState$: Observable<CompletedMessageState> = of(...messages).pipe(
+          this.parallel ? mergeAll() : concatAll(),
+          tap(() => execState.remaining--),
+          share(),
+        )
+
+        const debug$: Observable<any> = msgState$.pipe(
+          takeWhile(() => execState.remaining > 0), // IMPORTANT so it stops when there are no more pending messages
+          switchMap(() =>
+            interval(DEBUG_TIMEOUT).pipe(
+              takeUntil(msgState$),
+              switchMap(() => remainingArray$),
+              tap(remaining => {
+                const detail = remaining.map(msgState => msgState.compiled.debug).join('\n  ')
+                this.logger.warn(`${remaining.length} responses remaining:\n  ${detail}`)
+              })
+            )
+          ),
+          filter(() => false),
+        )
+        return merge(msgState$, debug$)
+      }),
+      share(),
+    )
+
+    const remaining$ = source$.pipe(
+      mergeMap(messages => messages.map(msg => msg)),
+      dequeueReplay(complete$, (trigger, event) => trigger.compiled === event.compiled),
+    )
+
+    const remainingArray$ = complete$.pipe(
+      delay(1), // needs to be delayed by 1 to let the dequeue take effect
+      switchMap(() => remaining$.pipe(
+        bufferTime(0),
+      ))
+    )
+
+    const output$ = complete$.pipe(
+      map(msgState => msgState.result),
+      toArray(),
+      map(this.parseResponses.bind(this)),
+    )
+
+    return Object.assign(output$, {
       id: `${this.constructor.name}#${this.instanceId}`,
-      sent: undefined,
+      sent$: undefined,
     })
   }
 

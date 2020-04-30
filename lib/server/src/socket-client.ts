@@ -1,68 +1,80 @@
-import { createConnection, Socket } from 'net'
-import { TextEncoder } from 'util'
+import { Socket } from 'net'
 
 import { Uuid } from '@dandi/common'
 import { Inject, Injectable, Logger } from '@dandi/core'
-import { Observable } from 'rxjs'
-import { share } from 'rxjs/operators'
+import { Observable, Subject } from 'rxjs'
+import {
+  filter,
+  first,
+  map,
+  share,
+  shareReplay,
+  switchMap,
+  switchMapTo,
+} from 'rxjs/operators'
 
-import { Client, ClientMessage, ClientMessageResponse } from './client'
+import { Client, ClientMessage, ClientMessageResponse, isClientMessage } from './client'
 import { CompiledSimpleMessage, MessageType, PendingMessage } from './message'
+import { ClientMessageConfig, SocketClientConfig } from './socket-client-config'
+import { SocketConnection } from './socket-connection'
 
-const enc = new TextEncoder()
-const PORT_INDEX = process.argv.indexOf('--port')
-const PORT = parseInt(process.argv[PORT_INDEX + 1], 10)
-const DELIMITER = '------------------------------------------'
-const DELIMITER_BUF = enc.encode(DELIMITER)
+type Handled = true
+const HANDLED = true
 
 class CompiledSocketMessage extends CompiledSimpleMessage<ClientMessageResponse> {
 
+  private readonly response$$: Subject<ClientMessageResponse>
+
   constructor(
-    private logger: Logger,
-    conn: Socket,
+    private readonly logger: Logger,
+    private readonly config: ClientMessageConfig,
+    conn$: Observable<Socket>,
     public readonly type: MessageType,
     public readonly body: Uint8Array | string,
     hasResponse: boolean | number,
     debug: string,
   ) {
-    super(() => {
-      this.send(conn)
-      return this.pendingMessage
-    }, hasResponse, debug)
+    super(() => this.send(conn$), hasResponse, debug)
+    this.response$$ = new Subject<ClientMessageResponse>()
   }
 
-  public send(conn: Socket): void {
-    const newline = enc.encode('\n')
-    const id = enc.encode(this.id.toString())
-    const type = enc.encode(this.type)
-    const body = typeof this.body === 'string' ? enc.encode(this.body) : this.body
-    const content = Buffer.concat([
-      id,
-      newline,
-      type,
-      newline,
-      body,
-      DELIMITER_BUF
-    ])
-    this.logger.debug('sending to server:', content.toString('utf-8'))
-    conn.write(content, (err) => {
-      if (err) {
-        this.logger.error(this, err)
-        return this.onSendErr(err)
-      }
-
-      this.onSent()
-    })
+  public send(conn$: Observable<Socket>): Observable<Observable<ClientMessageResponse>> {
+    return conn$.pipe(
+      switchMap(conn => new Observable<Observable<ClientMessageResponse>>(o => {
+        const newline = this.config.encoder.encode('\n')
+        const id = this.config.encoder.encode(this.id.toString())
+        const type = this.config.encoder.encode(this.type)
+        const body = typeof this.body === 'string' ? this.config.encoder.encode(this.body) : this.body
+        const content = Buffer.concat([
+          id,
+          newline,
+          type,
+          newline,
+          body,
+          this.config.delimiterBuffer,
+        ])
+        this.logger.debug('sending to server:', content.toString('utf-8'))
+        conn.write(content, (err) => {
+          if (err) {
+            this.logger.error(this, err)
+            return o.error(err)
+          }
+          o.next(this.response$$.asObservable())
+          o.complete()
+        })
+      })),
+    )
   }
 
-  public respond(responseRaw: string[]) {
+  public respond(responseRaw: string[]): void {
     const [successRaw, ...extras] = responseRaw
     const success = successRaw === 'true'
     const response: ClientMessageResponse = {
       success,
       extras,
     }
-    this.onResponse(response)
+    this.response$$.next(response)
+    this.response$$.complete()
   }
 }
 
@@ -70,116 +82,77 @@ class CompiledSocketMessage extends CompiledSimpleMessage<ClientMessageResponse>
 export class SocketClient implements Client {
 
   public readonly messages$: Observable<ClientMessage>
-
-  private conn: Socket
-  private onConnected: () => void
-  private onReady: () => void
-  private isConnected: boolean = false
-  private isReady: boolean = false
-  private readonly connected: Promise<void> = new Promise<void>(resolve => this.onConnected = resolve)
-  private readonly ready: Promise<void> = new Promise<void>(resolve => this.onReady = resolve)
-
-  private readonly outgoing: CompiledSocketMessage[] = []
   private readonly pending = new Map<Uuid, CompiledSocketMessage>()
 
-  private next: (item: [Uuid, string[]]) => void
-  private error: (err: Error) => void
-
-  private buffer = ''
-
   constructor(
+    @Inject(SocketConnection) private readonly conn$: Observable<Socket>,
+    @Inject(SocketClientConfig) private readonly config: SocketClientConfig,
     @Inject(Logger) private logger: Logger,
   ) {
-    this.messages$ = new Observable<[Uuid, string[]]>(o => {
-      this.next = o.next.bind(o)
-      this.error = o.error.bind(o)
-      this.conn = createConnection({ port: PORT }, this.onConnected)
-      this.conn.on('end', () => {
-        logger.debug('connection closed')
-        o.complete()
-      })
-      this.conn.on('data', chunk => {
-        const data = chunk.toString()
-        this.buffer += data
-        this.checkBuffer()
-      })
-
-      return () => {
-        this.conn.end()
-        this.conn = undefined
-      }
-    }).pipe(share())
-
-    this.checkBuffer = this.checkBuffer.bind(this)
-    this.checkQueue = this.checkQueue.bind(this)
-
-    this.init()
+    const incoming$ = this.initIncoming(this.conn$)
+    const ready$ = this.initReady(incoming$)
+    this.messages$ = this.initMessages(ready$, incoming$)
   }
 
-  public send(type: MessageType, buffer?: Uint8Array | string, hasResponse?: boolean | number): PendingMessage {
-    const msg = new CompiledSocketMessage(this.logger, this.conn, type, buffer, hasResponse, buffer?.toString())
-    this.outgoing.push(msg)
-    this.checkQueue()
-    return msg.pendingMessage
-  }
-
-  private async init(): Promise<void> {
-    await this.connected
-    this.logger.info('connected.')
-    this.isConnected = true
-    this.conn.write(DELIMITER + '\n', (err: Error) => {
-      if (err) {
-        this.error(err)
-        this.logger.error('error writing delimiter', err);
-      }
-    })
-  }
-
-  private async checkQueue(): Promise<void> {
-    const msg = this.outgoing.shift()
-    if (!msg) {
-      return
-    }
-
+  public send(type: MessageType, buffer?: Uint8Array | string, hasResponse?: boolean | number): PendingMessage<ClientMessageResponse> {
+    const msg = new CompiledSocketMessage(this.logger, this.config.message, this.conn$, type, buffer, hasResponse, buffer?.toString())
     this.pending.set(msg.id, msg)
-    if (!this.isReady) {
-      await this.ready
-    }
-    msg.send(this.conn)
+    return msg.pendingMessage$
   }
 
-  private checkBuffer(): void {
-    const responseEndIndex = this.buffer.indexOf(DELIMITER)
-    if (responseEndIndex < 0) {
-      return
-    }
+  private initIncoming(conn$: Observable<Socket>): Observable<string> {
+    return conn$.pipe(
+      switchMap(conn => new Observable<string>(o => {
+        let buffer = ''
+        conn.on('data', chunk => {
+          try {
+            buffer += chunk.toString()
 
-    const response = this.buffer.substring(0, responseEndIndex)
-    this.buffer = this.buffer.substring(responseEndIndex + DELIMITER.length)
-    this.handleResponse(response)
-    setTimeout(this.checkBuffer, 0)
+            const responseEndIndex = buffer.indexOf(this.config.message.delimiter)
+            if (responseEndIndex < 0) {
+              return
+            }
+
+            const response = buffer.substring(0, responseEndIndex)
+            buffer = buffer.substring(responseEndIndex + this.config.message.delimiter.length)
+            o.next(response)
+          } catch (err) {
+            o.error(err)
+          }
+        })
+        return () => {}
+      })),
+      share(),
+    )
   }
 
-  private handleResponse(response: string): void {
-    if (!this.isReady) {
-      this.isReady = true
-      this.onReady()
-      this.logger.debug('client ready')
-    }
+  private initReady(incoming$: Observable<string>): Observable<void> {
+    return incoming$.pipe(
+      first(),
+      map(() => this.logger.debug('client ready')),
+      shareReplay(1),
+    )
+  }
 
-    if (!response) {
-      return
-    }
+  private initMessages(ready$: Observable<void>, incoming$: Observable<string>): Observable<ClientMessage> {
+    return ready$.pipe(
+      switchMapTo(incoming$),
+      map(this.handleResponse.bind(this)),
+      filter(isClientMessage),
+      share(),
+    )
+  }
 
+  private handleResponse(response: string): Handled | ClientMessage {
     const [idRaw, ...parts] = response.split('\n')
     const id = Uuid.for(idRaw)
     const pendingMessage = this.pending.get(id)
     if (pendingMessage) {
       pendingMessage.respond(parts)
       this.pending.delete(id)
-
-    } else {
-      this.next([id, parts])
+      return HANDLED
     }
+
+    return [id, parts]
   }
 }

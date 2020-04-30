@@ -29,7 +29,6 @@ export class Scoreboard {
       const serverObj = this.objectives.get(obj.id)
       if (serverObj) {
         this.objectives.delete(obj.id)
-        serverObj.dispose('removeObjectives')
       }
     })
   }

@@ -1,27 +1,19 @@
+import { of, timer } from 'rxjs'
+import { map } from 'rxjs/operators'
+
 import { Command } from '../../command'
-import { Client, CompiledMessage, PendingMessage } from '../../server'
+import { Client, CompiledMessage, CompiledSimpleMessage, ExecuteResponse } from '../../server'
 
-class CompiledWaitMessage implements CompiledMessage {
-
-  public readonly id = 'wait'
-  public readonly pendingMessage: PendingMessage
-  public sent: Promise<void>
-  public readonly debug: string
-
-  private onComplete: () => void
-  private onSent: () => void
+class CompiledWaitMessage extends CompiledSimpleMessage<void> {
 
   constructor(public readonly duration: number) {
-    this.pendingMessage = Object.assign(new Promise<void>(resolve => {
-      this.onComplete = resolve
-    }))
-    this.sent = new Promise<void>(resolve => this.onSent = resolve)
-    this.debug = `wait ${this.duration}`
+    super(() => this.execute(), false, `wait ${duration}`)
   }
 
-  public execute(): PendingMessage {
-    setTimeout(this.onComplete, this.duration)
-    return this.pendingMessage
+  public execute(): ExecuteResponse<void> {
+    return of(undefined).pipe(
+      map(() => timer(this.duration).pipe(() => undefined)),
+    )
   }
 }
 

@@ -4,6 +4,8 @@ import { Client } from './client'
 import { localToken } from './local-token'
 import { ServerEventsProvider } from './server-events'
 import { SocketClient } from './socket-client'
+import { SocketClientConfigProvider } from './socket-client-config'
+import { SocketConnectionProvider } from './socket-connection'
 
 export class ServerModuleBuilder extends ModuleBuilder<ServerModuleBuilder> {
   constructor(...entries: Registerable[]) {
@@ -14,4 +16,6 @@ export class ServerModuleBuilder extends ModuleBuilder<ServerModuleBuilder> {
 export const ServerModule = new ServerModuleBuilder(
   { provide: Client, useClass: SocketClient },
   ServerEventsProvider,
+  SocketClientConfigProvider,
+  SocketConnectionProvider,
 )

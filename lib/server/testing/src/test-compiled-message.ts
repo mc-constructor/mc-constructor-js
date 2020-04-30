@@ -4,7 +4,7 @@ export class TestCompiledMessage extends CompiledSimpleMessage {
   constructor(
     hasResponse: boolean | number,
   ) {
-    super(() => this.pendingMessage, hasResponse, 'test')
+    super(() => this.pendingMessage$, hasResponse, 'test')
   }
 
   public respond(responseRaw: string[]) {

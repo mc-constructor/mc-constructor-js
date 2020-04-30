@@ -37,8 +37,9 @@ export class Players {
       dequeueReplay(this.playerLeave$),
     )
 
-    const init$ = new Observable<void>(o => {
-      this.init(client).then(() => o.next())
+    // FIXME: refactor this to pipe instead of subscribe?
+    const init$ = new Observable<any>(o => {
+      this.init(client).subscribe(o)
       return () => {
         this.playersByName.clear()
         this.playersByUuid.clear()
@@ -56,9 +57,6 @@ export class Players {
   }
 
   public hasNamedPlayer(name: string): boolean {
-    if (!this.playersByName.has(name)) {
-      this.logger.debug('no player named', name)
-    }
     return this.playersByName.has(name)
   }
 
@@ -66,10 +64,14 @@ export class Players {
     return this.playersByName.get(name)
   }
 
-  private async init(client: Client): Promise<Player[]> {
-    const playerList = await listPlayers(true).execute(client)
-    playerList.players.forEach(this.addPlayer.bind(this))
-    return this.players
+  private init(client: Client): Observable<Player[]> {
+    return listPlayers(true).execute(client).pipe(
+      map(result => {
+        result.players.forEach(this.addPlayer.bind(this))
+        return result.players
+      }),
+      share(),
+    )
   }
 
   private onPlayerJoin(event: PlayerEvent): void {

@@ -21,6 +21,17 @@ export type ClientMessageResponse = ClientMessageSuccessResponse | ClientMessage
 
 export type ClientMessage = [Uuid, string[]]
 
+export function isClientMessage(obj: any): obj is ClientMessage {
+  if (!(obj && Array.isArray(obj) && obj.length == 2)) {
+    return false
+  }
+  const [id, parts] = obj
+  if (!(typeof id === 'string' || id instanceof Uuid)) {
+    return false
+  }
+  return Array.isArray(parts) && parts.every(part => typeof part === 'string')
+}
+
 export interface Client {
   send(type: MessageType, buffer?: Uint8Array | string, hasResponse?: boolean | number): PendingMessage<ClientMessageResponse>
 

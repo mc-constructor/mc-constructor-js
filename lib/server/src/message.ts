@@ -1,4 +1,6 @@
 import { Uuid } from '@dandi/common'
+import { defer, Observable } from 'rxjs'
+import { map, share, single, switchMap, takeWhile, tap, timeout } from 'rxjs/operators'
 
 import { Client, ClientMessageFailedResponse, ClientMessageResponse, ClientMessageSuccessResponse } from './client'
 import { MessageError } from './message-error'
@@ -9,47 +11,36 @@ export enum MessageType {
   minigame = 'minigame',
 }
 
-export interface PendingMessage<TResponse = any> extends Promise<TResponse> {
+export interface PendingMessage<TResponse = any> extends Observable<TResponse> {
   id: string | Uuid
-  sent: Promise<void>
+  sent$: Observable<CompiledMessage<TResponse>>
 }
 
-export function extendPendingMessage<TResponse>(pending: PendingMessage, promise: Promise<TResponse>): PendingMessage<TResponse> {
-  return Object.assign(promise, {
-    id: pending.id,
-    sent: pending.sent,
-  })
-}
+export type ExecuteResponse<TResponse> = Observable<Observable<TResponse>>
 
-export type ExecuteFn<TResponse> = () => PendingMessage<TResponse>
+export type ExecuteFn<TResponse> = () => ExecuteResponse<TResponse>
 
 export abstract class Message<TResponse extends any = any> {
   public abstract readonly debug: string
 
   public execute(client: Client): PendingMessage<TResponse> {
-    return this.compileMessage(client).execute()
+    return this.compileMessage(client).pendingMessage$
   }
-  public abstract compileMessage(client: Client): CompiledMessage
+  public abstract compileMessage(client: Client): CompiledMessage<TResponse>
 }
 
 export interface CompiledMessage<TResponse = any> {
   id: string | Uuid
-  pendingMessage: PendingMessage
-  sent: Promise<void>
-  execute: ExecuteFn<TResponse>
+  pendingMessage$: PendingMessage<TResponse>
+  sent$: Observable<this>
   debug: string
 }
 
 export class CompiledSimpleMessage<TResponse = any> implements CompiledMessage<TResponse> {
 
   public readonly id: string | Uuid
-  public readonly pendingMessage: PendingMessage<TResponse>
-  public readonly sent: Promise<void>
-
-  protected onSent: () => void
-  protected onSendErr: (err: Error) => void
-  protected onResponse: (response?: TResponse) => void
-  protected onAborted: (err: Error) => void
+  public readonly pendingMessage$: PendingMessage<TResponse>
+  public readonly sent$: Observable<this>
 
   constructor(
     protected readonly executeFn: ExecuteFn<TResponse>,
@@ -58,44 +49,25 @@ export class CompiledSimpleMessage<TResponse = any> implements CompiledMessage<T
     id?: string | Uuid,
   ) {
     this.id = id || Uuid.create()
-    this.sent = new Promise<void>((resolve, reject) => {
-      this.onSent = this.handleSent.bind(this, resolve)
-      this.onSendErr = reject
-    })
-    this.pendingMessage = Object.assign(new Promise<TResponse>((resolve, reject) => {
-      this.onResponse = (response: TResponse) => {
-        resolve(response)
-      }
-      this.onAborted = reject
-    }), {
+
+    const sent$ = defer(() => this.executeFn()).pipe(
+      share(),
+    )
+
+    this.sent$ = sent$.pipe(map(() => this))
+
+    const pendingMessage$ = sent$.pipe(
+      takeWhile(() => this.hasResponse !== false),
+      switchMap(response$ => response$),
+      typeof this.hasResponse === 'number' ? timeout<TResponse>(this.hasResponse) : tap<TResponse>(),
+      share(),
+    )
+
+    this.pendingMessage$ = Object.assign(pendingMessage$, {
       id: this.id,
-      sent: this.sent,
+      sent$: this.sent$,
     })
   }
-
-  public execute(): PendingMessage<TResponse> {
-    try {
-      this.executeFn().then(this.onResponse, this.onAborted)
-      this.onSent()
-    } catch (err) {
-      this.onSendErr(err)
-      this.onAborted(err)
-    }
-    return this.pendingMessage
-  }
-
-  private async handleSent(resolveSent: () => void): Promise<void> {
-    resolveSent()
-    if (this.hasResponse === false) {
-      this.onResponse()
-    }
-    if (typeof this.hasResponse === 'number') {
-      let timeout = setTimeout(() => this.onResponse(), this.hasResponse)
-      await this.pendingMessage
-      clearTimeout(timeout)
-    }
-  }
-
 }
 
 export abstract class SimpleMessage<TResponse extends any = any> extends Message<TResponse> {
@@ -105,36 +77,34 @@ export abstract class SimpleMessage<TResponse extends any = any> extends Message
   protected readonly hasResponse: boolean | number = true
   protected readonly allowedErrorKeys: string[] = []
 
-  public compileMessage(client: Client): CompiledMessage {
+  public compileMessage(client: Client): CompiledMessage<TResponse> {
     return new CompiledSimpleMessage(
-      this.execute.bind(this, client),
+      this.executeInternal.bind(this, client),
       this.hasResponse,
       this.debug,
       (this as any).id?.toString(),
     )
   }
 
-  public execute(client: Client): PendingMessage<TResponse> {
+  protected executeInternal(client: Client): ExecuteResponse<TResponse> {
     const body = this.getMessageBody()
-    return this.makeResponse(client.send(this.type, body, this.hasResponse), body)
-  }
-
-  private makeResponse(pending: PendingMessage<ClientMessageResponse>, body: string | Uint8Array): PendingMessage<TResponse> {
-    return extendPendingMessage(pending, new Promise<TResponse>(async (resolve, reject) => {
-      const response = await pending
-      if (!response) {
-        // does not require a response, or allows a timed out response
-        return resolve()
-      }
-      if (response.success === true) {
-        return resolve(this.parseSuccessResponse(response))
-      }
-      const err = this.parseFailedResponse(response, body)
-      if (this.allowedErrorKeys.includes(err.type)) {
-        return resolve()
-      }
-      reject(err)
-    }))
+    return client.send(this.type, body, this.hasResponse).sent$.pipe(
+      map(msg => msg.pendingMessage$.pipe(map((response: ClientMessageResponse) => {
+        if (!response) {
+          // does not require a response, or allows a timed out response
+          return undefined
+        }
+        if (response.success === true) {
+          return this.parseSuccessResponse(response)
+        }
+        const err = this.parseFailedResponse(response, body)
+        if (this.allowedErrorKeys.includes(err.type)) {
+          return undefined
+        }
+        throw err
+      })) as Observable<TResponse>),
+      single(),
+    )
   }
 
   protected abstract getMessageBody(): string | Uint8Array
