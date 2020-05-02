@@ -1,4 +1,5 @@
-import { assertDeepEqual, chaiMarbles } from './src/chai-marbles'
+import { afterEach, assertDeepEqual, beforeEach, chaiMarbles } from './src/chai-marbles'
 
 module.exports = chaiMarbles
-module.exports.assertDeepEqual = assertDeepEqual
+module.exports.config = { assertDeepEqual, beforeEach, afterEach }
+

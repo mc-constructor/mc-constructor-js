@@ -19,6 +19,10 @@ declare global {
       skip: PendingMarblesSuiteFunction
     }
 
+    interface PendingSuiteFunction {
+      marbles: MarblesSuiteFunction
+    }
+
     interface SuiteFunction {
       marbles: MarblesSuiteFunction
     }

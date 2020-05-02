@@ -12,6 +12,7 @@ export interface MarblesHelpers {
   readonly expectSubscriptions: typeof TestScheduler.prototype.expectSubscriptions
   readonly hot: typeof TestScheduler.prototype.createHotObservable
   readonly scheduler: TestScheduler
+  readonly helpers: MarblesHelpers
 }
 
 export interface MarblesHelpersStatic extends MarblesHelpers {
@@ -47,6 +48,10 @@ class MarblesHelpersImpl implements MarblesHelpersStatic {
     return MarblesHelpersInternal.scheduler
   }
 
+  public get helpers(): MarblesHelpers {
+    return this
+  }
+
   public init(assertDeepEqual: AssertDeepEqualFn): void {
     this.assertDeepEqual = assertDeepEqual
   }
@@ -79,6 +84,7 @@ export function marblesTesting(): void {
       expectSubscriptions,
       hot,
       scheduler,
+      helpers: MarblesHelpersInternal,
     })
   })
   afterEach(() => {
@@ -87,6 +93,7 @@ export function marblesTesting(): void {
     delete MarblesHelpersInternal.expectSubscriptions
     delete MarblesHelpersInternal.hot
     delete MarblesHelpersInternal.scheduler
+    delete MarblesHelpersInternal.helpers
   })
 
 }

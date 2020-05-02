@@ -20,5 +20,6 @@ module.exports = {
   spec: [
     'lib/**/*.spec.ts',
     'minigames/**/*.spec.ts',
+    'rxjs-marbles/**/*.spec.ts',
   ]
 }

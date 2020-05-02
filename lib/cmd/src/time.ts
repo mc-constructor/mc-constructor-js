@@ -38,7 +38,7 @@ export interface TimeCommandBuilder {
 }
 
 class TimeCommand extends SimpleArgsCommand {
-  public readonly expectResponse = true
+  public readonly hasResponse = true
   protected readonly command: string = 'time'
 
   constructor(protected readonly subCommand: TimeSubCommand, protected readonly arg: number | TimeType | TimeSpec) {

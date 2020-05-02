@@ -21,15 +21,23 @@ declare global {
       skip: PendingMarblesSuiteFunction
     }
 
+    interface PendingSuiteFunction {
+      marbles: MarblesSuiteFunction
+    }
+
     interface SuiteFunction {
       marbles: MarblesSuiteFunction
+    }
+
+    interface TestFunction {
+      noMarbles: TestFunction
     }
 
   }
 
   export namespace Chai {
     interface Assertion {
-      subscribedWith(subscriptionMarbles: string): Assertion
+      subscribedWith(...subscriptionMarbles: string[]): Assertion
       subscription(subscriptionMarbles: string): Assertion
       marbleValues(values: any): Assertion
     }

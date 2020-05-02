@@ -14,7 +14,7 @@ import {
 } from 'rxjs/operators'
 
 import { Client, ClientMessage, ClientMessageResponse, isClientMessage } from './client'
-import { CompiledSimpleMessage, MessageType, PendingMessage } from './message'
+import { CompiledSimpleMessage, ExecuteResponse, MessageType, PendingMessage } from './messages'
 import { ClientMessageConfig, SocketClientConfig } from './socket-client-config'
 import { SocketConnection } from './socket-connection'
 
@@ -38,7 +38,7 @@ class CompiledSocketMessage extends CompiledSimpleMessage<ClientMessageResponse>
     this.response$$ = new Subject<ClientMessageResponse>()
   }
 
-  public send(conn$: Observable<Socket>): Observable<Observable<ClientMessageResponse>> {
+  public send(conn$: Observable<Socket>): ExecuteResponse<ClientMessageResponse> {
     return conn$.pipe(
       switchMap(conn => new Observable<Observable<ClientMessageResponse>>(o => {
         const newline = this.config.encoder.encode('\n')
@@ -94,7 +94,7 @@ export class SocketClient implements Client {
     this.messages$ = this.initMessages(ready$, incoming$)
   }
 
-  public send(type: MessageType, buffer?: Uint8Array | string, hasResponse?: boolean | number): PendingMessage<ClientMessageResponse> {
+  public send(type: MessageType, buffer: Uint8Array | string, hasResponse?: boolean | number): PendingMessage<ClientMessageResponse> {
     const msg = new CompiledSocketMessage(this.logger, this.config.message, this.conn$, type, buffer, hasResponse, buffer?.toString())
     this.pending.set(msg.id, msg)
     return msg.pendingMessage$

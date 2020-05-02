@@ -1,4 +1,6 @@
 # Messages
+- Convert "Message" to "ClientRequest"
+- disambiguate "response" terminology
 
 ## Check
 - are subsequent players detected correctly by players service?

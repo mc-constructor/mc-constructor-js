@@ -10,12 +10,13 @@ import {
   mergeAll,
   mergeMap,
   share,
-  switchMap,
+  switchMap, take,
   takeUntil,
   takeWhile,
   tap,
   toArray,
 } from 'rxjs/operators'
+
 import { loggerFactory } from '../../common'
 import { dequeueReplay } from '../../common/rxjs'
 import {
@@ -103,11 +104,13 @@ export abstract class MultiCommand extends Command {
         const msgState$: Observable<CompletedMessageState> = of(...messages).pipe(
           this.parallel ? mergeAll() : concatAll(),
           tap(() => execState.remaining--),
+          take(messages.length),
           share(),
         )
 
         const debug$: Observable<any> = msgState$.pipe(
           takeWhile(() => execState.remaining > 0), // IMPORTANT so it stops when there are no more pending messages
+          tap(() => this.logger.debug(`${execState.remaining} responses remaining`)),
           switchMap(() =>
             interval(DEBUG_TIMEOUT).pipe(
               takeUntil(msgState$),
@@ -145,7 +148,7 @@ export abstract class MultiCommand extends Command {
 
     return Object.assign(output$, {
       id: `${this.constructor.name}#${this.instanceId}`,
-      sent$: undefined,
+      sent$: undefined, // TODO: emit once for each subcommand?
     })
   }
 

@@ -1,4 +1,4 @@
-import { of, timer } from 'rxjs'
+import { defer, of, timer } from 'rxjs'
 import { map } from 'rxjs/operators'
 
 import { Command } from '../../command'
@@ -11,9 +11,9 @@ class CompiledWaitMessage extends CompiledSimpleMessage<void> {
   }
 
   public execute(): ExecuteResponse<void> {
-    return of(undefined).pipe(
-      map(() => timer(this.duration).pipe(() => undefined)),
-    )
+    return defer(() => timer(this.duration).pipe(
+      map(() => undefined),
+    ))
   }
 }
 

@@ -13,8 +13,7 @@
 import { MonoTypeOperatorFunction, Observable, Operator, Subscriber, Subscription, TeardownLogic } from 'rxjs'
 import { DequeueReplaySubject, TriggerSelectorFn } from './dequeue-replay-subject'
 
-
-export function dequeueReplay<TStream>(dequeueTrigger: Observable<TStream>, ): MonoTypeOperatorFunction<TStream>
+export function dequeueReplay<TStream>(dequeueTrigger: Observable<TStream>): MonoTypeOperatorFunction<TStream>
 export function dequeueReplay<TStream, TTrigger>(
   dequeueTrigger: Observable<TTrigger>,
   selectorFn: TriggerSelectorFn<TStream, TTrigger>,

@@ -10,15 +10,15 @@ import {
   MinigameStartEvent,
   PlayerEvent,
   ServerEventType,
-} from './event'
+} from './events'
 import {
   AttackedByEntityEventType,
   parseAttackedEntityEvent,
   parseEntityEvent
-} from './event/entity'
-import { parseMinigameStartEvent } from './event/minigame'
-import { parsePlayerEvent } from './event/player-event'
-import { parseMessage, ServerEvent } from './event/server-event'
+} from './events/entity'
+import { parseMinigameStartEvent } from './events/minigame'
+import { parsePlayerEvent } from './events/player-event'
+import { parseMessage, ServerEvent } from './events/server-event'
 import { localToken } from './local-token'
 
 type ServerEventParserFn<TEvent extends ServerEvent> = (event: ServerEvent) => TEvent

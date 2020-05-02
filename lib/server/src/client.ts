@@ -3,7 +3,7 @@ import { InjectionToken } from '@dandi/core'
 import { Observable } from 'rxjs'
 
 import { localToken } from './local-token'
-import { MessageType, PendingMessage } from './message'
+import { MessageType, PendingMessage } from './messages'
 
 export interface ClientMessageResponseContent {
   extras: string[]
@@ -33,7 +33,7 @@ export function isClientMessage(obj: any): obj is ClientMessage {
 }
 
 export interface Client {
-  send(type: MessageType, buffer?: Uint8Array | string, hasResponse?: boolean | number): PendingMessage<ClientMessageResponse>
+  send(type: MessageType, buffer: Uint8Array | string, hasResponse?: boolean | number): PendingMessage<ClientMessageResponse>
 
   // TODO: move this out to a different interface
   readonly messages$: Observable<ClientMessage>

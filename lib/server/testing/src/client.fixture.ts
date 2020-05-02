@@ -1,22 +1,42 @@
 import { stub } from '@dandi/core/testing'
+import { NEVER, Observable } from 'rxjs'
+import { map } from 'rxjs/operators'
 import { SinonStub } from 'sinon'
 
-import { Client } from '../..'
+import { Client, MessageType } from '../..'
+
 import { TestCompiledMessage } from './test-compiled-message'
 
+export type ClientSendStubReturn =ReturnType<Client['send']> & { compiled: TestCompiledMessage }
+export type ClientSendStub = SinonStub<Parameters<Client['send']>, ClientSendStubReturn>
+
 export interface ClientFixture extends Client {
-  lastSent(): TestCompiledMessage
-  send: SinonStub
+  send: ClientSendStub
+  readonly lastSent: TestCompiledMessage
 }
 
-export function clientFixture(): ClientFixture {
-  let clientCompiled: TestCompiledMessage
-  return {
+export type ClientFixtureResponse = Observable<any> | Observable<any>[]
+
+export function clientFixture(response$?: ClientFixtureResponse): ClientFixture
+export function clientFixture(response$: ClientFixtureResponse, responseValues?: { [key: string ]: any }): ClientFixture
+export function clientFixture(response$?: ClientFixtureResponse, responseValues?: { [key: string]: any }): ClientFixture {
+  let lastSent: TestCompiledMessage
+  let count = 0
+  return Object.defineProperties({
     messages$: undefined,
-    send: stub().callsFake((type, cmd, hasResponse) => {
-      clientCompiled = new TestCompiledMessage(hasResponse)
-      return clientCompiled.pendingMessage$
-    }),
-    lastSent() { return clientCompiled },
-  }
+    send: stub().callsFake((type: MessageType, cmd: Uint8Array | string, hasResponse: boolean | number = true) => {
+      const callResponse$ = Array.isArray(response$) ? response$[count] : (response$ || NEVER)
+      const mappedResponse$ = callResponse$.pipe(
+        map(key => {
+          const responseValue = responseValues ? responseValues[key] : key
+          return { success: true, extras: [responseValue] }
+        }),
+      )
+      const compiled = new TestCompiledMessage(hasResponse, mappedResponse$, `clientFixture#${count++}`)
+      lastSent = compiled
+      return Object.assign(compiled.pendingMessage$, { compiled })
+    }) as ClientSendStub,
+  }, {
+    lastSent: { get: () => lastSent }
+  })
 }
