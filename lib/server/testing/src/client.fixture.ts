@@ -13,6 +13,7 @@ export type ClientSendStub = SinonStub<Parameters<Client['send']>, ClientSendStu
 export interface ClientFixture extends Client {
   send: ClientSendStub
   readonly lastSent: TestCompiledMessage
+  config(response$: ClientFixtureResponse, responseValues?: { [key: string]: any }): void
 }
 
 export type ClientFixtureResponse = Observable<any> | Observable<any>[]
@@ -29,13 +30,19 @@ export function clientFixture(response$?: ClientFixtureResponse, responseValues?
       const mappedResponse$ = callResponse$.pipe(
         map(key => {
           const responseValue = responseValues ? responseValues[key] : key
+          // console.log(`client.send response`, compiled.id, responseValue)
           return { success: true, extras: [responseValue] }
         }),
       )
       const compiled = new TestCompiledMessage(hasResponse, mappedResponse$, `clientFixture#${count++}`)
+      // console.log(`client.send#${compiled.id}`, cmd)
       lastSent = compiled
       return Object.assign(compiled.pendingMessage$, { compiled })
     }) as ClientSendStub,
+    config(configResponse$: ClientFixtureResponse, configResponseValues?: { [key: string]: any }): void {
+      response$ = configResponse$
+      responseValues = configResponseValues
+    },
   }, {
     lastSent: { get: () => lastSent }
   })

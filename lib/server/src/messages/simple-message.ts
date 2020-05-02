@@ -1,5 +1,5 @@
 import { Uuid } from '@dandi/common'
-import { map, tap } from 'rxjs/operators'
+import { map } from 'rxjs/operators'
 
 import { Client, ClientMessageFailedResponse, ClientMessageResponse, ClientMessageSuccessResponse } from '../client'
 
@@ -55,7 +55,7 @@ export abstract class SimpleMessage<TResponse extends any = any> extends Message
   protected abstract getMessageBody(): string | Uint8Array
 
   protected parseSuccessResponse(response: ClientMessageSuccessResponse): TResponse {
-    return undefined
+    return (response.extras.length <= 1 ? response.extras[0] : response.extras) as any
   }
 
   protected parseFailedResponse(response: ClientMessageFailedResponse, body: string | Uint8Array): MessageError {

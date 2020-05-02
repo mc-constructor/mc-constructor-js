@@ -6,7 +6,6 @@ import { combineLatest, forkJoin, merge, Observable, of, ReplaySubject, defer, t
 import {
   buffer,
   concatMap,
-  delay,
   finalize,
   map,
   pairwise,
@@ -56,7 +55,7 @@ export class ArenaManager {
     // start with "defer" so that the entry requirements aren't created until the game is started (by subscribing to
     // this observable)
     return defer(() => {
-      console.log('arenaAvailable defer', this.arenas)
+      console.log('arenaAvailable defer')
       this.logger.debug('starting arenas', this.arenas.map(arena => arenaDescriptor(arena.instance).title.toString()))
       // this will emit any time an arena's entry requirements have all been met
       return merge(...this.arenas.map(arena => this.arenaEntryRequirements(arena)))
@@ -83,13 +82,14 @@ export class ArenaManager {
         // set up the new arena (includes moving players into it once it's done)
         return this.initArena([prevArena, arena]).pipe(
           switchMap(() => {
-            console.log('after initArena')
+            const prev = prevArena ? arenaDescriptor(prevArena.instance).title : undefined
+            console.log('after initArena', { prev, arena: arenaDescriptor(arena.instance).title })
             // set up the arena's hooks to listen for their events
             return merge(
               defer(() => this.initArenaHooks(arena)),
               // emit arenaStart$ - note that this must be emitted AFTER initArenaHooks is subscribed to so that any
               // arenaStart$ behaviors on the newly initialized arena can receive the event
-              defer(() => timer(5)).pipe(
+              defer(() => timer(1)).pipe(
                 tap(() => {
                   console.log('arenaStart', arena.instance.constructor.name)
                   this.logger.debug('arena start', arena.instance.constructor.name)
@@ -98,6 +98,7 @@ export class ArenaManager {
               ),
             )
           }),
+          tap(() => console.log('after initArena/switchMap')),
           // buffer until exit requirements are complete, and at least one new arena is available
           // this allows the current arena's hooks to continue receiving events until all exit requirements are
           // completed and a new arena is ready to be started
@@ -116,26 +117,32 @@ export class ArenaManager {
 
   private initArena([prevArena, arena]: [ConfiguredArena, ConfiguredArena]): Observable<ConfiguredArena> {
     const descriptor = arenaDescriptor(arena.instance)
+    console.log('initArena', descriptor.title)
     return defer(() => {
-      console.log('initArena')
-      this.logger.debug('initArena', descriptor.title.toString())
+      console.log('initArena.defer', descriptor.title)
+      this.logger.debug('initArena', descriptor.title)
       if (prevArena) {
         return this.clearArena(prevArena)
       }
       return of(undefined)
     }).pipe(
-      tap(() => console.log('initArena after defer')),
+      tap(() => console.log('initArena start')),
       this.command(arena.instance.init()),
-      tap(() => console.log('initArena after init command')),
       // delay(500),
       this.command(this.common.movePlayersToArena(arena.instance)),
       this.command(title('@a', descriptor.title, descriptor.description)),
+      tap(v => console.log('initArena after CMD', v)),
+      // tap(() => console.log('initArena after move players and title command')),
       map(() => arena),
-      tap(arena => this.logger.debug('initArena complete', arena.constructor.name)),
+      // tap(() => this.logger.debug('initArena complete', descriptor.title)),
+      tap(() => console.log('initArena complete', descriptor.title)),
+      share(),
+      tap(() => console.log('initArena emit', descriptor.title)),
     )
   }
 
   private initArenaHooks(arena: ConfiguredArena): Observable<any> {
+    console.log('initArenaHooks')
     const hooks = [...Object.keys(arena.instance.hooks || {})].map((hook: keyof ArenaHooks) => {
       const handlers = arena.instance.hooks[hook] as HookHandler<any>[]
       return merge(...handlers.map((handler: HookHandler<any>) => {

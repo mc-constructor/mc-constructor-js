@@ -139,6 +139,10 @@ describe.marbles('MultiCommand', (helpers) => {
     })
   })
 
+  describe('execute', () => {
+    it('returns an ExecuteResponse')
+  })
+
   it('waits for commands to succeed before sending subsequent commands in series mode', () => {
 
     const cmds = {
@@ -151,11 +155,13 @@ describe.marbles('MultiCommand', (helpers) => {
       cold('---b|'),
       cold('---c|'),
     ])
+    const values = {
+      r: ['a', 'b', 'c']
+    }
     // TODO: is there a way to check the timing of individual commands
-    const expected = '-----------(abc|)'
+    const expected = '-----------(r|)'
     const cmd$ = series(cmds.a, cmds.b, cmds.c).execute(client)
-
-    expect(cmd$).to.equal(expected)
+    expect(cmd$).with.marbleValues(values).to.equal(expected)
 
   })
 
@@ -170,10 +176,13 @@ describe.marbles('MultiCommand', (helpers) => {
       cold('---b|'),
       cold('---c|'),
     ])
-    const expected = '---(abc|)'
+    const values = {
+      r: ['a', 'b', 'c']
+    }
+    const expected = '---(r|)'
     const cmd$ = parallel(cmds.a, cmds.b, cmds.c).execute(client)
 
-    expect(cmd$).to.equal(expected)
+    expect(cmd$).with.marbleValues(values).to.equal(expected)
   })
 
 })

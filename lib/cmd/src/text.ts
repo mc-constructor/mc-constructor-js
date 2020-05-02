@@ -70,6 +70,10 @@ export class TextFragmentBuilder {
   public toJSON(): string | TextFragment {
     return this.requiresObj ? this.obj : this.text
   }
+
+  [inspect.custom](): string {
+    return this.text
+  }
 }
 
 export class TextBuilder {

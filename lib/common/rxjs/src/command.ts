@@ -1,6 +1,6 @@
 import { InjectionToken, Provider } from '@dandi/core'
-import { from, Observable, OperatorFunction } from 'rxjs'
-import { switchMap } from 'rxjs/operators'
+import { Observable, OperatorFunction } from 'rxjs'
+import { switchMap, tap } from 'rxjs/operators'
 
 import { Command } from '../../../command'
 import { Client } from '../../../server'
@@ -14,7 +14,12 @@ export type CommandOperatorFn = <TResponse>(cmd?: CommandInput<TResponse>) => Op
 export function execCommand(client: Client): CommandStaticFn {
   return <TResponse>(cmdIn: CommandInput<TResponse>): Observable<TResponse> => {
     const cmd = typeof cmdIn === 'function' ? cmdIn() : cmdIn
-    return from(cmd.execute(client))
+    // console.log('execCommand', cmd.debug)
+    const response$ = cmd.execute(client)
+    // console.log('execCommand msg', response$.id)
+    return response$.pipe(
+      // tap(v => console.log('execCommand response', v))
+    )
   }
 }
 

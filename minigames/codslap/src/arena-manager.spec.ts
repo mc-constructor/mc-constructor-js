@@ -1,20 +1,17 @@
 import { ConsoleLogListener } from '@dandi/core/logging'
-import { stub, testHarness } from '@dandi/core/testing'
+import { testHarness } from '@dandi/core/testing'
 import { CommonModule } from '@minecraft/core/common'
-import { SubscriptionTracker } from '@minecraft/core/common/rxjs'
 import { stubLoggerFactory } from '@minecraft/core/common/testing'
 import { Players } from '@minecraft/core/players'
 import { playersFixture, PlayersFixture } from '@minecraft/core/players/testing'
 import { Client } from '@minecraft/core/server'
 import { clientFixture, ClientFixture } from '@minecraft/core/server/testing'
 
-import { of } from 'rxjs'
-import * as rxOps from 'rxjs/operators'
-
 import { expect } from 'chai'
+
 import { codslapEventsFixture, CodslapEventsFixture, codslapObjectivesFixture } from '../testing'
 
-import { Arena, ArenasModuleBuilder } from './arena'
+import { Arena, ArenasModuleBuilder, ConfiguredArena, ConfiguredArenas } from './arena'
 import { ArenaManager } from './arena-manager'
 import { Boring } from './arena/boring.arena'
 import { CodslapEvents } from './codslap-events'
@@ -22,18 +19,11 @@ import { CodslapObjectives } from './codslap-objectives'
 import { CommonCommands } from './common'
 import { EventsAccessorProvider } from './events-accessor-provider'
 
-xdescribe.marbles('ArenaManager', ({ cold }) => {
+describe.marbles('ArenaManager', ({ cold }) => {
 
   stubLoggerFactory()
 
-  let harness = testHarness(
-    new ArenasModuleBuilder()
-      .arena(Boring, {
-        entry: Arena.requirements.none,
-        exit: [
-          Arena.requirements.minArenaAge(30),
-        ],
-      }),
+  const harness = testHarness(
     ArenaManager,
     CommonCommands,
     CommonModule,
@@ -61,60 +51,76 @@ xdescribe.marbles('ArenaManager', ({ cold }) => {
   let events: CodslapEventsFixture
   let players: PlayersFixture
   let manager: ArenaManager
-  let subs: SubscriptionTracker
+  let arenas: ConfiguredArena[]
+
+  async function init() {
+    manager = await harness.inject(ArenaManager)
+    arenas = await harness.inject(ConfiguredArenas)
+  }
+
+  function registerSingleArena() {
+    harness.register(
+      new ArenasModuleBuilder()
+        .arena(Boring, {
+          entry: Arena.requirements.none,
+          exit: [
+            Arena.requirements.minArenaAge(30),
+          ],
+        }),
+    )
+  }
 
   beforeEach(async () => {
-    stub(rxOps, 'delay').returns(() => of([]))
-
     client = clientFixture()
     events = codslapEventsFixture()
     players = playersFixture()
-    manager = await harness.inject(ArenaManager)
-    subs = await harness.inject(SubscriptionTracker)
+    players.players.push({ name: 'testguy', uuid: '12345' })
   })
   afterEach(() => {
     client = undefined
     events = undefined
     players = undefined
     manager = undefined
-    subs = undefined
+    arenas = undefined
   })
 
-  it('can be instantiated', () => {
-    expect(manager).to.exist
+  describe('ctr', () => {
+    beforeEach(registerSingleArena)
+    beforeEach(init)
+
+    it('can be instantiated', () => {
+      expect(manager).to.exist
+    })
   })
 
   describe('run$', () => {
-    it('can be subscribed to', () => {
-      subs.track(harness as any, manager.run$.subscribe())
+
+    describe('basic', () => {
+      beforeEach(registerSingleArena)
+      beforeEach(init)
+
+      it('can be subscribed to', () => {
+        const sub = manager.run$.subscribe()
+
+        sub.unsubscribe()
+      })
+
+      it('starts the first arena', () => {
+        const values = {
+          a: arenas[0]
+        }
+        client.config(cold('a'))
+
+        // FIXME: where is the 2000ms delay coming from?
+        const expectedStart = '2000ms -a'
+
+        expect(manager.arenaStart$, 'arenaStart$').with.marbleValues(values).to.equal(expectedStart)
+        expect(manager.run$, 'run$').to.equal('')
+      })
     })
 
-    it('starts the first arena', () => {
-      // client.send.returns(Promise.resolve())
-      // const values = {
-      //   a: Boring
-      // }
-      //
-      // const expectedRun = 'a'
-      // const startSub = '^'
-      //
-      // const runSub = manager.run$.subscribe()
-      //
-      // expect(manager.arenaStart$).with.subscription(startSub).and.marbleValues(values).to.equal(expectedRun)
+    describe('multiple commands', () => {
 
-      // const runSub = manager.run$.subscribe()
-      // subs.track(harness as any,
-      //   manager.arenaStart$.subscribe(arenaStart),
-      //   runSub,
-      // )
-
-      // expect(arenaStart).to.have.been.calledOnce
-      // const arena = arenaStart.firstCall.lastArg
-      // expect(arena).to.be.instanceof(Boring)
-      //
-      // runSub.unsubscribe()
-
-      // FIXME: first arena gets repeated due to queuedReplay behavior - how should that be fixed?
     })
 
   })

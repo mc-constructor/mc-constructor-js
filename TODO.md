@@ -18,6 +18,7 @@
 
 ## Minigames
 - what subscriptions aren't getting cleaned up between instances? (e.g. codslap level check is leaking)
+- add check for player count?
 
 ## Arenas
 - Entry/Exit requirements - make arena specified reqs optional, add global reqs (to help with ordering)

@@ -25,7 +25,7 @@ import {
   CompiledSimpleMessage,
   ClientMessageResponse,
   MessageType,
-  PendingMessage,
+  PendingMessage, ExecuteResponse,
 } from '../../server'
 
 import { Command } from './command'
@@ -75,7 +75,7 @@ export abstract class MultiCommand extends Command {
 
   protected abstract compile(): Command[]
 
-  protected processCommands(context: MultiCommandExecutionContext): PendingMessage {
+  protected processCommands(context: MultiCommandExecutionContext): ExecuteResponse<any> {
     interface MessageState {
       compiled: CompiledMessage
     }
@@ -144,9 +144,10 @@ export abstract class MultiCommand extends Command {
       map(msgState => msgState.result),
       toArray(),
       map(this.parseResponses.bind(this)),
+      // tap(v => console.log('MultiCommand complete', v)),
     )
 
-    return Object.assign(output$, {
+    return Object.assign(of(output$), {
       id: `${this.constructor.name}#${this.instanceId}`,
       sent$: undefined, // TODO: emit once for each subcommand?
     })
