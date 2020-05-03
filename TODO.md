@@ -24,6 +24,7 @@
 ## Minigames
 - what subscriptions aren't getting cleaned up between instances? (e.g. codslap level check is leaking)
 - add check for player count?
+- move Arena stuff out of codslap
 
 ## Arenas
 - Entry/Exit requirements - make arena specified reqs optional, add global reqs (to help with ordering)
@@ -40,15 +41,14 @@
  - give codslappers tiered dmg vs mobs, no dmg vs players
  
 ## Bugs
-- spawn blacklist on bedrock pit
-- spawn blacklist on removed rows of shrinky dinks
-- primed and ready - fix general tnt logic
+- fixed? spawn blacklist on bedrock pit
+- fixed? spawn blacklist on removed rows of shrinky dinks
+- fixed? primed and ready - fix general tnt logic
 - hooks stop working on the last arena after exit reqs are met
 
 ## Balance/Gameplay fixes
 - scale random spawns with # of players
 - enabled limiting hook-based spawns (e.g. total number of cows spawned)
-- heal/feed player on moving to arena
 - remove fire effect?
 
 ### Ideas:

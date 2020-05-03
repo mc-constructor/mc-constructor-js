@@ -35,7 +35,7 @@ export function clientFixture(response$?: ClientFixtureResponse, responseValues?
         }),
       )
       const compiled = new TestCompiledMessage(hasResponse, mappedResponse$, `clientFixture#${count++}`)
-      // console.log(`client.send#${compiled.id}`, cmd)
+      // console.log(`client.send#${compiled.id}`, cmd, callResponse$ !== NEVER)
       lastSent = compiled
       return Object.assign(compiled.pendingMessage$, { compiled })
     }) as ClientSendStub,

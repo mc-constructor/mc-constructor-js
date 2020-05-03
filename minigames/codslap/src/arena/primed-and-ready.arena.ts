@@ -62,7 +62,6 @@ class PrimedAndReadyArena extends ArenaBase {
   private run(events: CodslapEvents): Observable<any> {
     this.logger.debug('run')
     return Arena.requirements.minArenaAge(PrimedAndReadyArena.minDelay)(events, this).pipe(
-
       tap(() => this.logger.debug('minimum arena age met, waiting for next available arena to start exploding')),
       switchMapTo(events.arenaAvailable$),
 
@@ -70,27 +69,26 @@ class PrimedAndReadyArena extends ArenaBase {
 
       switchMap(() =>
 
-        // next explosion location - down 2 because spawn locations are up 2 from the floor
-        defer(() => of(this.getRandomSpawn().modify.down(2))).pipe(
+        // next explosion location - down 1 because spawn locations are up 1 from the floor
+        defer(() => of(this.getRandomSpawn().modify.down(1))).pipe(
           events.timedPlayerReadyEvent(this.getTimer.bind(this)),
 
           map(loc => this.getTntCommand(loc)),
-          switchMap(([cmd, tntState]) => combineLatest([this.command()(of(cmd)), of(tntState)])),
+          switchMap(([cmd, tntState]) => combineLatest([of(cmd).pipe(this.command()), of(tntState)])),
           delay(5000),
           map(([,tntState]) => this.replaceBlock(tntState)),
           this.command(),
+          repeat(PrimedAndReadyArena.explosionCount),
       )),
-      repeat(PrimedAndReadyArena.explosionCount),
     )
   }
 
   private getTimer(): Observable<true> {
     return timer(PrimedAndReadyArena.explosionInterval, PrimedAndReadyArena.removeRowScheduler).pipe(
-      tap(() => this.logger.debug('shrink timer tick')),
+      tap(() => this.logger.debug('explosion timer tick')),
       map(() => true),
     )
   }
-
 
   private getTntCommand(coords: Coordinates): [Command, [Coordinates, Area]] {
     const cmd = parallel(

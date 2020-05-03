@@ -59,7 +59,6 @@ export class CodslapInitCommand extends MultiCommand {
       ),
       clear('@a'),
       clearEffect('@a'),
-      giveEffect('@a', Effect.instantHealth, 10),
     )
     return series(
       holdingArea,

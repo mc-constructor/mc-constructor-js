@@ -1,5 +1,3 @@
-import { inspect } from 'util'
-
 export interface AxisValueWrapper {
 
   make(value: number): this

@@ -67,6 +67,19 @@ export abstract class ArenaBase implements Arena {
     return spawn
   }
 
+  public isBlacklistedSpawn(spawn: Coordinates): boolean {
+    if (!spawn) {
+      return true
+    }
+    return [...this.spawnBlacklist.values()].some(blacklisted => blacklisted.contains(spawn))
+  }
+
+  public init(): Command {
+    this.spawnAreas.clear()
+    this.spawnBlacklist.clear()
+    return this.fill()
+  }
+
   protected getLayerCenter(layer: PlatformLayer): Coordinates {
     if (layer.centerOffset) {
       return this.center.modify.offset(layer.centerOffset)
@@ -123,7 +136,7 @@ export abstract class ArenaBase implements Arena {
     })
   }
 
-  private getRandomSpawnCandidate(): Coordinates {
+  protected getRandomSpawnCandidate(): Coordinates {
     const spawnAreas = [...this.spawnAreas.values()]
     const layer = spawnAreas[randomInt(0, spawnAreas.length - 1)]
     return loc(
@@ -131,19 +144,6 @@ export abstract class ArenaBase implements Arena {
       randomInt(layer.start.y, layer.end.y),
       randomInt(layer.start.z, layer.end.z),
     )
-  }
-
-  public isBlacklistedSpawn(spawn: Coordinates): boolean {
-    if (!spawn) {
-      return true
-    }
-    return [...this.spawnBlacklist.values()].some(blacklisted => blacklisted.contains(spawn))
-  }
-
-  public init(): Command {
-    this.spawnAreas.clear()
-    this.spawnBlacklist.clear()
-    return this.fill()
   }
 
   protected fill(resetBlock?: Block): Command {

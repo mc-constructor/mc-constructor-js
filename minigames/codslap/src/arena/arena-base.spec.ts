@@ -1,5 +1,6 @@
+import { stub } from '@dandi/core/testing'
 import { block } from '@minecraft/core/cmd'
-import { impersonate, stubLoggerFactory } from '@minecraft/core/common/testing'
+import { impersonate, stubLoggerFactory, repeat } from '@minecraft/core/common/testing'
 import { area, Block, loc } from '@minecraft/core/types'
 
 import { expect } from 'chai'
@@ -32,6 +33,7 @@ describe('ArenaBase', () => {
 
   beforeEach(() => {
     arena = new TestArena()
+    arena.init()
   })
   afterEach(() => {
     arena = undefined
@@ -40,13 +42,25 @@ describe('ArenaBase', () => {
   describe('getRandomSpawn', () => {
 
     it('returns a spawn point inside a platform layer', () => {
-      arena.init()
+      repeat(10000, () => {
+        impersonate(arena, function(this: TestArena) {
+          const [, start, end] = this.getLayerArea(this.layers[0])
+          const spawnArea = area(start, end)
+          const spawn = this.getRandomSpawn()
+          expect(spawn).to.be.within(spawnArea)
+        })
+      })
+    })
 
+    it('does not return spawn points that fall within blacklisted areas', () => {
       impersonate(arena, function(this: TestArena) {
-        const [, start, end] = this.getLayerArea(this.layers[0])
-        const spawnArea = area(start, end)
-        const spawn = this.getRandomSpawn()
-        expect(spawn).to.be.within(spawnArea)
+        const [center] = this.getLayerArea(this.layers[0])
+        this.blacklistSpawnArea(area(center, center))
+        stub(this as any, 'getRandomSpawnCandidate')
+          .callThrough()
+          .onFirstCall().returns(center)
+
+        expect(this.getRandomSpawn()).not.to.deep.equal(center)
       })
     })
 

@@ -1,8 +1,8 @@
 import { Inject, Injectable } from '@dandi/core'
-import { clear, rawCmd } from '@minecraft/core/cmd'
+import { clear, giveEffect, rawCmd } from '@minecraft/core/cmd'
 import { Command, parallel } from '@minecraft/core/command'
 import { Players } from '@minecraft/core/players'
-import { area, Coordinates, Item, loc } from '@minecraft/core/types'
+import { area, Coordinates, Effect, Item, loc } from '@minecraft/core/types'
 
 import { Arena } from './arena'
 import { CodslapObjectives } from './codslap-objectives'
@@ -70,7 +70,11 @@ export class CommonCommands {
   }
 
   public movePlayersToArena(arena: Arena): Command {
-    return parallel(...this.players$.players.map(player => rawCmd(`teleport ${player.name} ${arena.getRandomSpawn()}`)))
+    return parallel(
+      ...this.players$.players.map(player => rawCmd(`teleport ${player.name} ${arena.getRandomSpawn()}`)),
+      giveEffect('@a', Effect.instantHealth, 10),
+      giveEffect('@a', Effect.saturation, 10),
+    )
   }
 
 }
