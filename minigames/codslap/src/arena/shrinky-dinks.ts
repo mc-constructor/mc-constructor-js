@@ -1,7 +1,7 @@
 import { Inject, Logger } from '@dandi/core'
 import { block, text, title } from '@minecraft/core/cmd'
 import { Command, parallel } from '@minecraft/core/command'
-import { randomInt, randomIntGenerator } from '@minecraft/core/common'
+import { randomIntGenerator } from '@minecraft/core/common'
 import { CommandOperator, CommandOperatorFn, RandomIntervalScheduler } from '@minecraft/core/common/rxjs'
 import { area, Block, loc, Mob } from '@minecraft/core/types'
 
@@ -13,10 +13,10 @@ import { CommonCommands } from '../common'
 import { summonBehavior } from '../hooks'
 
 import { Arena, ArenaConstructor } from './arena'
-import { PlatformArena, PlatformLayer } from './platform-arena'
+import { ArenaBase, PlatformLayer } from './arena-base'
 
 @Arena()
-class ShrinkyDinksArena extends PlatformArena {
+class ShrinkyDinksArena extends ArenaBase {
 
   public static readonly title = text('Shrinky Dinks!').bold
   public static readonly description = text(`Keep an eye on the edges...`)
@@ -54,11 +54,11 @@ class ShrinkyDinksArena extends PlatformArena {
   private currentRadius = ShrinkyDinksArena.initialRadius
 
   constructor(
-    @Inject(CommonCommands) private common: CommonCommands,
+    @Inject(CommonCommands) common: CommonCommands,
     @Inject(CommandOperator) private readonly command: CommandOperatorFn,
     @Inject(Logger) private logger: Logger,
   ) {
-    super(common.center)
+    super(common)
   }
 
   private run(events: CodslapEvents): Observable<any> {
@@ -93,11 +93,11 @@ class ShrinkyDinksArena extends PlatformArena {
     const south = air.fill(se, sw.modify.up(1))
     const west = air.fill(sw, nw.modify.up(1))
 
-    this.spawnBlacklist.push(
-      area(nw, ne.modify.up(1)),
-      area(ne, se.modify.up(1)),
-      area(se, sw.modify.up(1)),
-      area(sw, nw.modify.up(1)),
+    this.blacklistSpawnArea(
+      area(nw, ne),
+      area(ne, se),
+      area(se, sw),
+      area(sw, nw),
     )
 
     return parallel(

@@ -4,16 +4,19 @@ import { CommonModule } from '@minecraft/core/common'
 import { stubLoggerFactory } from '@minecraft/core/common/testing'
 import { Players } from '@minecraft/core/players'
 import { playersFixture, PlayersFixture } from '@minecraft/core/players/testing'
-import { Client } from '@minecraft/core/server'
+import { Client, ServerEventType } from '@minecraft/core/server'
 import { clientFixture, ClientFixture } from '@minecraft/core/server/testing'
 
 import { expect } from 'chai'
+import { NEVER } from 'rxjs'
+import { map, tap } from 'rxjs/operators'
 
 import { codslapEventsFixture, CodslapEventsFixture, codslapObjectivesFixture } from '../testing'
 
 import { Arena, ArenasModuleBuilder, ConfiguredArena, ConfiguredArenas } from './arena'
 import { ArenaManager } from './arena-manager'
 import { Boring } from './arena/boring.arena'
+import { KingOfTheHill } from './arena/king-of-the-hill.arena'
 import { CodslapEvents } from './codslap-events'
 import { CodslapObjectives } from './codslap-objectives'
 import { CommonCommands } from './common'
@@ -70,6 +73,26 @@ describe.marbles('ArenaManager', ({ cold }) => {
     )
   }
 
+  function registerTwoArenas() {
+    harness.register(
+      new ArenasModuleBuilder()
+        .arena(Boring, {
+          entry: Arena.requirements.none,
+          exit: [
+            Arena.requirements.minArenaAge(30),
+          ],
+        })
+        .arena(KingOfTheHill, {
+          entry: [
+            Arena.requirements.minGameAge(35),
+          ],
+          exit: [
+            () => NEVER,
+          ],
+        }),
+    )
+  }
+
   beforeEach(async () => {
     client = clientFixture()
     events = codslapEventsFixture()
@@ -120,7 +143,44 @@ describe.marbles('ArenaManager', ({ cold }) => {
     })
 
     describe('multiple commands', () => {
+      beforeEach(registerTwoArenas)
+      beforeEach(init)
 
+      it('starts the first arena', () => {
+        const values = {
+          a: arenas[0],
+          b: arenas[1],
+        }
+        client.config(cold('a'))
+
+        const expectedStart = '2000ms -a'
+
+        expect(manager.arenaStart$, 'arenaStart$').with.marbleValues(values).to.equal(expectedStart)
+        expect(manager.run$, 'run$').to.equal('')
+      })
+
+      it('starts the second arena once it is ready and the first arena completes its exit requirements', () => {
+        const values = {
+          a: arenas[0],
+          b: arenas[1],
+        }
+        client.config(cold('a'), cold('b'))
+        events.config({
+
+          codslap$: cold('3500ms ' + Array(26).join('a')).pipe(
+            map(() => ({
+              type: ServerEventType.playerAttackEntity,
+              player: { name: 'someguy' } as any,
+            } as any)),
+            tap(() => console.log('codslap!')),
+          ),
+        })
+
+        const expectedStart = '2000ms -a 35999ms b'
+
+        expect(manager.arenaStart$, 'arenaStart$').with.marbleValues(values).to.equal(expectedStart)
+        expect(manager.run$, 'run$').and.marbleValues(values).to.equal('31s a')
+      })
     })
 
   })

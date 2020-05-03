@@ -104,7 +104,7 @@ export const Arena: ArenaStatic = Object.assign(ArenaDecorator, {
         ),
     minGameAge: (age: number): ArenaRequirement =>
       (events: CodslapEvents) =>
-        events.age$.pipe(
+        events.minigameAge$.pipe(
           filter(event => event.minigameAge >= age),
           take(1),
         ),

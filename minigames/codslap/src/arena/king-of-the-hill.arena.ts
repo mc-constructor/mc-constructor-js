@@ -6,7 +6,7 @@ import { CommonCommands } from '../common'
 import { summonBehavior } from '../hooks'
 
 import { Arena, ArenaConstructor } from './arena'
-import { PlatformArena, PlatformLayer } from './platform-arena'
+import { ArenaBase, PlatformLayer } from './arena-base'
 
 const STAIRS = [
   Block.acaciaStairs,
@@ -28,7 +28,7 @@ const STAIRS = [
 ]
 
 @Arena()
-class KingOfTheHillArena extends PlatformArena {
+class KingOfTheHillArena extends ArenaBase {
 
   public static readonly title = text('King of the Hill').bold
   public static readonly description = text('Mmmmmhm.')
@@ -67,7 +67,7 @@ class KingOfTheHillArena extends PlatformArena {
   constructor(
     @Inject(CommonCommands) common: CommonCommands,
   ) {
-    super(common.center)
+    super(common)
   }
 
 }

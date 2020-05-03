@@ -2,6 +2,11 @@
 - Convert "Message" to "ClientRequest"
 - disambiguate "response" terminology
 
+# Marbles testing
+- figure out how to get stack trace pointing to the failed test expectation,
+  but still preserve the marbles diff - maybe instantiate an exception at the
+  call site?
+
 ## Check
 - are subsequent players detected correctly by players service?
 

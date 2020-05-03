@@ -11,7 +11,7 @@ import {
   pairwise,
   share,
   startWith,
-  switchMap,
+  switchMap, take,
   tap,
 } from 'rxjs/operators'
 
@@ -51,15 +51,14 @@ export class ArenaManager {
   }
 
   private arenaAvailable(): Observable<ConfiguredArena> {
-    console.log('arenaAvailable')
     // start with "defer" so that the entry requirements aren't created until the game is started (by subscribing to
     // this observable)
     return defer(() => {
-      console.log('arenaAvailable defer')
       this.logger.debug('starting arenas', this.arenas.map(arena => arenaDescriptor(arena.instance).title.toString()))
       // this will emit any time an arena's entry requirements have all been met
       return merge(...this.arenas.map(arena => this.arenaEntryRequirements(arena)))
     }).pipe(
+      tap(arena => console.log('arena available:', arenaDescriptor(arena.instance).title)),
       tap(arena => this.logger.debug('arena available:', arenaDescriptor(arena.instance).title)),
       dequeueReplay(this.arenaStart$),
       // note: share is not needed here because dequeueReplay effectively accomplishes the same thing
@@ -106,12 +105,15 @@ export class ArenaManager {
             combineLatest([
               this.arenaExitRequirements(arena),
               this.arenaAvailable$,
-            ]),
+            ]).pipe(
+              take(1), // important to avoid re-emitting an already completed arena
+            ),
           ),
           map(() => arena),
         )
       }),
       share(),
+      finalize(() => console.log('GAME OVER, MAN')),
     )
   }
 
@@ -119,7 +121,6 @@ export class ArenaManager {
     const descriptor = arenaDescriptor(arena.instance)
     console.log('initArena', descriptor.title)
     return defer(() => {
-      console.log('initArena.defer', descriptor.title)
       this.logger.debug('initArena', descriptor.title)
       if (prevArena) {
         return this.clearArena(prevArena)
@@ -131,10 +132,7 @@ export class ArenaManager {
       // delay(500),
       this.command(this.common.movePlayersToArena(arena.instance)),
       this.command(title('@a', descriptor.title, descriptor.description)),
-      tap(v => console.log('initArena after CMD', v)),
-      // tap(() => console.log('initArena after move players and title command')),
       map(() => arena),
-      // tap(() => this.logger.debug('initArena complete', descriptor.title)),
       tap(() => console.log('initArena complete', descriptor.title)),
       share(),
       tap(() => console.log('initArena emit', descriptor.title)),

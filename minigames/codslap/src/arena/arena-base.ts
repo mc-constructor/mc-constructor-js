@@ -22,7 +22,13 @@ const NO_SPAWN_BLOCKS: Block[] = [
   Block.water,
 ]
 
-export abstract class PlatformArena implements Arena {
+export interface PlatformArenaConstants {
+  center: Coordinates
+  spawnOffsetFromFloor: Coordinates
+  spawnBlacklistOffset: Area
+}
+
+export abstract class ArenaBase implements Arena {
 
   public static readonly entryRequirements: ArenaRequirement[] = []
   public static readonly exitRequirements: ArenaRequirement[] = []
@@ -30,8 +36,36 @@ export abstract class PlatformArena implements Arena {
   public abstract readonly layers: PlatformLayer[]
   public readonly hooks: ArenaHooks
 
-  protected readonly spawnAreas: Area[] = []
-  protected readonly spawnBlacklist: Area[] = []
+  public get center(): Coordinates {
+    return this.constants.center
+  }
+
+  public get spawnOffsetFromFloor(): Coordinates {
+    return this.constants.spawnOffsetFromFloor
+  }
+
+  public get spawnBlacklistOffset(): Area {
+    return this.constants.spawnBlacklistOffset
+  }
+
+  private readonly spawnAreas = new Map<Area, Area>()
+  private readonly spawnBlacklist = new Map<Area, Area>()
+
+  protected constructor(
+    protected readonly constants: PlatformArenaConstants,
+  ) {}
+
+  public cleanup(): Command {
+    return this.fill(Block.air)
+  }
+
+  public getRandomSpawn(): Coordinates {
+    let spawn = this.getRandomSpawnCandidate()
+    while (this.isBlacklistedSpawn(spawn)) {
+      spawn = this.getRandomSpawnCandidate()
+    }
+    return spawn
+  }
 
   protected getLayerCenter(layer: PlatformLayer): Coordinates {
     if (layer.centerOffset) {
@@ -65,22 +99,33 @@ export abstract class PlatformArena implements Arena {
     ]
   }
 
-  protected constructor(public readonly center: Coordinates) {}
-
-  public cleanup(): Command {
-    return this.fill(Block.air)
+  protected blacklistSpawnArea(...areas: Area[]): void {
+    areas.forEach(entry => {
+      const blacklisted = area(
+        entry.start.modify.offset(this.spawnBlacklistOffset.start),
+        entry.end.modify.offset(this.spawnBlacklistOffset.end),
+      )
+      this.spawnBlacklist.set(entry, blacklisted)
+    })
   }
 
-  public getRandomSpawn(): Coordinates {
-    let spawn = this.getRandomSpawnCandidate()
-    while (this.isBlacklistedSpawn(spawn)) {
-      spawn = this.getRandomSpawnCandidate()
-    }
-    return spawn
+  protected restoreSpawnArea(...areas: Area[]): void {
+    areas.forEach(entry => this.spawnBlacklist.delete(entry))
+  }
+
+  protected addSpawnArea(...areas: Area[]): void {
+    areas.forEach(entry => {
+      const spawnArea = area(
+        entry.start.modify.offset(this.spawnOffsetFromFloor),
+        entry.end.modify.offset(this.spawnOffsetFromFloor),
+      )
+      this.spawnAreas.set(entry, spawnArea)
+    })
   }
 
   private getRandomSpawnCandidate(): Coordinates {
-    const layer = this.spawnAreas[randomInt(0, this.spawnAreas.length - 1)]
+    const spawnAreas = [...this.spawnAreas.values()]
+    const layer = spawnAreas[randomInt(0, spawnAreas.length - 1)]
     return loc(
       randomInt(layer.start.x, layer.end.x),
       randomInt(layer.start.y, layer.end.y),
@@ -88,16 +133,16 @@ export abstract class PlatformArena implements Arena {
     )
   }
 
-  private isBlacklistedSpawn(spawn: Coordinates): boolean {
+  public isBlacklistedSpawn(spawn: Coordinates): boolean {
     if (!spawn) {
       return true
     }
-    return this.spawnBlacklist.some(blacklisted => blacklisted.contains(spawn))
+    return [...this.spawnBlacklist.values()].some(blacklisted => blacklisted.contains(spawn))
   }
 
   public init(): Command {
-    this.spawnAreas.length = 0
-    this.spawnBlacklist.length = 0
+    this.spawnAreas.clear()
+    this.spawnBlacklist.clear()
     return this.fill()
   }
 
@@ -106,9 +151,9 @@ export abstract class PlatformArena implements Arena {
       const [, start, end] = this.getLayerArea(layer)
       if (!resetBlock && !layer.ignoreForSpawn) {
         if (layer.preventSpawn || NO_SPAWN_BLOCKS.includes(layer.block.block)) {
-          this.spawnBlacklist.push(area(start.modify.up(5), end.modify.down(2)))
+          this.blacklistSpawnArea(area(start, end))
         } else {
-          this.spawnAreas.push(area(start.modify.up(2), end.modify.up(2)))
+          this.addSpawnArea(area(start, end))
         }
       }
       return (resetBlock ? block(resetBlock) : layer.block).fill(start, end)

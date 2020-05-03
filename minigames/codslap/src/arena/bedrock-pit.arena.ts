@@ -8,10 +8,10 @@ import { summonBehavior } from '../hooks'
 import { CommonCommands } from '../common'
 
 import { Arena, ArenaConstructor, ArenaHooks } from './arena'
-import { PlatformArena, PlatformLayer } from './platform-arena'
+import { ArenaBase, PlatformLayer } from './arena-base'
 
 @Arena()
-class BedrockPitArena extends PlatformArena {
+class BedrockPitArena extends ArenaBase {
 
   public static readonly title = text('Bedrock Pit').bold
   public static readonly description = text('Mind the gap...')
@@ -78,7 +78,7 @@ class BedrockPitArena extends PlatformArena {
   constructor(
     @Inject(CommonCommands) private common: CommonCommands,
   ) {
-    super(common.center)
+    super(common)
   }
 }
 

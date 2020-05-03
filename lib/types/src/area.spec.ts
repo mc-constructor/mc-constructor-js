@@ -16,6 +16,7 @@ describe('Area', () => {
 
     test(true, loc(5, 5, 5), loc(0, 0, 0), loc(10, 10, 10))
     test(false, loc(5, 5, 5), loc(6, 0, 0), loc(10, 10, 10))
+    test(true, loc(5, 5, 5), loc(5, 5, 5), loc(5, 5, 5))
 
   })
 

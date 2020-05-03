@@ -7,10 +7,10 @@ import { CommonCommands } from '../common'
 import { summonBehavior } from '../hooks'
 
 import { Arena, ArenaConstructor } from './arena'
-import { PlatformArena, PlatformLayer } from './platform-arena'
+import { ArenaBase, PlatformLayer } from './arena-base'
 
 @Arena()
-class BoringArena extends PlatformArena {
+class BoringArena extends ArenaBase {
 
   public static readonly title = text('Boring Arena').bold
   public static readonly description = text(`Give me a break, it's just the first level...`)
@@ -39,7 +39,7 @@ class BoringArena extends PlatformArena {
   constructor(
     @Inject(CommonCommands) private common: CommonCommands,
   ) {
-    super(common.center)
+    super(common)
   }
 }
 

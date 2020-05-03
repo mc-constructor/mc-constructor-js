@@ -24,7 +24,8 @@
     },
     "typeRoots": [
       "./node_modules/@types",
-      "./rxjs-marbles/@types"
+      "./rxjs-marbles/@types",
+      "./lib/common/testing/@types"
     ]
   }
 }

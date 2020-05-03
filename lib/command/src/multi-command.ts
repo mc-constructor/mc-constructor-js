@@ -10,7 +10,8 @@ import {
   mergeAll,
   mergeMap,
   share,
-  switchMap, take,
+  switchMap,
+  take,
   takeUntil,
   takeWhile,
   tap,
@@ -25,7 +26,7 @@ import {
   CompiledSimpleMessage,
   ClientMessageResponse,
   MessageType,
-  PendingMessage, ExecuteResponse,
+  ExecuteResponse,
 } from '../../server'
 
 import { Command } from './command'
@@ -144,12 +145,12 @@ export abstract class MultiCommand extends Command {
       map(msgState => msgState.result),
       toArray(),
       map(this.parseResponses.bind(this)),
-      // tap(v => console.log('MultiCommand complete', v)),
     )
 
+    // IMPORTANT: return of(output$) for the correct ExecuteResponse
     return Object.assign(of(output$), {
       id: `${this.constructor.name}#${this.instanceId}`,
-      sent$: undefined, // TODO: emit once for each subcommand?
+      sent$: undefined, // TODO: emit once for each subcommand? could that mess things up by triggering too many switchMaps?
     })
   }
 

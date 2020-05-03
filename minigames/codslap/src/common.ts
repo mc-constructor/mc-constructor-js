@@ -2,7 +2,7 @@ import { Inject, Injectable } from '@dandi/core'
 import { clear, rawCmd } from '@minecraft/core/cmd'
 import { Command, parallel } from '@minecraft/core/command'
 import { Players } from '@minecraft/core/players'
-import { Coordinates, Item, loc } from '@minecraft/core/types'
+import { area, Coordinates, Item, loc } from '@minecraft/core/types'
 
 import { Arena } from './arena'
 import { CodslapObjectives } from './codslap-objectives'
@@ -31,6 +31,11 @@ export class CommonCommands {
   public readonly center: Coordinates = loc(0, 100, 0)
   public readonly baseStart = this.center.modify.west(this.arenaSize).modify.north(this.arenaSize)
   public readonly baseEnd = this.center.modify.east(this.arenaSize).modify.south(this.arenaSize)
+  public readonly spawnOffsetFromFloor = loc(0, 1, 0)
+  public readonly spawnBlacklistOffset = area(
+    this.spawnOffsetFromFloor.modify.up(100),
+    this.spawnOffsetFromFloor.modify.down(100),
+  )
 
   public readonly holdingCenter = this.center.modify.up(120).modify.west(100)
 
@@ -61,22 +66,11 @@ export class CommonCommands {
   }
 
   public movePlayersToHolding(): Command {
-    return rawCmd(`teleport @a ${this.holdingCenter.modify.up(2)}`)
+    return rawCmd(`teleport @a ${this.holdingCenter.modify(this.spawnOffsetFromFloor)}`)
   }
 
   public movePlayersToArena(arena: Arena): Command {
     return parallel(...this.players$.players.map(player => rawCmd(`teleport ${player.name} ${arena.getRandomSpawn()}`)))
   }
-
-  // public getRandomSpawn(): Coordinates {
-  //   return this.spawn
-  //     .modify(0, this.getRandomPlatformAxisValue())
-  //     .modify(2, this.getRandomPlatformAxisValue())
-  // }
-  //
-  // public getRandomPlatformAxisValue(): number {
-  //   const spawnSide = Math.random() - 0.5 > 0 ? -1 : 1
-  //   return randomInt(this.platformHoleSize + 2, this.spawnRange) * spawnSide
-  // }
 
 }

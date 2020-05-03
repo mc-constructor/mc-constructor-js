@@ -13,10 +13,10 @@ import { CommonCommands } from '../common'
 import { summonBehavior } from '../hooks'
 
 import { Arena, ArenaConstructor } from './arena'
-import { PlatformArena, PlatformLayer } from './platform-arena'
+import { ArenaBase, PlatformLayer } from './arena-base'
 
 @Arena()
-class PrimedAndReadyArena extends PlatformArena {
+class PrimedAndReadyArena extends ArenaBase {
 
   public static readonly title = text('Primed and Ready').bold
   public static readonly description = text(`Watch me exploooooooode!!!`)
@@ -56,7 +56,7 @@ class PrimedAndReadyArena extends PlatformArena {
     @Inject(Players) private readonly players: Players,
     @Inject(Logger) private logger: Logger,
   ) {
-    super(common.center)
+    super(common)
   }
 
   private run(events: CodslapEvents): Observable<any> {
@@ -102,15 +102,15 @@ class PrimedAndReadyArena extends PlatformArena {
       title('@a', text('Watch out!')),
     )
     const blacklistArea = area(
-      coords.modify.offset(loc(1, 1, 1)),
+      coords.modify.offset(loc(1, 0, 1)),
       coords.modify.offset(loc(-1, 0, -1)),
     )
-    this.spawnBlacklist.push(blacklistArea)
+    this.blacklistSpawnArea(blacklistArea)
     return [cmd, [coords, blacklistArea]]
   }
 
   private replaceBlock([loc, blacklistArea]: [Coordinates, Area]): Command {
-    this.spawnBlacklist.splice(this.spawnBlacklist.indexOf(blacklistArea), 1)
+    this.restoreSpawnArea(blacklistArea)
     return block(Block.bedrock).set(loc)
   }
 

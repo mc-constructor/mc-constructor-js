@@ -1,31 +1,53 @@
-import { AttackedByPlayerEvent, EntityEvent, Player, PlayerEvent } from '@minecraft/core/server'
 import { stub } from '@dandi/core/testing'
-import { MinigameAgeEvent } from '@minecraft/minigames'
-import { Observable, Subject } from 'rxjs'
+import { interval, NEVER, Observable } from 'rxjs'
+import { map, scan, share } from 'rxjs/operators'
+import { SinonStub } from 'sinon'
 
-import { ArenaAgeEvent, ConfiguredArena } from '../../src/arena'
 import { CodslapEvents } from '../../src/codslap-events'
 
+type AnyFn = (...args: any[]) => any
+
 export type CodslapEventsFixture = {
-  [TProp in keyof CodslapEvents]: TProp extends Observable<infer TEvent> ? Subject<TEvent> : CodslapEvents[TProp]
+  [TProp in keyof CodslapEvents]: CodslapEvents[TProp] extends AnyFn ?
+    SinonStub<Parameters<CodslapEvents[TProp]>, ReturnType<CodslapEvents[TProp]>> :
+    CodslapEvents[TProp]
+} & { config(config: Partial<CodslapEvents>): CodslapEventsFixture }
+
+export type CodslapEventsFixtureConfig = {
+  [TProp in keyof CodslapEvents]?: CodslapEvents[TProp] extends Observable<infer T> ? CodslapEvents[TProp] : never
 }
 
-export function codslapEventsFixture(): CodslapEventsFixture {
-  return {
-    age$: new Subject<ArenaAgeEvent>(),
-    arenaAvailable$: new Subject<ConfiguredArena>(),
-    arenaStart$: new Subject<ConfiguredArena>(),
-    codslap$: new Subject<PlayerEvent>(),
-    codslapMobKill$: new Subject<AttackedByPlayerEvent>(),
-    codslapPlayerKill$: new Subject<AttackedByPlayerEvent>(),
-    minigameAge$: new Subject<MinigameAgeEvent>(),
-    playerDeath$: new Subject<EntityEvent>(),
-    playerRespawn$: new Subject<PlayerEvent>(),
-    playerReady$: new Subject<Player>(),
+export function codslapEventsFixture(config?: CodslapEventsFixtureConfig): CodslapEventsFixture {
+  const minigameAge$ = interval(1000).pipe(
+    map(minigameAge => ({ minigameAge })),
+    share(),
+  )
+  return Object.assign({
+    arenaAvailable$: NEVER,
+    arenaStart$: NEVER,
+    codslap$: NEVER,
+    codslapMobKill$: NEVER,
+    codslapPlayerKill$: NEVER,
+    minigameAge$,
+    playerDeath$: NEVER,
+    playerRespawn$: NEVER,
+    playerReady$: NEVER,
 
-    run$: new Subject<any>(),
+    run$: NEVER,
 
     timedPlayerReadyEvent: stub(),
     waitForPlayerReady: stub(),
-  }
+
+    config: function (config: CodslapEventsFixtureConfig) {
+      return Object.assign(this, config)
+    }
+  }, config, {
+    age$: minigameAge$.pipe(
+      map(event => Object.assign({ arenaAge: 0 }, event)),
+      scan((result, event) => Object.assign({}, event, {
+        arenaAge: result.arenaAge + 1,
+      })),
+      share(),
+    )
+  }) as any
 }

@@ -139,10 +139,6 @@ describe.marbles('MultiCommand', (helpers) => {
     })
   })
 
-  describe('execute', () => {
-    it('returns an ExecuteResponse')
-  })
-
   it('waits for commands to succeed before sending subsequent commands in series mode', () => {
 
     const cmds = {

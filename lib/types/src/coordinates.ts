@@ -46,9 +46,14 @@ class AxisValueImp extends Number implements AxisValueWrapper {
     return this.make(this.valueOf() - value)
   }
 
+  /**
+   * Returns `true` if the instance value is between `a` and `b`, inclusively; otherwise, `false`
+   * @param a
+   * @param b
+   */
   public between(a: SimpleAxisValue, b: SimpleAxisValue): boolean {
-    return (a > this.value && this.value > b) ||
-      (b > this.value && this.value > a)
+    return (a >= this.value && this.value >= b) ||
+      (b >= this.value && this.value >= a)
   }
 
   public toString(): string {
@@ -57,6 +62,10 @@ class AxisValueImp extends Number implements AxisValueWrapper {
 
   public valueOf(): any {
     return this.value
+  }
+
+  public get [Symbol.toStringTag]() {
+    return this.toString()
   }
 }
 
@@ -123,11 +132,13 @@ export function isSimpleCoordinatesXYZ(obj: any): obj is SimpleCoordinateXYZ {
 }
 
 export function isSimpleCoordinatesTuple(obj: any): obj is SimpleCoordinatesTuple {
-  return obj && Array.isArray(obj) && obj.length === 3 &&
-    isAxisValue(obj[0])
+  return obj &&
+    isAxisValue(obj[0]) &&
+    isAxisValue(obj[1]) &&
+    isAxisValue(obj[2])
 }
 
-export function isSimpleSimpleCoordinates(obj: any): obj is SimpleCoordinates {
+export function isSimpleCoordinates(obj: any): obj is SimpleCoordinates {
   return isSimpleCoordinatesTuple(obj) || isSimpleCoordinatesXYZ(obj)
 }
 
@@ -155,6 +166,15 @@ export interface Coordinates extends Iterable<AxisValue> {
   modify: ModifyCoordinates<this>
   clone(): this
   join(str: string): string
+}
+
+export function isCoordinates(obj: any): obj is Coordinates {
+  return obj &&
+    typeof obj.modify === 'function' &&
+    typeof obj.clone === 'function' &&
+    typeof obj.join === 'function' &&
+    isSimpleCoordinatesTuple(obj) &&
+    isSimpleCoordinatesXYZ(obj)
 }
 
 export interface CoordinatesConstructor<TCoordinates extends Coordinates> {
@@ -195,7 +215,7 @@ class CoordinatesImpl implements Iterable<any> {
     z?: AxisValue | number,
   ) {
     let loc: SimpleCoordinateXYZ
-    if (isSimpleSimpleCoordinates(simpleLocOrX)) {
+    if (isSimpleCoordinates(simpleLocOrX)) {
       loc = simpleCoordinatesXYZ(simpleLocOrX)
     } else {
       loc = { x: simpleLocOrX, y, z }
@@ -261,11 +281,7 @@ class CoordinatesImpl implements Iterable<any> {
   }
 
   public get [Symbol.toStringTag](): string {
-    return `[${this.constructor.name} ${this.toString()}]`
-  }
-
-  public [inspect.custom](): string {
-    return this.toString()
+    return `[Coordinates ${this.toString()}]`
   }
 
 }
