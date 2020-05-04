@@ -2,7 +2,7 @@ import { defer, of, timer } from 'rxjs'
 import { map } from 'rxjs/operators'
 
 import { Command } from '../../command'
-import { Client, CompiledMessage, CompiledSimpleMessage, ExecuteResponse } from '../../server'
+import { Client, CompiledMessage, CompiledSimpleMessage, ExecuteResponse } from '../../client'
 
 class CompiledWaitMessage extends CompiledSimpleMessage<void> {
 

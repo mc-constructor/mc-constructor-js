@@ -1,6 +1,6 @@
 import { Constructor, Disposable } from '@dandi/common'
 import { Inject, Injectable, Injector, Logger } from '@dandi/core'
-import { Client } from '@minecraft/core/server'
+import { Client } from '@minecraft/core/client'
 import { Observable, Observer } from 'rxjs'
 
 import { createGameScope } from './game-scope'

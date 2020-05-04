@@ -1,4 +1,4 @@
-import { MessageType, SimpleArgsMessage } from '@minecraft/core/server'
+import { MessageType, SimpleArgsMessage } from '@minecraft/core/client'
 
 export abstract class MinigameMessage<TArgs extends any[] = any[], TResponse extends any = any>
   extends SimpleArgsMessage<[string, ...any[]], TResponse> {

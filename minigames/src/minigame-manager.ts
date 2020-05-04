@@ -6,7 +6,7 @@ import {
   MinigameStartEvent,
   ServerEvents,
   ServerEventType
-} from '@minecraft/core/server'
+} from '@minecraft/core/client'
 import { Observable, Observer } from 'rxjs'
 import { switchMapTo, tap } from 'rxjs/operators'
 

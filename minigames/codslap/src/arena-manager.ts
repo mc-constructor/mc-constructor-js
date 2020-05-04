@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from '@dandi/core'
 import { title } from '@minecraft/core/cmd'
 import { CommandOperator, CommandOperatorFn, dequeueReplay } from '@minecraft/core/common/rxjs'
-import { Client } from '@minecraft/core/server'
+import { Client } from '@minecraft/core/client'
 import { combineLatest, forkJoin, merge, Observable, of, ReplaySubject, defer, timer } from 'rxjs'
 import {
   buffer,

@@ -3,7 +3,7 @@ import { Observable, OperatorFunction } from 'rxjs'
 import { switchMap, tap } from 'rxjs/operators'
 
 import { Command } from '../../../command'
-import { Client } from '../../../server'
+import { Client } from '../../../client'
 
 import { localToken } from '../../src/local-token'
 

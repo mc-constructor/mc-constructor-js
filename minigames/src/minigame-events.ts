@@ -1,7 +1,7 @@
 import { Logger } from '@dandi/core'
 import { dequeueReplay } from '@minecraft/core/common/rxjs'
 import { Players } from '@minecraft/core/players'
-import { EntityEvent, eventType, Player, PlayerEvent, ServerEvents, ServerEventType } from '@minecraft/core/server'
+import { EntityEvent, eventType, Player, PlayerEvent, ServerEvents, ServerEventType } from '@minecraft/core/client'
 import { interval, merge, MonoTypeOperatorFunction, Observable, of, race } from 'rxjs'
 import { delay, filter, map, share, switchMap, tap } from 'rxjs/operators'
 

@@ -1,5 +1,5 @@
 import { SimpleCommand } from '../../command'
-import { ClientMessageSuccessResponse } from '../../server'
+import { ClientMessageSuccessResponse } from '../../client'
 import { fromEntityId, Item } from '../../types'
 
 import { ItemBuilder } from './item'

@@ -4,8 +4,8 @@ import { CommonModule } from '@minecraft/core/common'
 import { stubLoggerFactory } from '@minecraft/core/common/testing'
 import { Players } from '@minecraft/core/players'
 import { playersFixture, PlayersFixture } from '@minecraft/core/players/testing'
-import { Client } from '@minecraft/core/server'
-import { clientFixture, ClientFixture } from '@minecraft/core/server/testing'
+import { Client } from '@minecraft/core/client'
+import { clientFixture, ClientFixture } from '@minecraft/core/client/testing'
 import { expect } from 'chai'
 import { merge } from 'rxjs'
 import { take, tap } from 'rxjs/operators'
@@ -19,7 +19,7 @@ import { CommonCommands } from '../common'
 import { Arena } from './arena'
 import { PrimedAndReady } from './primed-and-ready.arena'
 
-describe.only('PrimedAndReadyArena', () => {
+describe('PrimedAndReadyArena', () => {
 
   stubLoggerFactory()
 
@@ -71,7 +71,7 @@ describe.only('PrimedAndReadyArena', () => {
 
   describe.marbles('run', ({ cold }) => {
 
-    it.only('starts making tnt explosions after the minDelay', () => {
+    it('starts making tnt explosions after the minDelay', () => {
       events.config({
         arenaAvailable$: cold('b'),
       })
@@ -86,7 +86,7 @@ describe.only('PrimedAndReadyArena', () => {
       expect(run$.pipe(take(1))).to.equal('26s --(b|)')
     })
 
-    it.only('makes tnt explosions every 5s', () => {
+    it('makes tnt explosions every 5s', () => {
       events.config({
         arenaAvailable$: cold('b'),
       })
@@ -98,7 +98,7 @@ describe.only('PrimedAndReadyArena', () => {
       expect(run$.pipe(take(5))).to.equal('26s --b 5s --b 5s --b 5s --b 5s --(b|)')
     })
 
-    it.only('stops after 30 explosions', () => {
+    it('stops after 30 explosions', () => {
       events.config({
         arenaAvailable$: cold('b'),
       })

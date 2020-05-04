@@ -1,5 +1,5 @@
 import { SimpleArgsCommand } from '../../command'
-import { ClientMessageResponse, Player } from '../../server'
+import { ClientMessageResponse, Player } from '../../client'
 
 type UuidsArgs = ['uuids'] | []
 const UUIDS: UuidsArgs = ['uuids']

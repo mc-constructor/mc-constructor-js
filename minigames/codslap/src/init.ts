@@ -14,7 +14,7 @@ import {
 } from '@minecraft/core/cmd'
 import { Command, MultiCommand, parallel, series } from '@minecraft/core/command'
 import { Players } from '@minecraft/core/players'
-import { Block, Effect } from '@minecraft/core/types'
+import { Block } from '@minecraft/core/types'
 
 import { ArenaManager } from './arena-manager'
 import { CommonCommands } from './common'

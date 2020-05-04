@@ -3,7 +3,7 @@ import { Inject, Logger } from '@dandi/core'
 import { actionbar, clearEffect, rawCmd, text, title } from '@minecraft/core/cmd'
 import { Command } from '@minecraft/core/command'
 import { Players } from '@minecraft/core/players'
-import { AttackedByPlayerEvent, Client, EntityEvent, PlayerEvent } from '@minecraft/core/server'
+import { AttackedByPlayerEvent, Client, EntityEvent, PlayerEvent } from '@minecraft/core/client'
 import { Minigame } from '@minecraft/minigames'
 
 import { combineLatest, merge, Observable } from 'rxjs'

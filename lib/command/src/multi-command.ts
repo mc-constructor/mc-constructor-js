@@ -27,7 +27,7 @@ import {
   ClientMessageResponse,
   MessageType,
   ExecuteResponse,
-} from '../../server'
+} from '../../client'
 
 import { Command } from './command'
 

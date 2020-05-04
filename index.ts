@@ -5,7 +5,7 @@ import { PrettyColorsLogging } from '@dandi/logging'
 import { CommonModule, LoggerFactory } from './lib/common'
 import { Players, PlayersModule } from './lib/players'
 import { ScoreboardModule } from './lib/scoreboard'
-import { Client, ServerModule } from './lib/server'
+import { Client, ServerModule } from './lib/client'
 import { MinigameManager, MinigameModule } from './minigames'
 
 require('dotenv').config()

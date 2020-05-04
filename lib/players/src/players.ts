@@ -5,7 +5,7 @@ import { map, share, tap } from 'rxjs/operators'
 
 import { listPlayers } from '../../cmd'
 import { dequeueReplay } from '../../common/rxjs'
-import { Client, eventType, Player, PlayerEvent, ServerEvents, ServerEventType } from '../../server'
+import { Client, eventType, Player, PlayerEvent, ServerEvents, ServerEventType } from '../../client'
 
 @Injectable()
 export class Players {

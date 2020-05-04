@@ -1,4 +1,4 @@
-import { Client, CompiledMessage, Message, MessageType } from '../../server'
+import { Client, CompiledMessage, Message, MessageType } from '../../client'
 import { Block, Coordinates } from '../../types'
 
 import { AutoSignal, CommandBlockType, SetCommandBlockCommand } from './command-block'

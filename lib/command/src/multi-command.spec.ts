@@ -23,7 +23,7 @@ import { TestScheduler } from 'rxjs/testing'
 
 import { dequeueReplay } from '../../common/rxjs'
 import { stubLoggerFactory } from '../../common/testing'
-import { clientFixture, TestCommand } from '../../server/testing'
+import { clientFixture, TestCommand } from '../../client/testing'
 
 import { parallel, series } from './multi-command'
 

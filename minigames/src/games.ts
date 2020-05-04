@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@dandi/core'
 import { text, TextBuilder, TextFragmentBuilder } from '@minecraft/core/cmd'
-import { ServerEvents, Players } from '@minecraft/core/server'
+import { ServerEvents, Players } from '@minecraft/core/client'
 
 import { MinigameLoader } from './minigame-loader'
 import { MinigameRunner } from './minigame-runner'

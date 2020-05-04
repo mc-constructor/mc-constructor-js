@@ -1,7 +1,7 @@
 import { readFile } from 'fs'
 import { resolve } from 'path'
 
-import { MessageType, SimpleMessage } from '../../server'
+import { MessageType, SimpleMessage } from '../../client'
 
 // class CreateStructureCommand extends SimpleMessage {
 //   public readonly type: MessageType = MessageType.createStructure

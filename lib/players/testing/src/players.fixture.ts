@@ -3,7 +3,7 @@ import { Subject } from 'rxjs'
 
 import { Players } from '../..'
 import { ObservableServiceFixture } from '../../../common/testing'
-import { Player } from '../../../server'
+import { Player } from '../../../client'
 
 export type PlayersFixture = ObservableServiceFixture<Players>
 

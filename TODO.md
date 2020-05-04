@@ -3,9 +3,7 @@
 - disambiguate "response" terminology
 
 # Marbles testing
-- figure out how to get stack trace pointing to the failed test expectation,
-  but still preserve the marbles diff - maybe instantiate an exception at the
-  call site?
+- 
 
 ## Check
 - are subsequent players detected correctly by players service?
@@ -27,7 +25,6 @@
 - move Arena stuff out of codslap
 
 ## Arenas
-- Entry/Exit requirements - make arena specified reqs optional, add global reqs (to help with ordering)
 - Default/global hooks (e.g. cow spawning)                                                                                                                                                                                                                                                                                                                                                                                                                                                    
 
 ## Arena Ideas
@@ -44,7 +41,7 @@
 - fixed? spawn blacklist on bedrock pit
 - fixed? spawn blacklist on removed rows of shrinky dinks
 - fixed? primed and ready - fix general tnt logic
-- hooks stop working on the last arena after exit reqs are met
+- hooks stop working on the last arena after exit reqs are met 
 
 ## Balance/Gameplay fixes
 - scale random spawns with # of players

@@ -1,5 +1,5 @@
 import { Command, SimpleCommand } from '../../command'
-import { ClientMessageResponse } from '../../server'
+import { ClientMessageResponse } from '../../client'
 
 export class RawCommand extends SimpleCommand<ClientMessageResponse> {
   constructor(protected readonly command: string, protected readonly hasResponse: boolean | number) {

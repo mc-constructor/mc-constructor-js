@@ -8,7 +8,7 @@ import {
   entityAttackerType,
   PlayerEvent,
   ServerEvents,
-} from '@minecraft/core/server'
+} from '@minecraft/core/client'
 import { MinigameEvents } from '@minecraft/minigames'
 import { Observable, partition } from 'rxjs'
 import { filter, map, scan, share, tap } from 'rxjs/operators'

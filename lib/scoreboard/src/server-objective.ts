@@ -11,7 +11,7 @@ import {
   TextComponent
 } from '../../cmd'
 import { Command, parallel } from '../../command'
-import { Client } from '../../server'
+import { Client } from '../../client'
 
 import { Objective, ObjectiveEvent, ScoreOperation } from './objective'
 

@@ -1,4 +1,4 @@
-import { Message, MessageType, SimpleMessage } from '../../server'
+import { Message, MessageType, SimpleMessage } from '../../client'
 
 export abstract class Command<TResponse extends any = any> extends Message<TResponse> {
   public readonly type: MessageType = MessageType.cmd

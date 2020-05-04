@@ -2,8 +2,8 @@ import { testHarness } from '@dandi/core/testing'
 import { expect } from 'chai'
 
 import { parallel } from '../../../command'
-import { Client } from '../../../server'
-import { ClientFixture, clientFixture, TestCommand } from '../../../server/testing'
+import { Client } from '../../../client'
+import { ClientFixture, clientFixture, TestCommand } from '../../../client/testing'
 
 import { stubLoggerFactory } from '../../testing'
 

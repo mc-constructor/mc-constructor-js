@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@dandi/core'
 
 import { ObjectiveDisplay, TextComponent } from '../../cmd'
-import { Client } from '../../server'
+import { Client } from '../../client'
 
 import { Objective } from './objective'
 import { ServerObjective } from './server-objective'
