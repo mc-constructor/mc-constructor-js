@@ -40,6 +40,7 @@ declare global {
       subscribedWith(...subscriptionMarbles: string[]): Assertion
       subscription(subscriptionMarbles: string): Assertion
       marbleValues(values: any): Assertion
+      originalContext(context: any): Assertion
     }
   }
 }

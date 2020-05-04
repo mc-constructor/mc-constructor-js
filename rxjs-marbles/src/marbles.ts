@@ -1,50 +1,53 @@
 import { Observable } from 'rxjs'
 import { SubscriptionLog } from 'rxjs/internal/testing/SubscriptionLog'
-import { TestScheduler } from 'rxjs/testing'
+
+import { ContextualTestScheduler } from './contextual-test-scheduler'
 
 export interface AssertDeepEqualFn {
-  (actual: any, expected: any): boolean | void
+  (actual: any, expected: any, context?: any): boolean | void
 }
 
 export interface MarblesHelpers {
-  readonly cold: typeof TestScheduler.prototype.createColdObservable
-  readonly expectObservable: typeof TestScheduler.prototype.expectObservable
-  readonly expectSubscriptions: typeof TestScheduler.prototype.expectSubscriptions
-  readonly hot: typeof TestScheduler.prototype.createHotObservable
-  readonly scheduler: TestScheduler
+  readonly cold: typeof ContextualTestScheduler.prototype.createColdObservable
+  readonly expectObservable: typeof ContextualTestScheduler.prototype.expectObservable
+  readonly expectSubscriptions: typeof ContextualTestScheduler.prototype.expectSubscriptions
+  readonly hot: typeof ContextualTestScheduler.prototype.createHotObservable
+  readonly scheduler: ContextualTestScheduler
   readonly helpers: MarblesHelpers
 }
 
 export interface MarblesHelpersStatic extends MarblesHelpers {
   init(assertDeepEqual: AssertDeepEqualFn): void
-  createTestScheduler(): TestScheduler
+  createTestScheduler(): ContextualTestScheduler
   run(fn: (helpers?: MarblesHelpers) => void): void
 }
 
-type MarblesHelpersInternal = { -readonly [TProp in keyof MarblesHelpers]: MarblesHelpers[TProp] } & { scheduler: TestScheduler }
+type MarblesHelpersInternal = { -readonly [TProp in keyof MarblesHelpers]: MarblesHelpers[TProp] } & { scheduler: ContextualTestScheduler }
 const MarblesHelpersInternal: MarblesHelpersInternal = {} as any
 
 class MarblesHelpersImpl implements MarblesHelpersStatic {
 
   private assertDeepEqual: AssertDeepEqualFn
 
-  public get cold(): typeof TestScheduler.prototype.createColdObservable {
+  public get cold(): typeof ContextualTestScheduler.prototype.createColdObservable {
     return (marbles: string): any => MarblesHelpersInternal.cold(marbles)
   }
 
-  public get expectObservable(): typeof TestScheduler.prototype.expectObservable {
-    return (stream: Observable<any>, subscriptionMarbles?: string) => MarblesHelpersInternal.expectObservable(stream, subscriptionMarbles)
+  public get expectObservable(): typeof ContextualTestScheduler.prototype.expectObservable {
+    return (stream: Observable<any>, subscriptionMarbles?: string, context?: any) =>
+      MarblesHelpersInternal.expectObservable(stream, subscriptionMarbles, context)
   }
 
-  public get expectSubscriptions(): typeof TestScheduler.prototype.expectSubscriptions {
-    return (actualSubscriptionLogs: SubscriptionLog[]) => MarblesHelpersInternal.expectSubscriptions(actualSubscriptionLogs)
+  public get expectSubscriptions(): typeof ContextualTestScheduler.prototype.expectSubscriptions {
+    return (actualSubscriptionLogs: SubscriptionLog[], context?: any) =>
+      MarblesHelpersInternal.expectSubscriptions(actualSubscriptionLogs, context)
   }
 
-  public get hot(): typeof TestScheduler.prototype.createHotObservable {
+  public get hot(): typeof ContextualTestScheduler.prototype.createHotObservable {
     return (marbles: string) => MarblesHelpersInternal.hot(marbles)
   }
 
-  public get scheduler(): TestScheduler {
+  public get scheduler(): ContextualTestScheduler {
     return MarblesHelpersInternal.scheduler
   }
 
@@ -56,8 +59,8 @@ class MarblesHelpersImpl implements MarblesHelpersStatic {
     this.assertDeepEqual = assertDeepEqual
   }
 
-  public createTestScheduler(): TestScheduler {
-    return new TestScheduler(this.assertDeepEqual)
+  public createTestScheduler(): ContextualTestScheduler {
+    return new ContextualTestScheduler(this.assertDeepEqual)
   }
 
   public run(fn: (helpers?: MarblesHelpers) => void): void {

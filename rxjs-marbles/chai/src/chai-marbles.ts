@@ -28,6 +28,10 @@ export const chaiMarbles = (chai: Chai.ChaiStatic, utils: Chai.ChaiUtils) => {
     utils.flag(this, 'subscriptionMarbles', subscriptionMarbles)
   })
 
+  utils.addChainableMethod(chai.Assertion.prototype, 'originalContext', function (this: any, context: any) {
+    utils.flag(this, 'originalContext', context)
+  })
+
   utils.overwriteMethod(chai.Assertion.prototype, 'equal', function (this: any, _super: any) {
     return function equal(this: any, expected: any) {
       const obj = utils.flag(this, 'object')
@@ -36,8 +40,31 @@ export const chaiMarbles = (chai: Chai.ChaiStatic, utils: Chai.ChaiUtils) => {
         wrapLogSubscriptions(marbles.scheduler, obj)
         const subscription = utils.flag(this, 'subscriptionMarbles')
         const marbleValues = utils.flag(this, 'marbleValues')
-        marbles.expectObservable(obj, subscription).toBe(expected, marbleValues)
+        marbles.expectObservable(obj, subscription, this).toBe(expected, marbleValues)
+
+        // gross hacky stuff to make the stack trace line up correctly
+        const stackObj: any = {
+          name: 'REPLACE_ME',
+        }
+        Error.captureStackTrace(stackObj, utils.flag(this, 'ssfi'))
+        utils.flag(this, 'marblesStackObj', stackObj)
         return
+      }
+      const originalContext = utils.flag(this, 'originalContext')
+      if (originalContext) {
+        try {
+          return _super.call(this, expected)
+        } catch (err) {
+          // even more gross hacky stuff to make the stack trace line up correctly
+          const stackObj = utils.flag(originalContext, 'marblesStackObj')
+          const [, ...stackLines] = stackObj.stack.split('\n')
+          const [firstLine] = err.stack.split('\n')
+          const realStack = [firstLine, ...stackLines].join('\n')
+          Object.assign(err, {
+            stack: realStack,
+          })
+          throw err
+        }
       }
       return _super.call(this, expected)
     }
@@ -45,7 +72,9 @@ export const chaiMarbles = (chai: Chai.ChaiStatic, utils: Chai.ChaiUtils) => {
 
 }
 
-export const assertDeepEqual = (actual: any, expected: any) => expect(actual).to.deep.equal(expected)
+export const assertDeepEqual = (actual: any, expected: any, context: any) => {
+  expect(actual).with.originalContext(context).to.deep.equal(expected)
+}
 export const beforeEach = (helpers: MarblesHelpers, context: any): void => {
   util.flag(chaiMarbles, 'currentTest', context)
   util.flag(context, 'marblesHelpers', helpers)
