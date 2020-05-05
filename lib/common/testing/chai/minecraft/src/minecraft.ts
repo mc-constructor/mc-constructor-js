@@ -1,4 +1,4 @@
-import { isArea, isCoordinates } from '../../../../../types'
+import { isArea, isCoordinates } from '@ts-mc/core/types'
 import { Assertion } from 'chai'
 
 import AssertionStatic = Chai.AssertionStatic

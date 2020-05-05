@@ -1,6 +1,6 @@
 import * as chai from 'chai'
 
-import { Area } from '../../../../types'
+import { Area } from '@ts-mc/core/types'
 
 declare global {
   export namespace Chai {

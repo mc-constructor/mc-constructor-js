@@ -1,6 +1,11 @@
 # Messages
-- Convert "Message" to "ClientRequest"
 - disambiguate "response" terminology
+
+# Commands
+- MultiCommandRequest: update timeout warning to be cleared by updates from child multi commands
+- MultiCommandRequest: improve debugging
+  - use Symbol.toStringTag
+  - include debug/toStringTag text from contained commands (e.g. `[MultiCommandRequest: 'setblock etc etc', 'fill etc etc']`)
 
 # Marbles testing
 - 

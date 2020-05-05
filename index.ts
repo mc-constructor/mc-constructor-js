@@ -1,12 +1,12 @@
 import { DandiApplication, EntryPoint, Inject, Injectable, Logger, LogLevel } from '@dandi/core'
 import { ConsoleLogListener, LoggingModule } from '@dandi/core/logging'
 import { PrettyColorsLogging } from '@dandi/logging'
-
-import { CommonModule, LoggerFactory } from './lib/common'
-import { Players, PlayersModule } from './lib/players'
-import { ScoreboardModule } from './lib/scoreboard'
-import { Client, ServerModule } from './lib/client'
-import { MinigameManager, MinigameModule } from './minigames'
+import { CommonModule, LoggerFactory } from '@ts-mc/common'
+import { ClientModule, RequestClient } from '@ts-mc/core/client'
+import { Players, PlayersModule } from '@ts-mc/core/players'
+import { ScoreboardModule } from '@ts-mc/core/scoreboard'
+import { ServerEventsModule } from '@ts-mc/core/server-events'
+import { MinigameManager, MinigameModule } from '@ts-mc/minigames'
 
 require('dotenv').config()
 
@@ -15,7 +15,7 @@ class Init implements EntryPoint {
 
   constructor(
     @Inject(Players) private players: Players,
-    @Inject(Client) private readonly client: Client,
+    @Inject(RequestClient) private readonly client: RequestClient,
     @Inject(MinigameManager) private readonly minigame: MinigameManager,
     @Inject(Logger) private logger: Logger,
     @Inject(LoggerFactory) loggerFactory: LoggerFactory,
@@ -33,6 +33,7 @@ class Init implements EntryPoint {
 
 const app = new DandiApplication({
   providers: [
+    ClientModule,
     CommonModule,
     Init,
     LoggingModule.use(ConsoleLogListener),
@@ -40,7 +41,7 @@ const app = new DandiApplication({
     PlayersModule,
     PrettyColorsLogging.set({ filter: LogLevel.debug }),
     ScoreboardModule,
-    ServerModule,
+    ServerEventsModule,
   ]
 })
 app.run().catch(console.error.bind(console))

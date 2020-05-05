@@ -1,3 +1,3 @@
 import { localTokenFactory } from '@dandi/core'
 
-export const localToken = localTokenFactory('@minecraft/common')
+export const localToken = localTokenFactory('@ts-mc/common')

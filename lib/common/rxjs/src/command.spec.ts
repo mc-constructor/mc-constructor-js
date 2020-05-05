@@ -1,13 +1,12 @@
 import { testHarness } from '@dandi/core/testing'
+import { RequestClient } from '@ts-mc/core/client'
+import { RequestClientFixture, requestClientFixture, TestCommand } from '@ts-mc/core/client/testing'
+import { parallel } from '@ts-mc/core/command'
+import { CommandOperator, CommandOperatorFn, CommandOperatorProvider } from '@ts-mc/common/rxjs'
 import { expect } from 'chai'
-
-import { parallel } from '../../../command'
-import { Client } from '../../../client'
-import { ClientFixture, clientFixture, TestCommand } from '../../../client/testing'
 
 import { stubLoggerFactory } from '../../testing'
 
-import { CommandOperator, CommandOperatorFn, CommandOperatorProvider } from './command'
 
 describe.marbles('command operator', ({ cold }) => {
 
@@ -16,16 +15,16 @@ describe.marbles('command operator', ({ cold }) => {
   const harness = testHarness(
     CommandOperatorProvider,
     {
-      provide: Client,
+      provide: RequestClient,
       useFactory: () => client,
     },
   )
 
-  let client: ClientFixture
+  let client: RequestClientFixture
   let command: CommandOperatorFn
 
   beforeEach(async () => {
-    client = clientFixture()
+    client = requestClientFixture()
     command = await harness.inject(CommandOperator)
   })
 
