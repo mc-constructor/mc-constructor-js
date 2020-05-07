@@ -1,4 +1,5 @@
 import { Logger } from '@dandi/core'
+import { subclassFactoryProvider } from '@ts-mc/common'
 import { dequeueReplay } from '@ts-mc/common/rxjs'
 import { EntityEvent, eventType, PlayerEvent, ServerEvents, ServerEventType } from '@ts-mc/core/server-events'
 import { Players } from '@ts-mc/core/players'
@@ -6,10 +7,12 @@ import { Player } from '@ts-mc/core/types'
 import { interval, merge, MonoTypeOperatorFunction, Observable, of, race } from 'rxjs'
 import { delay, filter, map, scan, share, switchMap, tap } from 'rxjs/operators'
 
-import { Arena, ArenaAgeEvent } from './arena'
+import { GameScope } from './game-scope'
 import { MinigameAgeEvent } from './minigame-age-event'
 
 export class MinigameEvents {
+
+  public static readonly provide = subclassFactoryProvider(MinigameEvents, { restrictScope: GameScope })
 
   public readonly playerDeath$: Observable<EntityEvent>
   public readonly playerRespawn$: Observable<PlayerEvent>
@@ -37,8 +40,6 @@ export class MinigameEvents {
     }
     return this._run$
   }
-
-  private readonly arenaAgeMap = new Map<Arena<this>, Observable<ArenaAgeEvent>>()
 
   constructor(
     protected readonly events$: ServerEvents,
@@ -130,22 +131,6 @@ export class MinigameEvents {
         })
       ),
     )
-  }
-
-  public arenaAge$(arena: Arena<this>): Observable<ArenaAgeEvent> {
-    let arenaAge$: Observable<ArenaAgeEvent> = this.arenaAgeMap.get(arena)
-    if (!arenaAge$) {
-      arenaAge$ = this.minigameAge$.pipe(
-        map(event => Object.assign({ arenaAge: 0 }, event)),
-        scan((result, event) => Object.assign({}, event, {
-          arenaAge: result.arenaAge + 1,
-        })),
-        tap(event => this.logger.debug('age$', event)),
-        share(),
-      )
-      this.arenaAgeMap.set(arena, arenaAge$)
-    }
-    return arenaAge$
   }
 
   protected getRunStreams(): Observable<any>[] {

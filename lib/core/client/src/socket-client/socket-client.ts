@@ -1,21 +1,20 @@
-import { Socket } from 'net'
-
 import { Uuid } from '@dandi/common'
 import { Inject, Injectable, Logger, Provider } from '@dandi/core'
 import { Observable, Subject } from 'rxjs'
 import {
   filter,
-  first,
   map,
   share,
   shareReplay,
+  skip,
   switchMap,
   switchMapTo,
+  take, tap,
 } from 'rxjs/operators'
-import { RequestClient } from '../request-client'
 
-import { ClientRawResponse, ClientResponse, isClientRawResponse, ResponseClient } from '../response-client'
 import { CompiledSimpleRequest, ExecuteResponse, RequestType, PendingRequest } from '../request'
+import { RequestClient } from '../request-client'
+import { ClientRawResponse, ClientResponse, isClientRawResponse, ResponseClient } from '../response-client'
 
 import { ClientMessageConfig, SocketClientConfig } from './socket-client-config'
 import { SocketConnection } from './socket-connection'
@@ -23,25 +22,29 @@ import { SocketConnection } from './socket-connection'
 type Handled = true
 const HANDLED = true
 
+const CLIENT_READY = Symbol('SocketClient.READY')
+
 class CompiledSocketMessage extends CompiledSimpleRequest<ClientResponse> {
 
   private readonly response$$: Subject<ClientResponse>
 
   constructor(
-    private readonly logger: Logger,
     private readonly config: ClientMessageConfig,
-    conn$: Observable<Socket>,
+    conn$: Observable<SocketConnection>,
     public readonly type: RequestType,
     public readonly body: Uint8Array | string,
     hasResponse: boolean | number,
     debug: string,
+    logger: Logger,
   ) {
-    super(() => this.send(conn$), hasResponse, debug)
+    super(() => this.send(conn$), hasResponse, debug, undefined, logger)
     this.response$$ = new Subject<ClientResponse>()
   }
 
-  public send(conn$: Observable<Socket>): ExecuteResponse<ClientResponse> {
+  public send(conn$: Observable<SocketConnection>): ExecuteResponse<ClientResponse> {
+    console.log('waiting for connection:', this.debug)
     return conn$.pipe(
+      tap(() => console.log('got connection:', this.debug)),
       switchMap(conn => new Observable<Observable<ClientResponse>>(o => {
         const newline = this.config.encoder.encode('\n')
         const id = this.config.encoder.encode(this.id.toString())
@@ -84,39 +87,58 @@ class CompiledSocketMessage extends CompiledSimpleRequest<ClientResponse> {
 export class SocketClient implements RequestClient, ResponseClient {
 
   public readonly messages$: Observable<ClientRawResponse>
+
   private readonly pending = new Map<Uuid, CompiledSocketMessage>()
+  private readonly ready$: Observable<SocketConnection>
 
   constructor(
-    @Inject(SocketConnection) private readonly conn$: Observable<Socket>,
+    @Inject(SocketConnection) private readonly conn$: Observable<SocketConnection>,
     @Inject(SocketClientConfig) private readonly config: SocketClientConfig,
     @Inject(Logger) private logger: Logger,
   ) {
+    this.logger.debug('ctr')
     const incoming$ = this.initIncoming(this.conn$)
-    const ready$ = this.initReady(incoming$)
-    this.messages$ = this.initMessages(ready$, incoming$)
+    this.ready$ = this.initReady(incoming$)
+    this.messages$ = this.initMessages(incoming$)
   }
 
   public send(type: RequestType, buffer: Uint8Array | string, hasResponse?: boolean | number): PendingRequest<ClientResponse> {
-    const msg = new CompiledSocketMessage(this.logger, this.config.message, this.conn$, type, buffer, hasResponse, buffer?.toString())
+    const msg = new CompiledSocketMessage(this.config.message, this.ready$, type, buffer, hasResponse, buffer?.toString(), this.logger)
     this.pending.set(msg.id, msg)
     return msg.pendingResponse$
   }
 
-  private initIncoming(conn$: Observable<Socket>): Observable<string> {
+  private initIncoming(conn$: Observable<SocketConnection>): Observable<symbol | string> {
     return conn$.pipe(
-      switchMap(conn => new Observable<string>(o => {
+      switchMap(conn => new Observable<symbol | string>(o => {
+        console.log('writing delimiter')
+        conn.write(this.config.message.delimiter + '\n', (err: Error) => {
+          if (err) {
+            o.error(err)
+            this.logger.error('error writing delimiter', err)
+            return
+          }
+        })
+
         let buffer = ''
+        let ready = false
         conn.on('data', chunk => {
           try {
             buffer += chunk.toString()
 
             const responseEndIndex = buffer.indexOf(this.config.message.delimiter)
             if (responseEndIndex < 0) {
+              // keep going, haven't gotten the delimiter yet
               return
             }
 
             const response = buffer.substring(0, responseEndIndex)
             buffer = buffer.substring(responseEndIndex + this.config.message.delimiter.length)
+            if (!ready && response === '') {
+              ready = true
+              o.next(CLIENT_READY)
+              return
+            }
             o.next(response)
           } catch (err) {
             o.error(err)
@@ -124,21 +146,28 @@ export class SocketClient implements RequestClient, ResponseClient {
         })
         return () => {}
       })),
-      share(),
-    )
-  }
-
-  private initReady(incoming$: Observable<string>): Observable<void> {
-    return incoming$.pipe(
-      first(),
-      map(() => this.logger.debug('client ready')),
       shareReplay(1),
     )
   }
 
-  private initMessages(ready$: Observable<void>, incoming$: Observable<string>): Observable<ClientRawResponse> {
-    return ready$.pipe(
-      switchMapTo(incoming$),
+  private initReady(incoming$: Observable<symbol | string>): Observable<SocketConnection> {
+    return incoming$.pipe(
+      take(1),
+      map(ready => {
+        if (ready !== CLIENT_READY) {
+          throw new Error('Received unexpected first message')
+        }
+        this.logger.debug('client ready')
+        return undefined
+      }),
+      switchMapTo(this.conn$),
+      shareReplay(1),
+    )
+  }
+
+  private initMessages(incoming$: Observable<symbol | string>): Observable<ClientRawResponse> {
+    return incoming$.pipe(
+      skip(1), // skip the delimiter confirmation
       map(this.handleResponse.bind(this)),
       filter(isClientRawResponse),
       share(),

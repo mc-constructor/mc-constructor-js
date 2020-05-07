@@ -1,8 +1,10 @@
+import { stubLoggerFactory } from '@ts-mc/common/testing'
+import { requestClientFixture, TestSimpleRequest } from '@ts-mc/core/client/testing'
 import { expect } from 'chai'
 
-import { requestClientFixture, TestSimpleRequest } from '../../testing'
-
 describe('SimpleRequest', () => {
+
+  stubLoggerFactory()
 
   describe('compileRequest', () => {
     it('creates a CompiledRequest instance that sends the correct values to client.send', () => {

@@ -2,21 +2,28 @@ import { createConnection, Socket } from 'net'
 
 import { InjectionToken, Logger, Provider } from '@dandi/core'
 import { Observable } from 'rxjs'
-import { delay, filter, retryWhen, share, switchMap, tap } from 'rxjs/operators'
+import { delay, filter, retryWhen, share, shareReplay, tap } from 'rxjs/operators'
 
 import { localToken } from '../local-token'
 import { SocketClientConfig } from './socket-client-config'
 
-export const SocketConnection: InjectionToken<Observable<Socket>> = localToken.opinionated('SocketConnection', {
+export interface SocketConnection {
+  write: typeof Socket.prototype.write
+  on: typeof Socket.prototype.on
+}
+
+export const SocketConnection: InjectionToken<Observable<SocketConnection>> = localToken.opinionated('SocketConnection', {
   multi: false,
 })
 
-function socketConnectionFactory(config: SocketClientConfig, logger: Logger): Observable<Socket> {
-  return new Observable<Socket>(o => {
+let connId = 0
+
+function socketConnectionFactory(config: SocketClientConfig, logger: Logger): Observable<SocketConnection> {
+  return new Observable<SocketConnection>(o => {
     try {
       const conn = createConnection(config.socket, (() => {
         logger.debug('connected')
-        o.next(conn)
+        o.next(Object.assign(conn, { _id: connId++ }))
       }))
       conn.on('error', err => {
         o.error(err)
@@ -36,21 +43,11 @@ function socketConnectionFactory(config: SocketClientConfig, logger: Logger): Ob
       tap(() => logger.warn('connection refused, trying again...')),
       delay(500),
     )),
-    switchMap(conn => new Observable<Socket>(o => {
-      conn.write(config.message.delimiter + '\n', (err: Error) => {
-        if (err) {
-          o.error(err)
-          logger.error('error writing delimiter', err)
-          return
-        }
-        o.next(conn)
-      })
-    })),
-    share(),
+    shareReplay(1),
   )
 }
 
-export const SocketConnectionProvider: Provider<Observable<Socket>> = {
+export const SocketConnectionProvider: Provider<Observable<SocketConnection>> = {
   provide: SocketConnection,
   useFactory: socketConnectionFactory,
   deps: [SocketClientConfig, Logger],

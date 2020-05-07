@@ -1,11 +1,12 @@
 import { stub } from '@dandi/core/testing'
+import { stubLoggerFactory } from '@ts-mc/common/testing'
+import { TestCompiledRequest } from '@ts-mc/core/client/testing'
+import { expect } from 'chai'
 import { NEVER, of } from 'rxjs'
 
-import { expect } from 'chai'
-
-import { TestCompiledRequest } from '../../testing'
-
 describe.marbles('SimpleCompiledMessage', ({ cold }) => {
+
+  stubLoggerFactory()
 
   it('emits a reference to itself from sent$ when sent$ is subscribed to', () => {
     const compiled = new TestCompiledRequest(true)

@@ -1,9 +1,8 @@
 import { stub } from '@dandi/core/testing'
+import { RequestClient, RequestType } from '@ts-mc/core/client'
 import { NEVER, Observable } from 'rxjs'
 import { map } from 'rxjs/operators'
 import { SinonStub } from 'sinon'
-
-import { RequestClient, RequestType } from '../../index'
 
 import { TestCompiledRequest } from './test-compiled-request'
 

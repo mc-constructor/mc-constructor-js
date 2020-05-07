@@ -1,6 +1,5 @@
 import { InjectionToken } from '@dandi/core'
 
-
 import { localToken } from './local-token'
 import { RequestType, PendingRequest } from './request'
 import { ClientResponse } from './response-client'

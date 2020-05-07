@@ -71,7 +71,7 @@ export abstract class MultiCommandRequest extends CommandRequest {
   public compileRequest(client: RequestClient): CompiledRequest {
     const context = new MultiCommandExecutionContext(client, this.compile())
     const id = `${this.constructor.name}#${this.instanceId}`
-    return new CompiledSimpleRequest(this.processCommands.bind(this, context), true, id)
+    return new CompiledSimpleRequest(this.processCommands.bind(this, context), true, this.debug, id, this.logger)
   }
 
   protected abstract compile(): CommandRequest[]

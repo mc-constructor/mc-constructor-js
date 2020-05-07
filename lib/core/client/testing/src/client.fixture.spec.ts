@@ -1,10 +1,12 @@
+import { stubLoggerFactory } from '@ts-mc/common/testing'
+import { RequestType } from '@ts-mc/core/client'
 import { expect } from 'chai'
-
-import { RequestType } from '../../src/request'
 
 import { requestClientFixture } from './request-client.fixture'
 
 describe.marbles('ClientFixture', ({ cold }) => {
+
+  stubLoggerFactory()
 
   describe('send', () => {
 

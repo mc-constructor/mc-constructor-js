@@ -12,7 +12,7 @@ export interface Minigame {
 
   // TODO: move these to decorators?
 
-  readonly init: CommandRequest
+  init(): CommandRequest
   validateGameState(): CommandRequest
   ready(): CommandRequest
   run$: Observable<any>

@@ -1,5 +1,5 @@
 import { readdirSync, statSync } from 'fs'
-import { resolve, join } from 'path'
+import { resolve, join, relative } from 'path'
 
 import { Disposable } from '@dandi/common'
 import { Inject, Injectable, Logger, Registerable } from '@dandi/core'
@@ -29,6 +29,8 @@ export interface LoadedGameInfo extends GameInfo {
   cleanupTasks: (() => void)[]
 }
 
+const MINIGAMES_ROOT = resolve(__dirname, '../../../minigames')
+
 @Injectable()
 export class MinigameLoader implements Disposable {
 
@@ -49,13 +51,12 @@ export class MinigameLoader implements Disposable {
   }
 
   public listGames(): GameInfo[] {
-    const minigamesRoot = resolve(__dirname, '..')
-    return readdirSync(minigamesRoot)
+    return readdirSync(MINIGAMES_ROOT)
       .filter(item => {
         if (item === 'src' || item.startsWith('index.')) {
           return false
         }
-        const stats = statSync(resolve(minigamesRoot, item))
+        const stats = statSync(resolve(MINIGAMES_ROOT, item))
         return stats.isDirectory()
       })
       .map(name => {
@@ -70,8 +71,8 @@ export class MinigameLoader implements Disposable {
   }
 
   private getGameInfo(key: string): LoadedGameInfo {
-    const relativePath = join('..', key)
-    const rootPath = resolve(__dirname, relativePath)
+    const rootPath = resolve(MINIGAMES_ROOT, key)
+    const relativePath = relative(__dirname, rootPath)
     const descriptor = require(relativePath).default
     return Object.assign({
       key,

@@ -53,6 +53,7 @@ export const chaiMarbles = (chai: Chai.ChaiStatic, utils: Chai.ChaiUtils) => {
       const originalContext = utils.flag(this, 'originalContext')
       if (originalContext) {
         try {
+          utils.flag(this, 'message', utils.flag(originalContext, 'message'))
           return _super.call(this, expected)
         } catch (err) {
           // even more gross hacky stuff to make the stack trace line up correctly

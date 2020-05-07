@@ -1,5 +1,0 @@
-export * from './arena'
-export * from './arena-age-event'
-export * from './arena-base'
-export * from './arenas-module-builder'
-export * from './behaviors'
