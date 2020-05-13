@@ -19,7 +19,9 @@ module.exports = {
   ],
   spec: [
     'lib/**/*.spec.ts',
-    'codslap/**/*.spec.ts',
+    'minigames/**/*.spec.ts',
     'rxjs-marbles/**/*.spec.ts',
+
+    'lib/**/*.int-spec.ts',
   ]
 }

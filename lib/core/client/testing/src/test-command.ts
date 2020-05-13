@@ -4,6 +4,7 @@ import { ClientSuccessResponse } from '../../index'
 
 export class TestCommand extends SimpleArgsCommandRequest {
   protected readonly command = 'test'
+  protected allowedErrorKeys = ['test.error']
 
   constructor(
     public readonly hasResponse: boolean | number,
@@ -11,10 +12,6 @@ export class TestCommand extends SimpleArgsCommandRequest {
     ...args: any[]
   ) {
     super(id, ...args)
-  }
-
-  protected parseSuccessResponse(response: ClientSuccessResponse): any {
-    return response.extras[0]
   }
 
 }

@@ -1,8 +1,16 @@
 import { Constructor, Uuid } from '@dandi/common'
 import { Logger } from '@dandi/core'
 import { loggerFactory } from '@ts-mc/common'
-import { defer, Observable, timer } from 'rxjs'
-import { mapTo, share, shareReplay, switchMap, takeUntil, takeWhile, tap } from 'rxjs/operators'
+import { defer, Observable, of, race, timer } from 'rxjs'
+import {
+  map,
+  mapTo,
+  share,
+  shareReplay,
+  switchMap,
+  take,
+  tap,
+} from 'rxjs/operators'
 
 import { CompiledRequest, PendingRequest } from './compiled-request'
 
@@ -11,7 +19,7 @@ export type ExecuteFn<TResponse> = () => ExecuteResponse<TResponse>
 
 export class CompiledSimpleRequest<TResponse = any> implements CompiledRequest<TResponse> {
 
-  public readonly id: string | Uuid
+  public readonly id: string
   public readonly pendingResponse$: PendingRequest<TResponse>
   public readonly sent$: Observable<this>
 
@@ -23,14 +31,14 @@ export class CompiledSimpleRequest<TResponse = any> implements CompiledRequest<T
     protected readonly executeFn: ExecuteFn<TResponse>,
     protected readonly hasResponse: boolean | number,
     public readonly debug: string,
-    id?: string | Uuid,
+    id?: string,
     protected logger?: Logger
   ) {
     if (!logger) {
       this.logger = loggerFactory.getLogger(this.constructor as Constructor<CompiledSimpleRequest>)
     }
     this.created = Date.now()
-    this.id = id || Uuid.create()
+    this.id = id || Uuid.create().toString()
 
     const sent$ = this.initSent()
 
@@ -54,11 +62,20 @@ export class CompiledSimpleRequest<TResponse = any> implements CompiledRequest<T
   }
 
   protected initPendingMessage(sent$: ExecuteResponse<TResponse>): Observable<TResponse> {
+    // console.log(`${this.constructor.name}.initPendingMessage`)
     return sent$.pipe(
-      takeWhile(() => this.hasResponse !== false),
-      switchMap(response$ => response$),
-      typeof this.hasResponse === 'number' ? takeUntil<TResponse>(timer(this.hasResponse)) : tap<TResponse>(),
-      tap(() => {
+      switchMap(response$ => {
+        // console.log(`${this.constructor.name}.switchMapToResponse`)
+        if (this.hasResponse === false) {
+          return of(undefined)
+        }
+        if (typeof this.hasResponse === 'number') {
+          return race(response$, timer(this.hasResponse).pipe(map(() => {})))
+        }
+        return response$
+      }),
+      tap(v => {
+        // console.log(`${this.constructor.name} got response`, v)
         this.response = Date.now()
         const untilSent = this.sent - this.created
         const sentToResponse = this.response - this.sent
@@ -70,6 +87,7 @@ export class CompiledSimpleRequest<TResponse = any> implements CompiledRequest<T
           `  total: ${totalTime}ms`
         )
       }),
+      take(1),
       share(),
     )
   }

@@ -1,14 +1,16 @@
 import { Inject, Logger } from '@dandi/core'
+import { silence } from '@ts-mc/common/rxjs'
 import { RequestClient } from '@ts-mc/core/client'
 import { actionbar, clearEffect, rawCmd, text, title } from '@ts-mc/core/cmd'
 import { CommandRequest } from '@ts-mc/core/command'
+import { parallel } from '@ts-mc/core/command/src/multi-command-request'
 import { Players } from '@ts-mc/core/players'
 import { AttackedByPlayerEvent, EntityEvent, PlayerEvent } from '@ts-mc/core/server-events'
 import { Minigame } from '@ts-mc/minigames'
 import { ArenaManager, CommonCommands, ConfiguredArena } from '@ts-mc/minigames/arenas'
 
-import { combineLatest, merge, Observable } from 'rxjs'
-import { tap } from 'rxjs/operators'
+import { combineLatest, EMPTY, merge, Observable, OperatorFunction } from 'rxjs'
+import { mergeMap } from 'rxjs/operators'
 
 import { CodslapEvents } from './codslap-events'
 import { Codslap } from './codslap-metadata'
@@ -39,13 +41,16 @@ export class CodslapMinigame implements Minigame {
     const onPlayerDeath$ = combineLatest([this.events.playerDeath$, this.arena.arenaStart$])
 
     this.run$ = merge(
-      this.events.codslap$.pipe(tap(this.onCodslap.bind(this))),
-      onPlayerDeath$.pipe(tap(this.onPlayerDeath.bind(this))),
-      this.events.codslapPlayerKill$.pipe(tap(this.onCodslapPlayerKill.bind(this))),
-      this.events.codslapMobKill$.pipe(tap(this.onCodslapMobKill.bind(this))),
-      this.events.playerRespawn$.pipe(tap(this.onPlayerRespawn.bind(this))),
+      this.events.codslap$.pipe(this.mergeCmd(this.onCodslap.bind(this))),
+      onPlayerDeath$.pipe(this.mergeCmd(this.onPlayerDeath.bind(this))),
+      this.events.codslapPlayerKill$.pipe(this.mergeCmd(this.onCodslapPlayerKill.bind(this))),
+      this.events.codslapMobKill$.pipe(this.mergeCmd(this.onCodslapMobKill.bind(this))),
+      this.events.playerRespawn$.pipe(this.mergeCmd(this.onPlayerRespawn.bind(this))),
       this.events.run$,
-      this.arena.run$
+      this.arena.run$,
+      this.obj.codslap.events$,
+      this.obj.codslapMobKill.events$,
+      this.obj.codslapPlayerKill.events$,
     )
   }
 
@@ -61,35 +66,43 @@ export class CodslapMinigame implements Minigame {
     return title('@a', text('Get ready!'), text('May the best codslapper win!').bold)
   }
 
-  private onCodslap(event: PlayerEvent): void {
+  private mergeCmd(fn: (value: any) => CommandRequest): OperatorFunction<any, any> {
+    return mergeMap(v => {
+      const cmd = fn(v)
+      return cmd ? cmd.execute(this.client).pipe(silence) : EMPTY
+    })
+  }
+
+  private onCodslap(event: PlayerEvent): CommandRequest {
     this.obj.codslap.incrementScore(event.player.name, 1)
 
     const [weapon, pointsTillNext] = this.common.getPlayerWeapon(event.player.name)
-    if (weapon !== event.player.mainHand.item) {
-      this.common.equip(event.player.name).execute(this.client)
-    } else if (!isNaN(pointsTillNext)) {
+    if (weapon === event.player.mainHand.item && !isNaN(pointsTillNext)) {
       const isPlural = pointsTillNext > 1
-      actionbar(event.player.name, text(`${pointsTillNext} codslap${isPlural ? 's' : ''} till your next codslapper!`)).execute(this.client)
+      return actionbar(event.player.name, text(`${pointsTillNext} codslap${isPlural ? 's' : ''} till your next codslapper!`))
     }
+    return undefined
   }
 
-  private onCodslapMobKill(event: AttackedByPlayerEvent): void {
+  private onCodslapMobKill(event: AttackedByPlayerEvent): CommandRequest {
     this.obj.codslapMobKill.incrementScore(event.attacker.name, 1)
-    actionbar(event.attacker.name, text('Oh George, not the livestock!')).execute(this.client)
+    return actionbar(event.attacker.name, text('Oh George, not the livestock!'))
   }
-  private onCodslapPlayerKill(event: AttackedByPlayerEvent): void {
+  private onCodslapPlayerKill(event: AttackedByPlayerEvent): CommandRequest {
     this.obj.codslapPlayerKill.incrementScore(event.attacker.name, 1)
-    title(event.attacker.name, text('CODSLAP KILL')).execute(this.client)
+    return title(event.attacker.name, text('CODSLAP KILL'))
   }
 
-  private onPlayerDeath([event, arena]: [EntityEvent, ConfiguredArena<CodslapEvents>]): void {
+  private onPlayerDeath([event, arena]: [EntityEvent, ConfiguredArena<CodslapEvents>]): CommandRequest {
     this.logger.debug('onPlayerDeath', event)
-    rawCmd(`spawnpoint ${event.entityId} ${arena.instance.getRandomSpawn()}`).execute(this.client)
+    return rawCmd(`spawnpoint ${event.entityId} ${arena.instance.getRandomSpawn()}`)
   }
 
-  private onPlayerRespawn(event: PlayerEvent): void {
-    this.common.resetPlayer(event.player.name).execute(this.client)
-    clearEffect(event.player.name).execute(this.client)
+  private onPlayerRespawn(event: PlayerEvent): CommandRequest {
+    return parallel(
+      this.common.resetPlayer(event.player.name),
+      clearEffect(event.player.name),
+    )
   }
 
 }

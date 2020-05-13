@@ -34,21 +34,25 @@ describe.marbles('SimpleCompiledMessage', ({ cold }) => {
     expect(compiled.pendingResponse$).to.equal(expected)
   })
 
-  it('it completes without emitting if the message does not expect a response', () => {
+  it('emits undefined and completes immediately after sending if the message does not expect a response', () => {
     const compiled = new TestCompiledRequest(false)
-    const expected = '|'
-    const sub =      '^'
+    const expected = '(a|)'
+    const values = {
+      a: undefined as any,
+    }
 
-    expect(compiled.pendingResponse$).with.subscription(sub).to.equal(expected)
+    expect(compiled.pendingResponse$).and.marbleValues(values).to.equal(expected)
   })
 
-  it('completes without emitting after the specified timeout if the message has a timeout on expecting a response', () => {
+  it('emits undefined and completes after the specified timeout if the message has a timeout on expecting a response', () => {
     const compiled = new TestCompiledRequest(5)
     stub(compiled, 'execute').callsFake(() => of(NEVER))
-    const expected = '-----|'
-    const sub =      '^'
+    const expected = '-----(a|)'
+    const values = {
+      a: undefined as any,
+    }
 
-    expect(compiled.pendingResponse$).with.subscription(sub).to.equal(expected)
+    expect(compiled.pendingResponse$).with.marbleValues(values).to.equal(expected)
   })
 
   it('includes the sent$ observable as a property of pendingMessage$', () => {

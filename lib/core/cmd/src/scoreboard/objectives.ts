@@ -152,6 +152,7 @@ export function removeObjectives(...ids: string[]): CommandRequest {
     return new RemoveObjectiveCommand(ids[0])
   }
   return parallel(
+    'removeObjectives',
     ...ids.map(id => new RemoveObjectiveCommand(id)),
   )
 }

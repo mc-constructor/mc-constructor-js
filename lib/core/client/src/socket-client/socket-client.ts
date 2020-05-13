@@ -1,4 +1,3 @@
-import { Uuid } from '@dandi/common'
 import { Inject, Injectable, Logger, Provider } from '@dandi/core'
 import { Observable, Subject } from 'rxjs'
 import {
@@ -88,7 +87,7 @@ export class SocketClient implements RequestClient, ResponseClient {
 
   public readonly messages$: Observable<ClientRawResponse>
 
-  private readonly pending = new Map<Uuid, CompiledSocketMessage>()
+  private readonly pending = new Map<string, CompiledSocketMessage>()
   private readonly ready$: Observable<SocketConnection>
 
   constructor(
@@ -111,7 +110,6 @@ export class SocketClient implements RequestClient, ResponseClient {
   private initIncoming(conn$: Observable<SocketConnection>): Observable<symbol | string> {
     return conn$.pipe(
       switchMap(conn => new Observable<symbol | string>(o => {
-        console.log('writing delimiter')
         conn.write(this.config.message.delimiter + '\n', (err: Error) => {
           if (err) {
             o.error(err)
@@ -126,20 +124,23 @@ export class SocketClient implements RequestClient, ResponseClient {
           try {
             buffer += chunk.toString()
 
-            const responseEndIndex = buffer.indexOf(this.config.message.delimiter)
-            if (responseEndIndex < 0) {
-              // keep going, haven't gotten the delimiter yet
-              return
-            }
+            // console.log('DATA CHUNK', chunk.toString().replace(/\n/g, ' '))
 
-            const response = buffer.substring(0, responseEndIndex)
-            buffer = buffer.substring(responseEndIndex + this.config.message.delimiter.length)
-            if (!ready && response === '') {
-              ready = true
-              o.next(CLIENT_READY)
-              return
+            const nextEnd = () => buffer.indexOf(this.config.message.delimiter)
+
+            for (let responseEndIndex = nextEnd(); responseEndIndex >= 0; responseEndIndex = nextEnd()) {
+              const response = buffer.substring(0, responseEndIndex)
+              // console.log('FOUND RESPONSE', response.replace(/\n/g, ' '))
+              buffer = buffer.substring(responseEndIndex + this.config.message.delimiter.length)
+              if (!ready && response === '') {
+                ready = true
+                o.next(CLIENT_READY)
+                continue
+              }
+              // console.log('EMITTING RESPONSE', response.replace(/\n/g, ' '))
+              o.next(response)
             }
-            o.next(response)
+            // console.log('BUFFER', buffer.replace(/\n/g, ' '))
           } catch (err) {
             o.error(err)
           }
@@ -175,11 +176,12 @@ export class SocketClient implements RequestClient, ResponseClient {
   }
 
   private handleResponse(response: string): Handled | ClientRawResponse {
-    const [idRaw, ...parts] = response.split('\n')
-    const id = Uuid.for(idRaw)
+    const [id, ...parts] = response.split('\n')
     const pendingMessage = this.pending.get(id)
+    // console.log('HANDLE RESPONSE', id, pendingMessage.debug)
     if (pendingMessage) {
       pendingMessage.respond(parts)
+      // console.log('RESPONSE', pendingMessage.debug, parts.join(':'))
       this.pending.delete(id)
       return HANDLED
     }

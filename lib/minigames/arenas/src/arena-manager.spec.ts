@@ -50,10 +50,7 @@ describe.marbles('ArenaManager', ({ cold }) => {
       provide: MinigameEvents,
       useFactory: () => events,
     },
-    {
-      provide: CommonCommands,
-      useClass: CodslapCommonCommands,
-    },
+    CommonCommands.provide(CodslapCommonCommands),
     {
       provide: Players,
       useFactory: () => players,
@@ -71,7 +68,7 @@ describe.marbles('ArenaManager', ({ cold }) => {
   let arenas: ConfiguredArena<CodslapEvents>[]
 
   async function init() {
-    const injector = harness.createChild(createGameScope)
+    const injector = harness.createChild(createGameScope())
     manager = await injector.inject<ArenaManager<CodslapEvents>>(ArenaManager)
     arenas = await injector.inject(ConfiguredArenas)
   }
@@ -126,7 +123,7 @@ describe.marbles('ArenaManager', ({ cold }) => {
     beforeEach(registerSingleArena)
     beforeEach(init)
 
-    it.only('can be instantiated', () => {
+    it('can be instantiated', () => {
       expect(manager).to.exist
     })
   })
@@ -149,8 +146,7 @@ describe.marbles('ArenaManager', ({ cold }) => {
         }
         client.config(cold('a'))
 
-        // FIXME: where is the 2000ms delay coming from?
-        const expectedStart = '2000ms -a'
+        const expectedStart = '-a'
 
         expect(manager.arenaStart$, 'arenaStart$').with.marbleValues(values).to.equal(expectedStart)
         expect(manager.run$, 'run$').to.equal('')
@@ -168,7 +164,7 @@ describe.marbles('ArenaManager', ({ cold }) => {
         }
         client.config(cold('a'))
 
-        const expectedStart = '2000ms -a'
+        const expectedStart = '-a'
 
         expect(manager.arenaStart$, 'arenaStart$').with.marbleValues(values).to.equal(expectedStart)
         expect(manager.run$, 'run$').to.equal('')
@@ -191,7 +187,7 @@ describe.marbles('ArenaManager', ({ cold }) => {
           ),
         })
 
-        const expectedStart = '2000ms -a 35999ms b'
+        const expectedStart = '-a 35999ms b'
 
         expect(manager.arenaStart$, 'arenaStart$').with.marbleValues(values).to.equal(expectedStart)
         expect(manager.run$, 'run$').and.marbleValues(values).to.equal('31s a')

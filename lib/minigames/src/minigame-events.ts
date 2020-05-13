@@ -5,7 +5,7 @@ import { EntityEvent, eventType, PlayerEvent, ServerEvents, ServerEventType } fr
 import { Players } from '@ts-mc/core/players'
 import { Player } from '@ts-mc/core/types'
 import { interval, merge, MonoTypeOperatorFunction, Observable, of, race } from 'rxjs'
-import { delay, filter, map, scan, share, switchMap, tap } from 'rxjs/operators'
+import { delay, filter, map, share, switchMap, tap } from 'rxjs/operators'
 
 import { GameScope } from './game-scope'
 import { MinigameAgeEvent } from './minigame-age-event'
@@ -29,14 +29,7 @@ export class MinigameEvents {
   private _run$: Observable<any>
   public get run$(): Observable<any> {
     if (!this._run$) {
-      const streams = [
-        this.playerDeath$,
-        this.playerRespawn$,
-        this.playerAttack$,
-        this.playerReady$,
-        ...this.getRunStreams(),
-      ]
-      this._run$ = merge(...streams)
+      this._run$ = merge(...this.getRunStreams())
     }
     return this._run$
   }
@@ -134,7 +127,12 @@ export class MinigameEvents {
   }
 
   protected getRunStreams(): Observable<any>[] {
-    return []
+    return [
+      this.playerDeath$,
+      this.playerRespawn$,
+      this.playerAttack$,
+      this.playerReady$,
+    ]
   }
 
   protected debug<T>(tapFn: ((event: T) => any[])): MonoTypeOperatorFunction<T> {

@@ -74,6 +74,9 @@ export const chaiMarbles = (chai: Chai.ChaiStatic, utils: Chai.ChaiUtils) => {
 }
 
 export const assertDeepEqual = (actual: any, expected: any, context: any) => {
+  // FIXME: sometimes the diff doesn't show - is it with certain deeply nested objects?
+  //        Or specific to Uuid because it has certain stringifying implementations to fail the matcher, but don't
+  //        show a difference for inspection?
   expect(actual).with.originalContext(context).to.deep.equal(expected)
 }
 export const beforeEach = (helpers: MarblesHelpers, context: any): void => {

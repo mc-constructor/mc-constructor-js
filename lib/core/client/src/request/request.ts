@@ -12,6 +12,7 @@ export abstract class Request<TResponse extends any = any> {
   protected abstract readonly debug: string
 
   public execute(client: RequestClient): PendingRequest<TResponse> {
+    // console.log(this.constructor.name, 'execute', this.debug)
     return this.compileRequest(client).pendingResponse$
   }
   public abstract compileRequest(client: RequestClient): CompiledRequest<TResponse>

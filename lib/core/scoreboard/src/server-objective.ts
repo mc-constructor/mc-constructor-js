@@ -1,5 +1,6 @@
+import { silence } from '@ts-mc/common/rxjs'
 import { combineLatest, EMPTY, Observable } from 'rxjs'
-import { filter, mapTo, mergeMap, pluck, share, skip, startWith } from 'rxjs/operators'
+import { mapTo, mergeMap, pluck, share, skip, startWith } from 'rxjs/operators'
 
 import {
   addObjective,
@@ -29,14 +30,14 @@ export class ServerObjective extends Objective {
   protected init(): Observable<ObjectiveEvent> {
     const initCmds = [
       removeObjectives(this.id),
-      addObjective(this.id, 'dummy', this.displayName)
+      addObjective(this.id, 'dummy', this.displayName),
     ]
     if (this.display) {
       initCmds.push(setObjectiveDisplay(this.display, this.id))
     }
 
     // objectives need to be added to the server before we can start operating on them
-    const initCmd = parallel(...initCmds).execute(this.client)
+    const initCmd = parallel('serverObjective.initCmds', ...initCmds).execute(this.client)
 
     return combineLatest([
       // this ensures that we start queueing up events to get handled right away, but don't handle them until all the
@@ -61,7 +62,7 @@ export class ServerObjective extends Objective {
 
         if (cmd) {
           // merge with empty observable so that the command executes, but doesn't add its result into the stream
-          return cmd.execute(this.client).pipe(filter(() => false))
+          return cmd.execute(this.client).pipe(silence)
         }
         return EMPTY
       }),

@@ -5,7 +5,7 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "start": "cd .server; TS_NODE_CACHE=false node --require ts-node/register ../index.ts --cmd \"-Xmx1024M -Xms1024M -jar ../.jar/server-1-15-2.jar nogui\"",
+    "start": "TS_NODE_CACHE=false node --require ts-node/register --require tsconfig-paths ./index.ts --port 8888",
     "build": "tsc",
     "test": "mocha"
   },

@@ -5,7 +5,7 @@ import { RequestClient } from '@ts-mc/core/client'
 import { listPlayers } from '@ts-mc/core/cmd'
 import { eventType, PlayerEvent, ServerEvents, ServerEventType } from '@ts-mc/core/server-events'
 import { Player } from '@ts-mc/core/types'
-import { merge, Observable } from 'rxjs'
+import { defer, merge, Observable } from 'rxjs'
 import { map, share, tap } from 'rxjs/operators'
 
 @Injectable()
@@ -23,6 +23,7 @@ export class Players {
     @Inject(ServerEvents) events$: ServerEvents,
     @Inject(Logger) private logger: Logger,
   ) {
+    logger.debug('ctr')
     const playerJoin$ = events$.pipe(
       eventType(ServerEventType.playerJoined),
       tap(this.onPlayerJoin.bind(this)),
@@ -39,13 +40,7 @@ export class Players {
     )
 
     // FIXME: refactor this to pipe instead of subscribe?
-    const init$ = new Observable<any>(o => {
-      this.init(client).subscribe(o)
-      return () => {
-        this.playersByName.clear()
-        this.playersByUuid.clear()
-      }
-    })
+    const init$ = this.init(client)
 
     this.players$ = merge(init$, playerJoin$, this.playerLeave$).pipe(
       map(() => this.players),
@@ -66,7 +61,7 @@ export class Players {
   }
 
   private init(client: RequestClient): Observable<Player[]> {
-    return listPlayers(true).execute(client).pipe(
+    return defer(() => listPlayers(true).execute(client)).pipe(
       map(result => {
         result.players.forEach(this.addPlayer.bind(this))
         return result.players

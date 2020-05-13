@@ -8,7 +8,7 @@ import {
   ServerEvents
 } from '@ts-mc/core/server-events'
 import { Players } from '@ts-mc/core/players'
-import { ArenaAgeEvent, arenaDescriptor, ArenaManager, ConfiguredArena, ArenaMinigameEvents } from '@ts-mc/minigames/arenas'
+import { ArenaManager, ArenaMinigameEvents } from '@ts-mc/minigames/arenas'
 
 import { Observable, partition } from 'rxjs'
 import { filter, share } from 'rxjs/operators'
@@ -21,12 +21,8 @@ export class CodslapEvents extends ArenaMinigameEvents {
   public readonly codslap$: Observable<PlayerEvent>
   public readonly codslapMobKill$: Observable<AttackedByPlayerEvent>
   public readonly codslapPlayerKill$: Observable<AttackedByPlayerEvent>
-  public readonly age$: Observable<ArenaAgeEvent>
-  public readonly arenaAvailable$: Observable<ConfiguredArena<this>>
-  public readonly arenaStart$: Observable<ConfiguredArena<this>>
 
   private readonly codslapKill$: Observable<AttackedByPlayerEvent>
-  private readonly arenaManager: ArenaManager<this>
 
   constructor(
     @Inject(RequestClient) private client: RequestClient,
@@ -36,8 +32,7 @@ export class CodslapEvents extends ArenaMinigameEvents {
     @Inject(ArenaManager) arenaManager: ArenaManager<any>,
     @Inject(Logger) logger: Logger,
   ) {
-    super(events$, players, logger)
-    this.arenaManager = arenaManager
+    super(arenaManager, events$, players, logger)
     this.codslap$ = this.playerAttack$.pipe(
       filter(event => isCodslapper(event.player.mainHand.item)),
     )
@@ -49,13 +44,6 @@ export class CodslapEvents extends ArenaMinigameEvents {
     const [codslapPlayerKill$, codslapMobKill$] = partition(this.codslapKill$, event => players.hasNamedPlayer(event.entityId))
     this.codslapPlayerKill$ = codslapPlayerKill$
     this.codslapMobKill$ = codslapMobKill$
-
-    this.arenaAvailable$ = this.arenaManager.arenaAvailable$.pipe(
-      this.debug(arena => ['arenaAvailable$', arenaDescriptor(arena.instance).title]),
-    )
-    this.arenaStart$ = this.arenaManager.arenaStart$.pipe(
-      this.debug(arena => ['arenaStart$', arenaDescriptor(arena.instance).title]),
-    )
   }
 
   protected getRunStreams(): Observable<any>[] {
@@ -63,8 +51,6 @@ export class CodslapEvents extends ArenaMinigameEvents {
       this.codslap$,
       this.codslapPlayerKill$,
       this.codslapMobKill$,
-      this.age$,
-      this.arenaStart$,
     )
   }
 

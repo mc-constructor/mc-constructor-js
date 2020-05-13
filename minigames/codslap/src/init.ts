@@ -14,18 +14,15 @@ import {
 import { CommandRequest, parallel, series } from '@ts-mc/core/command'
 import { Players } from '@ts-mc/core/players'
 import { Block } from '@ts-mc/core/types'
-import { ArenaManager } from '@ts-mc/minigames/arenas'
 
 import { CodslapCommonCommands } from './codslap-common-commands'
-import { CodslapEvents } from './codslap-events'
 
 @Injectable()
 export class CodslapInit {
 
   constructor(
-    @Inject(Players) private players$: Players,
+    @Inject(Players) private players: Players,
     @Inject(CodslapCommonCommands) private common: CodslapCommonCommands,
-    @Inject(ArenaManager) private arena: ArenaManager<CodslapEvents>,
     @Inject(Logger) private logger: Logger,
   ) {
     this.logger.debug('ctr')
@@ -33,13 +30,16 @@ export class CodslapInit {
 
   public compile(): CommandRequest {
     return series(
+      'codslap.compile',
       this.initHoldingArea(),
       parallel(
+        'codslap.compile.rulesAndArena',
         this.initRules(),
         this.initArena(),
       ),
       wait(1500),
       parallel(
+        'codslap.initRules.initPlayers',
         this.initPlayers(),
         // this.removeHoldingArea(),
       ),
@@ -49,6 +49,7 @@ export class CodslapInit {
   protected initHoldingArea(): CommandRequest {
     const holding = this.common.holdingCenter
     const holdingArea = parallel(
+      'initHoldingArea',
       block(Block.whiteWool).fill(
         holding.modify.west(this.common.arenaSize).modify.north(this.common.arenaSize),
         holding.modify.east(this.common.arenaSize).modify.south(this.common.arenaSize),
@@ -57,6 +58,7 @@ export class CodslapInit {
       clearEffect('@a'),
     )
     return series(
+      'codslap.initHoldingArea',
       holdingArea,
       wait(1500),
       rawCmd(`teleport @a ${holding.modify.up(2)}`),
@@ -74,8 +76,9 @@ export class CodslapInit {
 
   protected initRules(): CommandRequest {
     return parallel(
+      'codslap.initRules',
       time.set.day,
-      weather.clear(), // TODO: fix accessor so it works
+      weather.clear,
       gamerule.doWeatherCycle.disable,
       gamerule.doDaylightCycle.disable,
       gamerule.commandBlockOutput.disable,
@@ -112,6 +115,7 @@ export class CodslapInit {
       )
 
     return parallel(
+      'codslap.initArena',
       kill(`@e[type=!player]`),
       kill(`@e[type=item]`),
       reset,
@@ -123,6 +127,7 @@ export class CodslapInit {
 
   protected initPlayers(): CommandRequest {
     return parallel(
+      'codslap.initPlayers',
       this.common.resetPlayer('@a'),
       rawCmd('gamemode adventure @a', 1500),
     )

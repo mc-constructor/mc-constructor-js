@@ -1,3 +1,4 @@
+import { Request } from '@ts-mc/core/client'
 import { CommandRequest, SimpleArgsCommandRequest } from '@ts-mc/core/command'
 
 export enum Weather {
@@ -25,14 +26,18 @@ function weatherFn(subCommand: Weather, duration?: number): CommandRequest {
   return new WeatherCommand(subCommand, duration)
 }
 
+type RequestFacade = { [TProp in keyof Request]: Request[TProp] }
+
 export const weather: WeatherCommandBuilder = Object.defineProperties(weatherFn,
   Object.values(Weather).reduce((result, subCommand) => {
     result[subCommand] = {
       get: () => {
         const cmd = new WeatherCommand(subCommand)
-        return Object.assign(weatherFn.bind(undefined, subCommand), {
+        const cmdRequestFacade: RequestFacade = {
+          compileRequest: cmd.compileRequest.bind(cmd),
           execute: cmd.execute.bind(cmd),
-        })
+        }
+        return Object.assign(weatherFn.bind(undefined, subCommand), cmdRequestFacade)
       }
     }
     return result

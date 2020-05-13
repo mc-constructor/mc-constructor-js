@@ -27,7 +27,7 @@ export function ArenaRequirements<TEvents extends MinigameEvents>(): ArenaRequir
       },
     minArenaAge: <TEvents extends ArenaMinigameEvents>(age: number): ArenaRequirement<TEvents> =>
       (events: TEvents, arena: Arena<TEvents>) =>
-        events.arenaAge$(arena).pipe(
+        events.getArenaAge$(arena).pipe(
           filter(event => event.arenaAge >= age),
           take(1),
         ),

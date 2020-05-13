@@ -132,7 +132,8 @@ export class ArenaManager<TEvents extends MinigameEvents> {
       tap(() => console.log('initArena start')),
       this.command(arena.instance.init()),
       // delay(500),
-      this.command(this.common.movePlayersToArena(arena.instance)),
+      map(() => this.common.movePlayersToArena(arena.instance)),
+      this.command(),
       this.command(title('@a', descriptor.title, descriptor.description)),
       map(() => arena),
       tap(() => console.log('initArena complete', descriptor.title)),
@@ -148,11 +149,13 @@ export class ArenaManager<TEvents extends MinigameEvents> {
       const handlers = arena.instance.hooks[hook] as HookHandler<any>[]
       return merge(...handlers.map((handler: HookHandler<any>) => {
         const hook$ = this.events[hook] as unknown as Observable<any>
-        return hook$.pipe(tap(event => {
-          this.logger.debug('arenas hook:', arena.constructor.name, hook, handler)
-          const cmd = handler(arena.instance, event)
-          cmd.execute(this.client)
-        }))
+        return hook$.pipe(
+          map(event => {
+            this.logger.debug('arenas hook:', arena.constructor.name, hook, handler)
+            return handler(arena.instance, event)
+          }),
+          this.command(),
+        )
       }))
     })
     return merge(...hooks)

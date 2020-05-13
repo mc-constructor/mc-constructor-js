@@ -1,5 +1,4 @@
-import { Uuid } from '@dandi/common'
-import { NEVER, Observable, of } from 'rxjs'
+import { defer, NEVER, Observable, of } from 'rxjs'
 
 import { CompiledSimpleRequest, ExecuteResponse } from '../../index'
 
@@ -8,12 +7,18 @@ export class TestCompiledRequest<TResponse = any> extends CompiledSimpleRequest<
   constructor(
     hasResponse: boolean | number,
     public readonly response$: Observable<TResponse> = NEVER,
-    id?: string | Uuid,
+    id?: string,
+    private sendFn?: () => void,
   ) {
     super(() => this.execute(), hasResponse, id?.toString(), id)
   }
 
   public execute(): ExecuteResponse<TResponse> {
-    return of(this.response$)
+    return defer(() => {
+      if (this.sendFn) {
+        this.sendFn()
+      }
+      return of(this.response$)
+    })
   }
 }

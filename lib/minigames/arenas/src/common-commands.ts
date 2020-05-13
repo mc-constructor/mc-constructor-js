@@ -29,7 +29,9 @@ export class CommonCommands {
   }
 
   public movePlayersToArena(arena: Arena<MinigameEvents>): CommandRequest {
+    console.log('movePlayersToArena', this.players.players)
     return parallel(
+      'command.movePlayersToArena',
       ...this.players.players.map(player => rawCmd(`teleport ${player.name} ${arena.getRandomSpawn()}`)),
       giveEffect('@a', Effect.instantHealth, 10),
       giveEffect('@a', Effect.saturation, 10),

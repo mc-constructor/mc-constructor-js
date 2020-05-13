@@ -18,7 +18,13 @@ export interface ClientErrorResponse extends ClientResponseContent {
 
 export type ClientResponse = ClientSuccessResponse | ClientErrorResponse
 
-export type ClientRawResponse = [Uuid, string[]]
+export function isClientResponse(obj: any): obj is ClientResponse {
+  return obj && typeof obj.success === 'boolean' &&
+    Array.isArray(obj.extras) &&
+    (!obj.extras.length || obj.extras.every((extra: any) => typeof extra === 'string'))
+}
+
+export type ClientRawResponse = [string, string[]]
 
 export function isClientRawResponse(obj: any): obj is ClientRawResponse {
   if (!(obj && Array.isArray(obj) && obj.length == 2)) {

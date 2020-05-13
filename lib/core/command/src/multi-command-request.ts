@@ -1,11 +1,12 @@
 import { Constructor } from '@dandi/common'
 import { Logger } from '@dandi/core'
-import { interval, merge, Observable, of } from 'rxjs'
+import { forkJoin, interval, merge, Observable, of } from 'rxjs'
 import {
   bufferTime,
   concatAll,
   delay,
   filter,
+  finalize,
   map,
   mergeAll,
   mergeMap,
@@ -31,7 +32,8 @@ import {
 
 import { CommandRequest } from './command-request'
 
-const DEBUG_TIMEOUT = 2500
+// const DEBUG_TIMEOUT = 2500
+const DEBUG_TIMEOUT = 500
 
 class MultiCommandExecutionContext {
 
@@ -58,10 +60,10 @@ export abstract class MultiCommandRequest extends CommandRequest {
   protected readonly logger: Logger
 
   public get debug(): string {
-    return `${this.constructor.name}#${this.instanceId}`
+    return `${this.constructor.name}#${this.instanceId}${this._debug ? `:${this._debug}`: ''}`
   }
 
-  protected constructor(logger?: Logger) {
+  protected constructor(logger?: Logger, private readonly _debug?: string) {
     super()
 
     this.logger = logger || loggerFactory.getLogger(this.constructor as Constructor)
@@ -69,6 +71,7 @@ export abstract class MultiCommandRequest extends CommandRequest {
 
 
   public compileRequest(client: RequestClient): CompiledRequest {
+    // console.log(this.constructor.name, 'compileRequest', this.debug)
     const context = new MultiCommandExecutionContext(client, this.compile())
     const id = `${this.constructor.name}#${this.instanceId}`
     return new CompiledSimpleRequest(this.processCommands.bind(this, context), true, this.debug, id, this.logger)
@@ -77,6 +80,7 @@ export abstract class MultiCommandRequest extends CommandRequest {
   protected abstract compile(): CommandRequest[]
 
   protected processCommands(context: MultiCommandExecutionContext): ExecuteResponse<any> {
+    // console.log(this.constructor.name, 'processCommands', this.debug)
     interface MessageState {
       compiled: CompiledRequest
     }
@@ -98,31 +102,38 @@ export abstract class MultiCommandRequest extends CommandRequest {
     const source$: Observable<CompletedMessageState$[]> = of(source)
 
     const complete$: Observable<CompletedMessageState> = source$.pipe(
+      // tap(() => console.log(this.constructor.name, 'processCommands.complete$', this.debug)),
       switchMap(messages => {
         const execState: CommandExecutionState = { remaining: messages.length }
 
         // actual processing of request
         const msgState$: Observable<CompletedMessageState> = of(...messages).pipe(
-          this.parallel ? mergeAll() : concatAll(),
+
+          // IMPORTANT! - Remaining count must be decremented BEFORE concat to ensure it is executed each time an
+          //              individual command emits. If it is after, it will only decrement once after concatAll for
+          //              series commands.
           tap(() => execState.remaining--),
+
+          this.parallel ? mergeAll() : concatAll(),
           take(messages.length),
           share(),
         )
 
         const debug$: Observable<any> = msgState$.pipe(
           takeWhile(() => execState.remaining > 0), // IMPORTANT so it stops when there are no more pending request
-          tap(() => this.logger.debug(`${execState.remaining} responses remaining`)),
+          tap(() => this.logger.debug(`${this.debug} ${execState.remaining} response(s) remaining`)),
           switchMap(() =>
             interval(DEBUG_TIMEOUT).pipe(
               takeUntil(msgState$),
               switchMap(() => remainingArray$),
               tap(remaining => {
                 const detail = remaining.map(msgState => msgState.compiled.debug).join('\n  ')
-                this.logger.warn(`${remaining.length} responses remaining:\n  ${detail}`)
-              })
+                this.logger.warn(`${this.debug} ${remaining.length} response(s) remaining:\n  ${detail}`)
+              }),
             )
           ),
           filter(() => false),
+          finalize(() => this.logger.debug(`${this.debug} complete`))
         )
         return merge(msgState$, debug$)
       }),
@@ -138,19 +149,25 @@ export abstract class MultiCommandRequest extends CommandRequest {
       delay(1), // needs to be delayed by 1 to let the dequeue take effect
       switchMap(() => remaining$.pipe(
         bufferTime(0),
-      ))
+      )),
+      tap(() => console.log(this.constructor.name, this.debug, 'NO MORE REMAINING'))
     )
 
     const output$ = complete$.pipe(
       map(msgState => msgState.result),
       toArray(),
       map(this.parseResponses.bind(this)),
+      tap(() => console.log(this.constructor.name, this.debug, 'output$ complete')),
+      take(1),
+      share(),
     )
+
+    const sent$ = forkJoin(context.compiled.map(c => c.sent$))
 
     // IMPORTANT: return of(output$) for the correct ExecuteResponse
     return Object.assign(of(output$), {
       id: `${this.constructor.name}#${this.instanceId}`,
-      sent$: undefined, // TODO: emit once for each subcommand? could that mess things up by triggering too many switchMaps?
+      sent$, // TODO: emit once for each subcommand? could that mess things up by triggering too many switchMaps?
     })
   }
 
@@ -161,8 +178,8 @@ export abstract class MultiCommandRequest extends CommandRequest {
 
 export class PassThroughMultiCommand extends MultiCommandRequest {
 
-  constructor(public readonly cmds: CommandRequest[], protected readonly parallel: boolean) {
-    super()
+  constructor(public readonly cmds: CommandRequest[], protected readonly parallel: boolean, debug?: string) {
+    super(undefined, debug)
   }
 
   protected compile(): CommandRequest[] {
@@ -170,10 +187,25 @@ export class PassThroughMultiCommand extends MultiCommandRequest {
   }
 }
 
-export function parallel(...cmds: CommandRequest[]): CommandRequest {
-  return new PassThroughMultiCommand(cmds, true)
+function passthrough(parallel: boolean, debugOrCmd: string | CommandRequest, cmds: CommandRequest[]): CommandRequest {
+  let debug: string
+  if (typeof debugOrCmd === 'string') {
+    debug = debugOrCmd
+  } else {
+    cmds.unshift(debugOrCmd)
+  }
+  // console.log('passthrough', debug, cmds.length)
+  return new PassThroughMultiCommand(cmds, parallel, debug)
 }
 
-export function series(...cmds: CommandRequest[]): CommandRequest {
-  return new PassThroughMultiCommand(cmds, false)
+export function parallel(debug?: string, ...cmds: CommandRequest[]): CommandRequest
+export function parallel(...cmds: CommandRequest[]): CommandRequest
+export function parallel(debugOrCmd: string | CommandRequest, ...cmds: CommandRequest[]): CommandRequest {
+  return passthrough(true, debugOrCmd, cmds)
+}
+
+export function series(debug?: string, ...cmds: CommandRequest[]): CommandRequest
+export function series(...cmds: CommandRequest[]): CommandRequest
+export function series(debugOrCmd: string | CommandRequest, ...cmds: CommandRequest[]): CommandRequest {
+  return passthrough(false, debugOrCmd, cmds)
 }

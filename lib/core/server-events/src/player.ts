@@ -1,5 +1,3 @@
-import { Uuid } from '@dandi/common'
-
 import { Item, HeldItem, PlayerWithHeldItems } from '@ts-mc/core/types'
 
 import { ServerEvent } from './server-event'
@@ -18,7 +16,7 @@ export function parseHeldItem(raw: string): HeldItem {
 export function parsePlayerWithHeldItems(event: ServerEvent): [PlayerWithHeldItems, string[]] {
   const [playerRaw, mainHandRaw, offHandRaw, ...extras] = event.extras
   const [name, uuidRaw] = playerRaw.split(' ')
-  const uuid = Uuid.for(uuidRaw.substring(1, uuidRaw.length - 1))
+  const uuid = uuidRaw.substring(1, uuidRaw.length - 1)
   const mainHand: HeldItem = parseHeldItem(mainHandRaw)
   const offHand: HeldItem = parseHeldItem(offHandRaw)
   const player: PlayerWithHeldItems = {

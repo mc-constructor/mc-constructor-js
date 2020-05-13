@@ -146,7 +146,7 @@ export abstract class ArenaBase<TEvents extends MinigameEvents> implements Arena
   }
 
   protected fill(resetBlock?: Block): CommandRequest {
-    return parallel(...this.layers.map(layer => {
+    return parallel('arenaBase.fill', ...this.layers.map(layer => {
       const [, start, end] = this.getLayerArea(layer)
       if (!resetBlock && !layer.ignoreForSpawn) {
         if (layer.preventSpawn || NO_SPAWN_BLOCKS.includes(layer.block.block)) {

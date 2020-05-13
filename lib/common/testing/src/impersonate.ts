@@ -1,3 +1,3 @@
-export function impersonate<T>(instance: T, fn: ((this: T) => void)): void {
+export function impersonate<TInstance, TResult>(instance: TInstance, fn: ((this: TInstance) => TResult)): TResult {
   return fn.call(instance)
 }

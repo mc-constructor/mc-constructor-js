@@ -1,6 +1,6 @@
 import { Constructor } from '@dandi/common'
 import { loggerFactory } from '@ts-mc/common'
-import { Observable, Subject } from 'rxjs'
+import { defer, Observable, Subject } from 'rxjs'
 import { tap } from 'rxjs/operators'
 
 
@@ -32,7 +32,7 @@ export class Objective {
   ) {
     this.incrementScore = this.next.bind(this, this.id, ScoreOperation.add)
     this.setScore = this.next.bind(this, this.id, ScoreOperation.set)
-    this.events$ = this.init()
+    this.events$ = defer(() => this.init())
   }
 
   public getScore(player: string): number {

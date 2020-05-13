@@ -47,6 +47,7 @@ export class CodslapCommonCommands extends CommonCommands {
 
   public equip(target: string, weapon?: Item): CommandRequest {
     return parallel(
+      'codslapCommon.equip',
       clear(target),
       rawCmd(`replaceitem entity ${target} weapon.mainhand ${weapon || this.getPlayerWeapon(target)[0]}`),
     )

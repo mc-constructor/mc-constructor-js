@@ -10,28 +10,28 @@ import { PrimedAndReady } from './primed-and-ready.arena'
 import { ShrinkyDinks } from './shrinky-dinks'
 
 export const CodslapArenasModule = new ArenasModuleBuilder(localToken.PKG)
-    // .arenas(Boring, {
-    //   entry: Codslap.requirements.none,
-    //   exit: [
-    //     // Codslap.requirements.minArenaAge(30),
-    //     Codslap.requirements.minArenaAge(15),
-    //   ],
-    // })
-    // .arenas(KingOfTheHill, {
-    //   entry: Codslap.requirements.none,
-    //   // entry: [
-    //   //   // Codslap.requirements.count('codslap$', 30),
-    //   //   Codslap.requirements.count('codslap$', 15),
-    //   // ],
-    //   exit: [
-    //     Codslap.requirements.minArenaAge(20),
-    //   ],
-    // })
-    .arena(PrimedAndReady, {
+    .arena(Boring, {
       entry: Codslap.requirements.none,
-      // entry: [
-      //   Codslap.requirements.count('codslap$', 30),
-      // ],
+      exit: [
+        // Codslap.requirements.minArenaAge(30),
+        Codslap.requirements.minArenaAge(15),
+      ],
+    })
+    .arena(KingOfTheHill, {
+      // entry: Codslap.requirements.none,
+      entry: [
+        // Codslap.requirements.count('codslap$', 30),
+        Codslap.requirements.count('codslap$', 15),
+      ],
+      exit: [
+        Codslap.requirements.minArenaAge(20),
+      ],
+    })
+    .arena(PrimedAndReady, {
+      // entry: Codslap.requirements.none,
+      entry: [
+        Codslap.requirements.count('codslap$', 30),
+      ],
       exit: [
         Codslap.requirements.minArenaAge(20),
       ],
@@ -45,12 +45,12 @@ export const CodslapArenasModule = new ArenasModuleBuilder(localToken.PKG)
         Codslap.requirements.minArenaAge(20),
       ],
     })
-    // .arenas(BedrockPit, {
-    //   entry: [
-    //     Codslap.requirements.count('codslap$', 500),
-    //   ],
-    //   exit: [
-    //     Codslap.requirements.minArenaAge(20),
-    //   ],
-    // })
+    .arena(BedrockPit, {
+      entry: [
+        Codslap.requirements.count('codslap$', 500),
+      ],
+      exit: [
+        Codslap.requirements.minArenaAge(20),
+      ],
+    })
 

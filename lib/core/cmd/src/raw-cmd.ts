@@ -7,11 +7,7 @@ export class RawCommand extends SimpleCommandRequest<ClientResponse> {
   }
 
   protected formatArgs(): string {
-    return '';
-  }
-
-  protected parseResponse(response: ClientResponse): ClientResponse {
-    return response
+    return ''
   }
 }
 

@@ -27,8 +27,8 @@ describe.marbles('ClientFixture', ({ cold }) => {
             extras: ['a'],
           }
         }
-        const response$ = cold('------a|')
-        const expected =       '------a|'
+        const response$ = cold('------(a|)')
+        const expected =       '------(a|)'
         const client = requestClientFixture(response$)
         const msg = client.send(RequestType.cmd, 'hi', true)
 
@@ -38,23 +38,29 @@ describe.marbles('ClientFixture', ({ cold }) => {
     })
 
     describe('with hasResponse === false', () => {
-      it('does not emit and closes the response immediately after the request is sent', () => {
+      it('emits undefined and completes immediately after the request is sent', () => {
         const client = requestClientFixture()
         const msg = client.send(RequestType.cmd, 'hi', false)
-        const expected = '|'
+        const expected = '(a|)'
+        const values = {
+          a: undefined as any
+        }
 
-        expect(msg).to.equal(expected)
+        expect(msg).with.marbleValues(values).to.equal(expected)
       })
     })
     
     describe(`with type hasResponse === 'number'`, () => {
 
-      it('does not emit and completes the response after the specified timeout', () => {
+      it('emits undefined and completes the response after the specified timeout', () => {
         const client = requestClientFixture()
         const msg = client.send(RequestType.cmd, 'hi', 5)
-        const expected = '-----|'
+        const expected = '-----(a|)'
+        const values = {
+          a: undefined as any
+        }
 
-        expect(msg).to.equal(expected)
+        expect(msg).with.marbleValues(values).to.equal(expected)
       })
 
       it('emits and completes the response when a response is received before the specified timeout', () => {
@@ -64,8 +70,8 @@ describe.marbles('ClientFixture', ({ cold }) => {
             extras: ['a'],
           }
         }
-        const response$ = cold('---a|')
-        const expected =       '---a|'
+        const response$ = cold('---(a|)')
+        const expected =       '---(a|)'
         const client = requestClientFixture(response$)
         const msg = client.send(RequestType.cmd, 'hi', true)
 

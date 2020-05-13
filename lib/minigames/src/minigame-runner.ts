@@ -3,7 +3,7 @@ import { Inject, Injectable, Injector, Logger } from '@dandi/core'
 import { CommandOperator, CommandOperatorFn } from '@ts-mc/core/command'
 import { RequestClient } from '@ts-mc/core/client'
 import { defer, from, Observable, of } from 'rxjs'
-import { catchError, mapTo, mergeMap, share, tap } from 'rxjs/operators'
+import { catchError, share, switchMap, tap } from 'rxjs/operators'
 
 import { createGameScope } from './game-scope'
 import { getMinigameMeta, Minigame } from './minigame'
@@ -27,14 +27,15 @@ export class MinigameRunner {
         this.logger.info('Disposing gameInjector')
         Disposable.dispose(gameInjector, 'cleanup')
       })
-      return from(Disposable.useAsync(gameInjector, async gameInjector => {
+      return from((async () => {
         this.logger.debug('invoking game')
         const game$: Observable<void> = await gameInjector.invoke(this as MinigameRunner, 'run')
         this.logger.debug('got game instance, ready to subscribe to event stream')
         return game$
-      }))
+      })())
     }).pipe(
-      mergeMap(game$ => game$),
+      tap(v => console.log('MinigameRunner.runGame before switchMap', v)),
+      switchMap(game$ => game$),
       catchError(err => {
         this.logger.error(err)
         throw err
@@ -49,7 +50,7 @@ export class MinigameRunner {
       this.logger.debug('run')
       return of(game.validateGameState())
     }).pipe(
-      mergeMap(validateCmd => {
+      switchMap(validateCmd => {
         if (validateCmd) {
           return validateCmd.execute(this.client)
         }
@@ -59,7 +60,7 @@ export class MinigameRunner {
       this.command(game.init()),
       tap(() => this.logger.info(`${gameInfo.title}: ready`)),
       this.command(game.ready()),
-      mapTo(game.run$),
+      switchMap(() => game.run$),
     )
   }
 }

@@ -11,7 +11,7 @@ import {
 export class TestSimpleRequest extends SimpleRequest<string> {
   public readonly type = RequestType.cmd
   public readonly debug = `${this.constructor.name}: ${this.msg}`
-  public readonly id: string | Uuid
+  public readonly id: string
 
   constructor(public readonly msg: string, protected readonly hasResponse: boolean | number) {
     super()

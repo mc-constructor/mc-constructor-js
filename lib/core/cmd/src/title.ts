@@ -1,7 +1,7 @@
 import { CommandRequest, MultiCommandRequest, parallel, SimpleArgsCommandRequest } from '@ts-mc/core/command'
 import { Ticks, ticksFromSeconds } from '@ts-mc/core/types'
 
-import { TextBuilder, TextFragmentBuilder } from './text'
+import { TextBuilder, TextFragmentBuilder, text } from './text'
 
 // https://minecraft.gamepedia.com/Commands/title
 
@@ -75,7 +75,7 @@ class ShowTitleCommand extends MultiCommandRequest {
       precmds.push(new TitleCommand(this.target, TitleSubcommand.subtitle, this.subtitle))
     }
     if (precmds.length > 2) {
-      cmds.push(parallel(...precmds))
+      cmds.push(parallel('title.precmds', ...precmds))
     } else if (precmds.length) {
       cmds.push(...precmds)
     }
@@ -98,12 +98,18 @@ class ShowTitleCommand extends MultiCommandRequest {
 
 export function title(
   target: string,
-  title: TextBuilder | TextFragmentBuilder,
-  subtitle?: TextBuilder | TextFragmentBuilder,
+  title: string | TextBuilder | TextFragmentBuilder,
+  subtitle?: string | TextBuilder | TextFragmentBuilder,
   fadeInSeconds?: number,
   displaySeconds?: number,
   fadeOutSeconds?: number,
 ): ShowTitleCommand {
+  if (typeof title === 'string') {
+    title = text(title)
+  }
+  if (typeof subtitle === 'string') {
+    subtitle = text(subtitle)
+  }
   return new ShowTitleCommand(target, title.builder, subtitle?.builder, new TitleTimes(fadeInSeconds, displaySeconds, fadeOutSeconds))
 }
 export function actionbar(target: string, text: TextBuilder | TextFragmentBuilder): TitleCommand {

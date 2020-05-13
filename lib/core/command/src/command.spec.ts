@@ -27,45 +27,49 @@ describe.marbles('command operator', ({ cold }) => {
     command = await harness.inject(CommandOperator)
   })
 
-  it('executes a single basic command', () => {
-    const response$ = cold('a')
-    const test$ = cold('a').pipe(
-      command(() => new TestCommand(true, 'a')),
-    )
+  describe('explicitly passed commands', () => {
 
-    client.config(response$)
+    it('executes a single basic command', () => {
+      const response$ = cold('a')
+      const test$ = cold('a').pipe(
+        command(() => new TestCommand(true, 'a')),
+      )
 
-    expect(test$).to.equal('a')
-  })
+      client.config(response$)
 
-  it('executes a parallel multi command that actually only has one command', () => {
-    const response$ = cold('a|')
-    const test$ = cold('a|').pipe(
-      command(() => parallel(new TestCommand(true, 'a'))),
-    )
-    const values = {
-      a: ['a'],
-    }
+      expect(test$).to.equal('a')
+    })
 
-    client.config(response$)
+    it('executes a parallel multi command that actually only has one command', () => {
+      const response$ = cold('a|')
+      const test$ = cold('a|').pipe(
+        command(() => parallel(new TestCommand(true, 'a'))),
+      )
+      const values = {
+        a: ['a'],
+      }
 
-    expect(test$).with.marbleValues(values).to.equal('a|')
-  })
+      client.config(response$)
 
-  it('executes a parallel multi command with multiple commands', () => {
-    const response$ = [cold('a|'), cold('b|')]
-    const test$ = cold('x|').pipe(
-      command(() => parallel(new TestCommand(true, 'a'), new TestCommand(true, 'b'))),
-    )
-    const values = {
-      a: 'a',
-      b: 'b',
-      r: ['a', 'b'],
-    }
+      expect(test$).with.marbleValues(values).to.equal('a|')
+    })
 
-    client.config(response$, values)
+    it('executes a parallel multi command with multiple commands', () => {
+      const response$ = [cold('a|'), cold('b|')]
+      const test$ = cold('x|').pipe(
+        command(() => parallel(new TestCommand(true, 'a'), new TestCommand(true, 'b'))),
+      )
+      const values = {
+        a: 'a',
+        b: 'b',
+        r: ['a', 'b'],
+      }
 
-    expect(test$).with.marbleValues(values).to.equal('r|')
+      client.config(response$, values)
+
+      expect(test$).with.marbleValues(values).to.equal('r|')
+    })
+
   })
 
 })

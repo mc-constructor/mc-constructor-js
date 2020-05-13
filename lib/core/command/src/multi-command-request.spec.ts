@@ -1,3 +1,6 @@
+import { dequeueReplay } from '@ts-mc/common/rxjs'
+import { stubLoggerFactory } from '@ts-mc/common/testing'
+import { requestClientFixture, TestCommand } from '@ts-mc/core/client/testing'
 import { expect } from 'chai'
 import {
   interval,
@@ -21,13 +24,9 @@ import {
 } from 'rxjs/operators'
 import { TestScheduler } from 'rxjs/testing'
 
-import { dequeueReplay } from '@ts-mc/common/rxjs'
-import { stubLoggerFactory } from '@ts-mc/common/testing'
-import { requestClientFixture, TestCommand } from '../../client/testing'
-
 import { parallel, series } from './multi-command-request'
 
-describe.marbles('MultiCommand', (helpers) => {
+describe.marbles('MultiCommandRequest', (helpers) => {
 
   const { cold } = helpers
 
@@ -147,15 +146,15 @@ describe.marbles('MultiCommand', (helpers) => {
       c: new TestCommand(true, 'c'),
     }
     const client = requestClientFixture([
-      cold('---a|'),
-      cold('---b|'),
-      cold('---c|'),
+      cold('---(a|)'),
+      cold('---(b|)'),
+      cold('---(c|)'),
     ])
     const values = {
       r: ['a', 'b', 'c']
     }
     // TODO: is there a way to check the timing of individual commands
-    const expected = '-----------(r|)'
+    const expected = '---------(r|)'
     const cmd$ = series(cmds.a, cmds.b, cmds.c).execute(client)
     expect(cmd$).with.marbleValues(values).to.equal(expected)
 
@@ -168,12 +167,38 @@ describe.marbles('MultiCommand', (helpers) => {
       c: new TestCommand(true, 'c'),
     }
     const client = requestClientFixture([
-      cold('---a|'),
-      cold('---b|'),
-      cold('---c|'),
+      cold('---(a|)'),
+      cold('---(b|)'),
+      cold('---(c|)'),
     ])
     const values = {
       r: ['a', 'b', 'c']
+    }
+    const expected = '---(r|)'
+    const cmd$ = parallel(cmds.a, cmds.b, cmds.c).execute(client)
+
+    expect(cmd$).with.marbleValues(values).to.equal(expected)
+  })
+
+  it('completes when one or more commands result in an "allowed" error', () => {
+
+    const cmds = {
+      a: new TestCommand(true, 'a'),
+      b: new TestCommand(true, 'b'),
+      c: new TestCommand(true, 'c'),
+    }
+    const responseValues = {
+      a: undefined as any,
+      b: 'test.error',
+      c: undefined as any,
+    }
+    const client = requestClientFixture([
+      cold('---(a|)'),
+      cold('---(b|)'),
+      cold('---(c|)'),
+    ], responseValues)
+    const values = {
+      r: [undefined, responseValues.b, undefined] as any[]
     }
     const expected = '---(r|)'
     const cmd$ = parallel(cmds.a, cmds.b, cmds.c).execute(client)

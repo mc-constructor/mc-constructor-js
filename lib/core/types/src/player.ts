@@ -4,7 +4,7 @@ import { Item } from './item'
 
 export interface Player {
   name: string
-  uuid: Uuid
+  uuid: string
 }
 
 export interface HeldItem {
