@@ -3,11 +3,13 @@ import { dequeueReplay, silence } from '@ts-mc/common/rxjs'
 import { title } from '@ts-mc/core/cmd'
 import { RequestClient } from '@ts-mc/core/client'
 import { CommandOperator, CommandOperatorFn } from '@ts-mc/core/command'
+import { Players } from '@ts-mc/core/players'
 import { GameScope, MinigameEvents, EventsAccessor, Accessor } from '@ts-mc/minigames'
 import { combineLatest, forkJoin, merge, Observable, of, ReplaySubject, defer, timer } from 'rxjs'
 import {
   buffer,
   concatMap,
+  filter,
   finalize,
   map,
   pairwise,
@@ -22,7 +24,6 @@ import { ArenaHooks } from './arena-hook'
 import { ArenaRequirement } from './arena-requirement'
 import { HookHandler } from './behaviors'
 import { CommonCommands } from './common-commands'
-import { Players } from '@ts-mc/core/players'
 
 @Injectable(RestrictScope(GameScope))
 export class ArenaManager<TEvents extends MinigameEvents> {
@@ -103,18 +104,27 @@ export class ArenaManager<TEvents extends MinigameEvents> {
             )
           }),
           tap(() => console.log('after initArena/switchMap')),
-          // buffer until exit requirements are complete, and at least one new arenas is available
-          // this allows the current arenas's hooks to continue receiving server-events until all exit requirements are
-          // completed and a new arenas is ready to be started
+          // buffer until exit requirements are complete, and at least one new arena is available
+          // this allows the current arena's hooks to continue receiving server-events until all exit requirements are
+          // completed and a new arena is ready to be started
           buffer(
             combineLatest([
               this.arenaExitRequirements(arena).pipe(tap(() => console.log('GOT EXIT REQUIREMENTS!', arenaDescriptor(arena.instance).title))),
-              this.arenaAvailable$.pipe(tap(() => console.log('GOT NEXT AVAILABLE ARENA!', arenaDescriptor(arena.instance).title))),
+              this.arenaAvailable$.pipe(
+                // this is complicated for now - since arenaStart doesn't get emitted until after a delay (see above),
+                // arenaAvailable$ immediately emits an event for the current arena. if it is not filtered out, the
+                // arena will responding to event hooks after its exit requirements are met until the REAL next arena
+                // becomes available
+                filter(nextArena => nextArena !== arena),
+                tap(() => console.log('GOT NEXT AVAILABLE ARENA!', arenaDescriptor(arena.instance).title)),
+              ),
             ]).pipe(
               tap(() => console.log('buffer emit', arenaDescriptor(arena.instance).title)),
-              take(1), // important to avoid re-emitting an already completed arenas
             ),
           ),
+
+          // important to avoid re-emitting an already completed arenas
+          take(1),
           map(() => arena),
         )
       }),

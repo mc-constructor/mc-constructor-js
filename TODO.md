@@ -27,10 +27,10 @@
 ## Minigames
 - what subscriptions aren't getting cleaned up between instances? (e.g. codslap level check is leaking)
 - add check for player count?
-- move Arena stuff out of codslap
 
 ## Arenas
-- Default/global hooks (e.g. cow spawning)                                                                                                                                                                                                                                                                                                                                                                                                                                                    
+- Default/global hooks (e.g. cow spawning)                                                            
+- use a generator to automatically create incremental entry/exit requirements                                                                                                                                                                                                                                                                                                                                                                                        
 
 ## Arena Ideas
 - ice floor - with polar bears?
@@ -46,7 +46,6 @@
 - fixed? spawn blacklist on removed rows of shrinky dinks
 
 ## Balance/Gameplay fixes
-- scale random spawns with # of players
 - enabled limiting hook-based spawns (e.g. total number of cows spawned)
 - remove fire effect?
 
@@ -59,6 +58,6 @@
  - killing player takes a random piece of armor or fish if it is better
 
 ### NEXT:
-- Fix arena hooks stopping after exit reqs complete
+- Fix spawning into blocks during arena transitions
 - Default/global hooks (e.g. cow spawning)    
 - Arena change sequence (show title / countdown, etc)
