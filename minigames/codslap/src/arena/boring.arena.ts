@@ -1,7 +1,7 @@
 import { Inject } from '@dandi/core'
 import { text, block } from '@ts-mc/core/cmd'
 import { Block, loc, Mob } from '@ts-mc/core/types'
-import { randomIntGenerator } from '@ts-mc/common'
+import { generateRandomInt } from '@ts-mc/common'
 import { Arena, ArenaBase, ArenaConstructor, PlatformLayer, summonBehavior } from '@ts-mc/minigames/arenas'
 
 import { CodslapEvents } from '../codslap-events'
@@ -23,10 +23,10 @@ class BoringArena extends ArenaBase<CodslapEvents> {
 
   public readonly hooks = {
     arenaStart$: [
-      summonBehavior(Mob.cow, randomIntGenerator(10, 20)),
+      summonBehavior(Mob.cow, { base: 10, playerBonus: generateRandomInt(1, 3), playerMultiplier: 1 }),
     ],
     playerRespawn$: [
-      summonBehavior(Mob.cow, randomIntGenerator(10, 20)),
+      summonBehavior(Mob.cow, { base: 10, playerBonus: generateRandomInt(1, 3), playerMultiplier: 1 }),
     ],
   }
 

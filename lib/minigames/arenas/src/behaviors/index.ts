@@ -1,2 +1,2 @@
 export * from './hook-handler'
-export * from './spawn-entity'
+export * from './summon-entity'

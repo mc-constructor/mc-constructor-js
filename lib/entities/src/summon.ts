@@ -1,4 +1,4 @@
-import { randomInt } from '../../common'
+import { randomInt } from '@ts-mc/common'
 import { Coordinates } from '@ts-mc/core/types'
 
 export enum AnimalType {

@@ -1,20 +1,11 @@
 import { inspect } from 'util'
 
 import { SimpleArgsCommandRequest } from '@ts-mc/core/command'
+import { NbtData, TextFragment } from '@ts-mc/core/types'
 
 // https://minecraft.gamepedia.com/Raw_JSON_text_format
 
-export interface TextFragment {
-  text: string
-  bold?: boolean
-  italic?: boolean
-  underlined?: boolean
-  strikethrough?: boolean
-  obfuscated?: boolean
-  color?: string
-}
-
-export class TextFragmentBuilder {
+export class TextFragmentBuilder implements NbtData {
 
   private requiresObj: boolean = false
   private readonly obj: TextFragment
@@ -63,6 +54,10 @@ export class TextFragmentBuilder {
     return JSON.stringify(this)
   }
 
+  public toNbtString(): string {
+    return this.toString()
+  }
+
   public get [Symbol.toStringTag](): string {
     return `[${this.constructor.name} ${this.toString()}]`
   }
@@ -76,7 +71,7 @@ export class TextFragmentBuilder {
   }
 }
 
-export class TextBuilder {
+export class TextBuilder implements NbtData {
 
   public readonly builder: this = this
 
@@ -105,6 +100,10 @@ export class TextBuilder {
 
   public toString(): string {
     return JSON.stringify(this)
+  }
+
+  public toNbtString(): string {
+    return this.toString()
   }
 
   [inspect.custom](): string {

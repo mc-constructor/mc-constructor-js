@@ -1,7 +1,7 @@
 import { Inject } from '@dandi/core'
-import { randomInt, randomIntGenerator } from '@ts-mc/common'
+import { generateRandomInt, generateRandom } from '@ts-mc/common'
 import { block, text } from '@ts-mc/core/cmd'
-import { Block, loc, Mob } from '@ts-mc/core/types'
+import { Block, Creeper, loc, Mob } from '@ts-mc/core/types'
 import { Arena, ArenaBase, ArenaConstructor, ArenaHooks, PlatformLayer, summonBehavior } from '@ts-mc/minigames/arenas'
 
 import { CodslapCommonCommands } from '../codslap-common-commands'
@@ -56,15 +56,11 @@ class BedrockPitArena extends ArenaBase<CodslapEvents> {
 
   public readonly hooks: ArenaHooks<CodslapEvents> = {
     playerRespawn$: [
-      summonBehavior(Mob.cow, randomIntGenerator(10, 20)),
-      summonBehavior(Mob.creeper, randomIntGenerator(0, 6)),
-      summonBehavior([Mob.creeper, '{powered:1}'], () => {
-        const probs = [0, 0, 0, 0, 1]
-        return probs[randomInt(0, probs.length - 1)]
-      })
+      summonBehavior(Mob.creeper, { base: generateRandomInt(1, 3), playerMultiplier: generateRandomInt(1, 2) }),
+      summonBehavior([Mob.creeper, { powered: Creeper.powered }], generateRandom([0, 0, 0, 0, 1])),
     ],
     arenaStart$: [
-      summonBehavior(Mob.cow, randomIntGenerator(10, 20)),
+      summonBehavior(Mob.cow, { base: 10, playerBonus: generateRandomInt(1, 3), playerMultiplier: 1 }),
     ]
   }
 

@@ -48,7 +48,7 @@ describe.marbles('CodslapInit', () => {
 
   describe('initHoldingArea', () => {
 
-    it.only('completes if no commands succeed', () => {
+    it('completes if no commands succeed', () => {
 
       client.config((cmd => {
         if (cmd.startsWith('fill')) {

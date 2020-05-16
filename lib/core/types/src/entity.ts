@@ -26,6 +26,8 @@ export interface Entity {
 
 export type EntityMap = Entity & typeof MiscEntity
 
+export type AnyEntity = EntityBlock | EntityItem | MiscEntity | Mob | Projectile | Vehicle
+
 export const Entity: EntityMap = Object.defineProperties(MiscEntity, {
   block: { get: () => EntityBlock },
   item: { get: () => EntityItem },

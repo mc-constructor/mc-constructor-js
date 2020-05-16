@@ -1,5 +1,5 @@
 import { Inject } from '@dandi/core'
-import { randomIntGenerator, range } from '@ts-mc/common'
+import { generateRandomInt, range } from '@ts-mc/common'
 import { block, text } from '@ts-mc/core/cmd'
 import { Block, Direction, loc, Mob } from '@ts-mc/core/types'
 import { Arena, ArenaBase, ArenaConstructor, PlatformLayer, summonBehavior } from '@ts-mc/minigames/arenas'
@@ -56,10 +56,10 @@ class KingOfTheHillArena extends ArenaBase<CodslapEvents> {
 
   public readonly hooks = {
     arenaStart$: [
-      summonBehavior(Mob.cow, randomIntGenerator(10, 20)),
+      summonBehavior(Mob.cow, { base: 10, playerBonus: generateRandomInt(1, 3), playerMultiplier: 1 }),
     ],
     playerRespawn$: [
-      summonBehavior(Mob.cow, randomIntGenerator(10, 20)),
+      summonBehavior(Mob.cow, { base: 10, playerBonus: generateRandomInt(1, 3), playerMultiplier: 1 }),
     ],
   }
 

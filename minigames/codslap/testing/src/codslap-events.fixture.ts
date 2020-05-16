@@ -24,6 +24,7 @@ export function codslapEventsFixture(config?: CodslapEventsFixtureConfig): Codsl
   )
   return Object.assign({
     arenaAvailable$: NEVER,
+    arenaAge$: NEVER,
     arenaStart$: NEVER,
     codslap$: NEVER,
     codslapMobKill$: NEVER,
@@ -42,12 +43,12 @@ export function codslapEventsFixture(config?: CodslapEventsFixtureConfig): Codsl
       return Object.assign(this, config)
     }
   }, config, {
-    arenaAge$: stub().returns(minigameAge$.pipe(
+    getArenaAge$: stub().returns(minigameAge$.pipe(
       map(event => Object.assign({ arenaAge: 0 }, event)),
       scan((result, event) => Object.assign({}, event, {
         arenaAge: result.arenaAge + 1,
       })),
       share(),
-    ))
+    )),
   }) as any
 }

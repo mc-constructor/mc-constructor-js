@@ -1,5 +1,5 @@
 import { Inject, Logger } from '@dandi/core'
-import { randomIntGenerator } from '@ts-mc/common'
+import { generateRandomInt } from '@ts-mc/common'
 import { RandomIntervalScheduler } from '@ts-mc/common/rxjs'
 import { block, rawCmd, text, title } from '@ts-mc/core/cmd'
 import { CommandRequest, CommandOperator, CommandOperatorFn, parallel, series } from '@ts-mc/core/command'
@@ -39,10 +39,10 @@ class PrimedAndReadyArena extends ArenaBase<CodslapEvents> {
 
   public readonly hooks = {
     arenaStart$: [
-      summonBehavior(Mob.cow, randomIntGenerator(10, 20)),
+      summonBehavior(Mob.cow, { base: 10, playerBonus: generateRandomInt(1, 3), playerMultiplier: 1 }),
     ],
     playerRespawn$: [
-      summonBehavior(Mob.cow, randomIntGenerator(10, 20)),
+      summonBehavior(Mob.cow, { base: 10, playerBonus: generateRandomInt(1, 3), playerMultiplier: 1 }),
     ],
   }
 

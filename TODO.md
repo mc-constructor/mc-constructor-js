@@ -35,7 +35,6 @@
 ## Arena Ideas
 - ice floor - with polar bears?
 - "virtual insanity" - platform "moves", splits, etc
-- replace random blocks with primed tnt
 - something involving a volcano?
 
 ## Codslap
@@ -45,8 +44,6 @@
 ## Bugs
 - fixed? spawn blacklist on bedrock pit
 - fixed? spawn blacklist on removed rows of shrinky dinks
-- fixed? primed and ready - fix general tnt logic
-- hooks stop working on the last arena after exit reqs are met 
 
 ## Balance/Gameplay fixes
 - scale random spawns with # of players
@@ -62,3 +59,6 @@
  - killing player takes a random piece of armor or fish if it is better
 
 ### NEXT:
+- Fix arena hooks stopping after exit reqs complete
+- Default/global hooks (e.g. cow spawning)    
+- Arena change sequence (show title / countdown, etc)

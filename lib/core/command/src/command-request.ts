@@ -42,6 +42,8 @@ export abstract class SimpleArgsCommandRequest<TArgs extends Array<any> = any[],
   }
 
   protected formatArgs(): string {
-    return this.args.join(' ')
+    return this.args
+      .filter(arg => typeof arg !== 'undefined')
+      .join(' ')
   }
 }

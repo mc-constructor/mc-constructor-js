@@ -22,6 +22,7 @@ import { ArenaHooks } from './arena-hook'
 import { ArenaRequirement } from './arena-requirement'
 import { HookHandler } from './behaviors'
 import { CommonCommands } from './common-commands'
+import { Players } from '@ts-mc/core/players'
 
 @Injectable(RestrictScope(GameScope))
 export class ArenaManager<TEvents extends MinigameEvents> {
@@ -42,6 +43,7 @@ export class ArenaManager<TEvents extends MinigameEvents> {
     @Inject(CommonCommands) private common: CommonCommands,
     @Inject(EventsAccessor) eventsAccessor: Accessor<TEvents>,
     @Inject(CommandOperator) private readonly command: CommandOperatorFn,
+    @Inject(Players) private readonly players: Players,
     @Inject(Logger) private readonly logger: Logger,
   ) {
     this.logger.debug('ctr')
@@ -154,7 +156,7 @@ export class ArenaManager<TEvents extends MinigameEvents> {
         return hook$.pipe(
           map(event => {
             this.logger.debug('arenas hook:', arena.constructor.name, hook, handler)
-            return handler(arena.instance, event)
+            return handler({ arena: arena.instance, event, players: this.players })
           }),
           this.command(),
         )
