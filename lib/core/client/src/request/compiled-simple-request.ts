@@ -80,12 +80,12 @@ export class CompiledSimpleRequest<TResponse = any> implements CompiledRequest<T
         const untilSent = this.sent - this.created
         const sentToResponse = this.response - this.sent
         const totalTime = this.response - this.created
-        this.logger.debug(
-          `cmd ${this.debug} request stats:\n` +
-          `  queued: ${untilSent}ms\n` +
-          `  in flight: ${sentToResponse}ms\n` +
-          `  total: ${totalTime}ms`
-        )
+        // this.logger.debug(
+        //   `cmd ${this.debug} request stats:\n` +
+        //   `  queued: ${untilSent}ms\n` +
+        //   `  in flight: ${sentToResponse}ms\n` +
+        //   `  total: ${totalTime}ms`
+        // )
       }),
       take(1),
       share(),

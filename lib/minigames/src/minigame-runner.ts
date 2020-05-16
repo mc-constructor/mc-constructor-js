@@ -34,7 +34,6 @@ export class MinigameRunner {
         return game$
       })())
     }).pipe(
-      tap(v => console.log('MinigameRunner.runGame before switchMap', v)),
       switchMap(game$ => game$),
       catchError(err => {
         this.logger.error(err)

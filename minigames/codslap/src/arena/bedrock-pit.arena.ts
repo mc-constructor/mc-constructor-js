@@ -6,17 +6,12 @@ import { Arena, ArenaBase, ArenaConstructor, ArenaHooks, PlatformLayer, summonBe
 
 import { CodslapCommonCommands } from '../codslap-common-commands'
 import { CodslapEvents } from '../codslap-events'
-import { Codslap } from '../codslap-static'
 
 @Arena()
 class BedrockPitArena extends ArenaBase<CodslapEvents> {
 
   public static readonly title = text('Bedrock Pit').bold
   public static readonly description = text('Mind the gap...')
-
-  public static readonly exitRequirements = [
-    Codslap.requirements.count('codslapPlayerKill$', 100),
-  ]
 
   public readonly radius: number = 11
   public readonly gapRadius: number = 3

@@ -57,10 +57,8 @@
  - collecting food drops increases satiation
  - collecting leather can grant random armor piece
  - collecting gunpowder can upgrades armor
- - can we detect missed attacks? - requires implementing a client packet to sent "left click on air" event
+ - can we detect missed attacks? - requires implementing a client packet to send "left click on air" event
  - increase knockback level with successful slaps (e.g. 10 slaps = level++)
  - killing player takes a random piece of armor or fish if it is better
 
 ### NEXT:
-- fix broken codslapper upgrades
-- fix arena switchover

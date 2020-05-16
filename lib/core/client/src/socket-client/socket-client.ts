@@ -41,9 +41,9 @@ class CompiledSocketMessage extends CompiledSimpleRequest<ClientResponse> {
   }
 
   public send(conn$: Observable<SocketConnection>): ExecuteResponse<ClientResponse> {
-    console.log('waiting for connection:', this.debug)
+    // console.log('waiting for connection:', this.debug)
     return conn$.pipe(
-      tap(() => console.log('got connection:', this.debug)),
+      // tap(() => console.log('got connection:', this.debug)),
       switchMap(conn => new Observable<Observable<ClientResponse>>(o => {
         const newline = this.config.encoder.encode('\n')
         const id = this.config.encoder.encode(this.id.toString())
@@ -57,7 +57,7 @@ class CompiledSocketMessage extends CompiledSimpleRequest<ClientResponse> {
           body,
           this.config.delimiterBuffer,
         ])
-        this.logger.debug('sending to server:', content.toString('utf-8'))
+        // this.logger.debug('sending to server:', content.toString('utf-8'))
         conn.write(content, (err) => {
           if (err) {
             this.logger.error(this, err)

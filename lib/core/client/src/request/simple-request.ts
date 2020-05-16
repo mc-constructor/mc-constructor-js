@@ -45,12 +45,12 @@ export abstract class SimpleRequest<TResponse extends any = any> extends Request
             return undefined
           }
           if (response.success === true) {
-            console.log('SUCCESS', this.debug)
+            // console.log('SUCCESS', this.debug)
             return this.parseSuccessResponse(response)
           }
           const err = this.parseFailedResponse(response, body)
           if (this.allowedErrorKeys?.includes(err.type)) {
-            console.log(this.constructor.name, this.debug, 'ALLOWED ERROR', err.type)
+            // console.log(this.constructor.name, this.debug, 'ALLOWED ERROR', err.type)
             return undefined
           }
           console.log('DISALLOWED ERROR', err)

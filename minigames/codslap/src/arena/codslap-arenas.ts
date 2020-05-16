@@ -14,7 +14,8 @@ export const CodslapArenasModule = new ArenasModuleBuilder(localToken.PKG)
       entry: Codslap.requirements.none,
       exit: [
         // Codslap.requirements.minArenaAge(30),
-        Codslap.requirements.minArenaAge(15),
+        Codslap.requirements.minArenaAge(5),
+        // Codslap.requirements.count('codslap$', 15),
       ],
     })
     .arena(KingOfTheHill, {
@@ -24,7 +25,8 @@ export const CodslapArenasModule = new ArenasModuleBuilder(localToken.PKG)
         Codslap.requirements.count('codslap$', 15),
       ],
       exit: [
-        Codslap.requirements.minArenaAge(20),
+        Codslap.requirements.minArenaAge(30),
+        Codslap.requirements.count('codslap$', 15),
       ],
     })
     .arena(PrimedAndReady, {
@@ -33,16 +35,18 @@ export const CodslapArenasModule = new ArenasModuleBuilder(localToken.PKG)
         Codslap.requirements.count('codslap$', 30),
       ],
       exit: [
-        Codslap.requirements.minArenaAge(20),
+        Codslap.requirements.minArenaAge(30),
+        Codslap.requirements.count('codslap$', 15),
       ],
     })
     .arena(ShrinkyDinks, {
       entry: [
-        Codslap.requirements.count('codslap$', 5),
-        // Codslap.requirements.count('codslap$', 45),
+        // Codslap.requirements.count('codslap$', 5),
+        Codslap.requirements.count('codslap$', 45),
       ],
       exit: [
-        Codslap.requirements.minArenaAge(20),
+        Codslap.requirements.minArenaAge(30),
+        Codslap.requirements.count('codslap$', 15),
       ],
     })
     .arena(BedrockPit, {
@@ -51,6 +55,7 @@ export const CodslapArenasModule = new ArenasModuleBuilder(localToken.PKG)
       ],
       exit: [
         Codslap.requirements.minArenaAge(20),
+        Codslap.requirements.count('codslap$', 15),
       ],
     })
 

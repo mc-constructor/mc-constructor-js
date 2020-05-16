@@ -77,6 +77,9 @@ export class CodslapMinigame implements Minigame {
     this.obj.codslap.incrementScore(event.player.name, 1)
 
     const [weapon, pointsTillNext] = this.common.getPlayerWeapon(event.player.name)
+    if (weapon !== event.player.mainHand.item) {
+      return this.common.equip(event.player.name)
+    }
     if (weapon === event.player.mainHand.item && !isNaN(pointsTillNext)) {
       const isPlural = pointsTillNext > 1
       return actionbar(event.player.name, text(`${pointsTillNext} codslap${isPlural ? 's' : ''} till your next codslapper!`))

@@ -19,7 +19,7 @@ export class MinigameEntrypoint implements EntryPoint {
 
   public run(): void {
     this.minigames.run$.subscribe({
-      next: (e) => this.logger.debug(e.source, e.event),
+      next: (e) => this.logger.debug(e.source, e.event.constructor.name),
       error: (err: any) => this.logger.error(err),
       complete: () => this.logger.info('done'),
     })

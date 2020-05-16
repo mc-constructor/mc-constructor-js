@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger, RestrictScope } from '@dandi/core'
-import { dequeueReplay } from '@ts-mc/common/rxjs'
+import { dequeueReplay, silence } from '@ts-mc/common/rxjs'
 import { title } from '@ts-mc/core/cmd'
 import { RequestClient } from '@ts-mc/core/client'
 import { CommandOperator, CommandOperatorFn } from '@ts-mc/core/command'
@@ -96,6 +96,7 @@ export class ArenaManager<TEvents extends MinigameEvents> {
                   this.logger.debug('arenas start', arena.instance.constructor.name)
                   this.arenaStart$$.next(arena)
                 }),
+                silence,
               ),
             )
           }),
@@ -105,9 +106,10 @@ export class ArenaManager<TEvents extends MinigameEvents> {
           // completed and a new arenas is ready to be started
           buffer(
             combineLatest([
-              this.arenaExitRequirements(arena),
-              this.arenaAvailable$,
+              this.arenaExitRequirements(arena).pipe(tap(() => console.log('GOT EXIT REQUIREMENTS!', arenaDescriptor(arena.instance).title))),
+              this.arenaAvailable$.pipe(tap(() => console.log('GOT NEXT AVAILABLE ARENA!', arenaDescriptor(arena.instance).title))),
             ]).pipe(
+              tap(() => console.log('buffer emit', arenaDescriptor(arena.instance).title)),
               take(1), // important to avoid re-emitting an already completed arenas
             ),
           ),
