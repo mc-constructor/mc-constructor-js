@@ -6,6 +6,7 @@
 - MultiCommandRequest: improve debugging
   - use Symbol.toStringTag
   - include debug/toStringTag text from contained commands (e.g. `[MultiCommandRequest: 'setblock etc etc', 'fill etc etc']`)
+- Deferred command - command that generates another command upon execution
 
 # Marbles testing
 - 
@@ -47,6 +48,7 @@
 
 ## Balance/Gameplay fixes
 - enabled limiting hook-based spawns (e.g. total number of cows spawned)
+- time based cow spawns if max is not reached
 - remove fire effect?
 
 ### Ideas:
@@ -58,6 +60,5 @@
  - killing player takes a random piece of armor or fish if it is better
 
 ### NEXT:
-- Fix spawning into blocks during arena transitions
+- Finish arena change sequence (add countdown)
 - Default/global hooks (e.g. cow spawning)    
-- Arena change sequence (show title / countdown, etc)

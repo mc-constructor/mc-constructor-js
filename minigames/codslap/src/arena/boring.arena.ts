@@ -31,7 +31,7 @@ class BoringArena extends ArenaBase<CodslapEvents> {
   }
 
   constructor(
-    @Inject(CodslapCommonCommands) private common: CodslapCommonCommands,
+    @Inject(CodslapCommonCommands) common: CodslapCommonCommands,
   ) {
     super(common)
   }

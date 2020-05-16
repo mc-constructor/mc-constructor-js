@@ -36,8 +36,6 @@ export class CodslapCommonCommands extends CommonCommands {
     this.spawnOffsetFromFloor.modify.down(100),
   )
 
-  public readonly holdingCenter = this.center.modify.up(120).modify.west(100)
-
   constructor(
     @Inject(CodslapObjectives) private objectives: CodslapObjectives,
     @Inject(Players) players: Players,

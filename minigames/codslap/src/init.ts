@@ -31,7 +31,7 @@ export class CodslapInit {
   public compile(): CommandRequest {
     return series(
       'codslap.compile',
-      this.initHoldingArea(),
+      this.common.initHoldingArea(),
       parallel(
         'codslap.compile.rulesAndArena',
         this.initRules(),
@@ -43,34 +43,6 @@ export class CodslapInit {
         this.initPlayers(),
         // this.removeHoldingArea(),
       ),
-    )
-  }
-
-  protected initHoldingArea(): CommandRequest {
-    const holding = this.common.holdingCenter
-    const holdingArea = parallel(
-      'initHoldingArea',
-      block(Block.whiteWool).fill(
-        holding.modify.west(this.common.arenaSize).modify.north(this.common.arenaSize),
-        holding.modify.east(this.common.arenaSize).modify.south(this.common.arenaSize),
-      ),
-      clear('@a'),
-      clearEffect('@a'),
-    )
-    return series(
-      'codslap.initHoldingArea',
-      holdingArea,
-      wait(1500),
-      rawCmd(`teleport @a ${holding.modify.up(2)}`),
-      wait(2500),
-    )
-  }
-
-  protected removeHoldingArea(): CommandRequest {
-    const holding = this.common.holdingCenter
-    return block(Block.air).fill(
-      holding.modify.west(this.common.arenaSize).modify.north(this.common.arenaSize),
-      holding.modify.east(this.common.arenaSize).modify.south(this.common.arenaSize),
     )
   }
 

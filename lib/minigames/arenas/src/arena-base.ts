@@ -1,8 +1,8 @@
-import { randomInt } from '@ts-mc/common'
 import { block, BlockCommandBuilder } from '@ts-mc/core/cmd'
 import { CommandRequest, parallel } from '@ts-mc/core/command'
-import { MinigameEvents } from '@ts-mc/minigames'
 import { area, Area, Block, Coordinates, loc } from '@ts-mc/core/types'
+import { MinigameEvents } from '@ts-mc/minigames'
+import { CommonCommands } from '@ts-mc/minigames/arenas'
 
 import { Arena } from './arena'
 import { ArenaHooks } from './arena-hook'
@@ -24,34 +24,29 @@ const NO_SPAWN_BLOCKS: Block[] = [
   Block.water,
 ]
 
-export interface PlatformArenaConstants {
-  center: Coordinates
-  spawnOffsetFromFloor: Coordinates
-  spawnBlacklistOffset: Area
-}
-
-export abstract class ArenaBase<TEvents extends MinigameEvents> implements Arena<TEvents> {
+export abstract class ArenaBase<TEvents extends MinigameEvents, TCommon extends CommonCommands = CommonCommands>
+  implements Arena<TEvents> {
 
   public abstract readonly layers: PlatformLayer[]
   public readonly hooks: ArenaHooks<TEvents>
 
   public get center(): Coordinates {
-    return this.constants.center
+    return this.common.center
   }
 
   public get spawnOffsetFromFloor(): Coordinates {
-    return this.constants.spawnOffsetFromFloor
+    return this.common.spawnOffsetFromFloor
   }
 
   public get spawnBlacklistOffset(): Area {
-    return this.constants.spawnBlacklistOffset
+    return this.common.spawnBlacklistOffset
   }
 
   private readonly spawnAreas = new Map<Area, Area>()
   private readonly spawnBlacklist = new Map<Area, Area>()
 
   protected constructor(
-    protected readonly constants: PlatformArenaConstants,
+    protected readonly common: CommonCommands,
   ) {}
 
   public cleanup(): CommandRequest {
@@ -59,18 +54,7 @@ export abstract class ArenaBase<TEvents extends MinigameEvents> implements Arena
   }
 
   public getRandomSpawn(): Coordinates {
-    let spawn = this.getRandomSpawnCandidate()
-    while (this.isBlacklistedSpawn(spawn)) {
-      spawn = this.getRandomSpawnCandidate()
-    }
-    return spawn
-  }
-
-  public isBlacklistedSpawn(spawn: Coordinates): boolean {
-    if (!spawn) {
-      return true
-    }
-    return [...this.spawnBlacklist.values()].some(blacklisted => blacklisted.contains(spawn))
+    return this.common.getRandomLocation([...this.spawnAreas.values()], [...this.spawnBlacklist.values()])
   }
 
   public init(): CommandRequest {
@@ -133,16 +117,6 @@ export abstract class ArenaBase<TEvents extends MinigameEvents> implements Arena
       )
       this.spawnAreas.set(entry, spawnArea)
     })
-  }
-
-  protected getRandomSpawnCandidate(): Coordinates {
-    const spawnAreas = [...this.spawnAreas.values()]
-    const layer = spawnAreas[randomInt(0, spawnAreas.length - 1)]
-    return loc(
-      randomInt(layer.start.x, layer.end.x),
-      randomInt(layer.start.y, layer.end.y),
-      randomInt(layer.start.z, layer.end.z),
-    )
   }
 
   protected fill(resetBlock?: Block): CommandRequest {

@@ -1,4 +1,4 @@
-import { Block, Coordinates } from '@ts-mc/core/types'
+import { Block, Coordinates, Area, isArea } from '@ts-mc/core/types'
 
 import { BlockData } from './block-data'
 import { BlockState } from './block-state'
@@ -29,6 +29,7 @@ export type BlockCommandDataModifiers<TBlock extends Block, TBlockData extends B
 
 export interface BlockCommandBuilderCommands<TBlock extends Block> {
   set(loc: Coordinates, ): SetBlockCommand<TBlock>
+  fill(area: Area, method?: FillMethod): FillCommand<TBlock>
   fill(start: Coordinates, end: Coordinates, method?: FillMethod): FillCommand<TBlock>
   box(start: Coordinates, end: Coordinates): BoxCommand<TBlock>
 }
@@ -134,7 +135,19 @@ class BlockCommandBuilderImpl<
     return new SetBlockCommand(this.block, this.state, this.data, loc)
   }
 
-  private fillBlockCommand(start: Coordinates, end: Coordinates, method: FillMethod): FillCommand<TBlock> {
+  private fillBlockCommand(start: Coordinates, end: Coordinates, method?: FillMethod): FillCommand<TBlock>
+  private fillBlockCommand(area: Area, method?: FillMethod): FillCommand<TBlock>
+  private fillBlockCommand(startOrArea: Coordinates | Area, endOrMethod?: Coordinates | FillMethod, method?: FillMethod): FillCommand<TBlock> {
+    let start: Coordinates
+    let end: Coordinates
+    if (isArea(startOrArea)) {
+      start = startOrArea.start
+      end = startOrArea.end
+      method = endOrMethod as FillMethod
+    } else {
+      start = startOrArea
+      end = endOrMethod as Coordinates
+    }
     return new FillCommand(this.block, this.state, this.data, method, start, end)
   }
 

@@ -17,6 +17,7 @@ import {
   startWith,
   switchMap, take,
   tap,
+  delay,
 } from 'rxjs/operators'
 
 import { ConfiguredArena, ConfiguredArenas, arenaDescriptor } from './arena'
@@ -24,6 +25,7 @@ import { ArenaHooks } from './arena-hook'
 import { ArenaRequirement } from './arena-requirement'
 import { HookHandler } from './behaviors'
 import { CommonCommands } from './common-commands'
+import { text } from '@ts-mc/core/cmd/src/text'
 
 @Injectable(RestrictScope(GameScope))
 export class ArenaManager<TEvents extends MinigameEvents> {
@@ -139,20 +141,18 @@ export class ArenaManager<TEvents extends MinigameEvents> {
     return defer(() => {
       this.logger.debug('initArena', descriptor.title)
       if (prevArena) {
-        return this.clearArena(prevArena)
+        return this.clearArena(prevArena, arena)
       }
       return of(undefined)
     }).pipe(
       tap(() => console.log('initArena start')),
       this.command(arena.instance.init()),
-      // delay(500),
-      map(() => this.common.movePlayersToArena(arena.instance)),
-      this.command(),
+      delay(2500),
+      this.command(() => this.common.movePlayersToArena(arena.instance)),
       this.command(title('@a', descriptor.title, descriptor.description)),
       map(() => arena),
       tap(() => console.log('initArena complete', descriptor.title)),
       share(),
-      tap(() => console.log('initArena emit', descriptor.title)),
     )
   }
 
@@ -175,10 +175,12 @@ export class ArenaManager<TEvents extends MinigameEvents> {
     return merge(...hooks)
   }
 
-  private clearArena(arena: ConfiguredArena<TEvents>): Observable<ConfiguredArena<TEvents>> {
-    return defer(() => of(this.common.movePlayersToHolding())).pipe(
-      this.command(),
-      // delay(500),
+  private clearArena(arena: ConfiguredArena<TEvents>, nextArena: ConfiguredArena<TEvents>): Observable<ConfiguredArena<TEvents>> {
+    return of(undefined).pipe(
+      this.command(title('@a', text('Coming up...'), arenaDescriptor(nextArena).title)),
+      delay(5000),
+      this.command(() => this.common.movePlayersToHolding()),
+      delay(500),
       this.command(arena.instance.cleanup()),
     )
   }
@@ -192,7 +194,6 @@ export class ArenaManager<TEvents extends MinigameEvents> {
   }
 
   private arenaRequirements(arena: ConfiguredArena<TEvents>, type: 'entry' | 'exit', requirements: ArenaRequirement<TEvents>[]): Observable<ConfiguredArena<TEvents>> {
-
     console.log('arenaRequirements', arenaDescriptor(arena.instance).title)
     const reqs$ = (requirements || [])
       .concat(arena.config[type])

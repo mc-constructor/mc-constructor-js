@@ -34,6 +34,9 @@ export interface ArenaDecorator {
 }
 
 export function arenaDescriptor<TEvents extends MinigameEvents>(arena: Arena<TEvents> | ConfiguredArena<TEvents>): ArenaDescriptor<TEvents> {
+  if (isConfiguredArena(arena)) {
+    return arenaDescriptor(arena.instance)
+  }
   return arena.constructor as unknown as ArenaDescriptor<TEvents>
 }
 
@@ -61,6 +64,11 @@ export interface ConfiguredArena<TEvents extends MinigameEvents> {
   instance: Arena<TEvents>
   config: ArenaConfiguration<TEvents>
 }
+
+export function isConfiguredArena(obj: any): obj is ConfiguredArena<any> {
+  return obj && typeof obj.instance === 'object'
+}
+
 export const ConfiguredArenas: InjectionToken<ConfiguredArena<MinigameEvents>[]> = localToken.opinionated('ConfiguredArenas', {
   multi: false,
 })
