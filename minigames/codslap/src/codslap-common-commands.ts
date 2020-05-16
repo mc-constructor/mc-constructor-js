@@ -2,10 +2,11 @@ import { Inject } from '@dandi/core'
 import { clear, rawCmd } from '@ts-mc/core/cmd'
 import { CommandRequest, parallel } from '@ts-mc/core/command'
 import { Players } from '@ts-mc/core/players'
-import { area, Coordinates, Item, loc } from '@ts-mc/core/types'
-import { CommonCommands } from '@ts-mc/minigames/arenas'
+import { area, Coordinates, Item, loc, Mob } from '@ts-mc/core/types'
+import { CommonCommands, summonBehavior } from '@ts-mc/minigames/arenas'
 
 import { CodslapObjectives } from './codslap-objectives'
+import { generateRandomInt } from '@ts-mc/common'
 
 export type Codslapper = Item.codslapper | Item.diamondCodslapper | Item.goldCodslapper | Item.ironCodslapper | Item.stoneCodslapper | Item.woodenCodslapper
 
@@ -34,6 +35,16 @@ export class CodslapCommonCommands extends CommonCommands {
   public readonly spawnBlacklistOffset = area(
     this.spawnOffsetFromFloor.modify.up(100),
     this.spawnOffsetFromFloor.modify.down(100),
+  )
+
+  public readonly summonCowsOnStartBehavior = summonBehavior(
+    Mob.cow,
+    { base: 10, playerBonus: generateRandomInt(0, 1), playerMultiplier: 1 },
+  )
+
+  public readonly summonCowsOnRespawnBehavior = summonBehavior(
+    Mob.cow,
+    { base: 10, playerBonus: generateRandomInt(0, 5) },
   )
 
   constructor(

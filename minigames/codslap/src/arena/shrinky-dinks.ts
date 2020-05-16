@@ -1,10 +1,9 @@
 import { Inject, Logger } from '@dandi/core'
-import { generateRandomInt } from '@ts-mc/common'
 import { RandomIntervalScheduler } from '@ts-mc/common/rxjs'
 import { block, text, title } from '@ts-mc/core/cmd'
 import { CommandOperator, CommandOperatorFn, CommandRequest, parallel } from '@ts-mc/core/command'
-import { area, Block, loc, Mob } from '@ts-mc/core/types'
-import { Arena, ArenaBase, ArenaConstructor, PlatformLayer, summonBehavior } from '@ts-mc/minigames/arenas'
+import { area, Block, loc } from '@ts-mc/core/types'
+import { Arena, ArenaBase, ArenaConstructor, PlatformLayer } from '@ts-mc/minigames/arenas'
 
 import { interval, Observable } from 'rxjs'
 import { delay, map, switchMap, switchMapTo, takeWhile, tap } from 'rxjs/operators'
@@ -14,7 +13,7 @@ import { CodslapCommonCommands } from '../codslap-common-commands'
 import { Codslap } from '../codslap-static'
 
 @Arena()
-class ShrinkyDinksArena extends ArenaBase<CodslapEvents> {
+class ShrinkyDinksArena extends ArenaBase<CodslapEvents, CodslapCommonCommands> {
 
   public static readonly title = text('Shrinky Dinks!').bold
   public static readonly description = text(`Keep an eye on the edges...`)
@@ -42,10 +41,10 @@ class ShrinkyDinksArena extends ArenaBase<CodslapEvents> {
 
   public readonly hooks = {
     arenaStart$: [
-      summonBehavior(Mob.cow, { base: 10, playerBonus: generateRandomInt(1, 3), playerMultiplier: 1 }),
+      this.common.summonCowsOnStartBehavior,
     ],
     playerRespawn$: [
-      summonBehavior(Mob.cow, { base: 10, playerBonus: generateRandomInt(1, 3), playerMultiplier: 1 }),
+      this.common.summonCowsOnRespawnBehavior,
     ],
   }
 

@@ -1,20 +1,20 @@
 import { Inject, Logger } from '@dandi/core'
-import { generateRandomInt } from '@ts-mc/common'
 import { RandomIntervalScheduler } from '@ts-mc/common/rxjs'
+import { RequestError } from '@ts-mc/core/client'
 import { block, rawCmd, text, title } from '@ts-mc/core/cmd'
 import { CommandRequest, CommandOperator, CommandOperatorFn, parallel, series } from '@ts-mc/core/command'
 import { Players } from '@ts-mc/core/players'
-import { area, Area, Block, Coordinates, loc, Mob } from '@ts-mc/core/types'
-import { Arena, ArenaBase, ArenaConstructor, PlatformLayer, summonBehavior } from '@ts-mc/minigames/arenas'
+import { area, Area, Block, Coordinates, loc } from '@ts-mc/core/types'
+import { Arena, ArenaBase, ArenaConstructor, PlatformLayer } from '@ts-mc/minigames/arenas'
 import { combineLatest, defer, Observable, of, timer } from 'rxjs'
-import { delay, map, repeat, switchMap, switchMapTo, tap } from 'rxjs/operators'
+import { catchError, delay, map, repeat, switchMap, switchMapTo, tap } from 'rxjs/operators'
 
 import { CodslapEvents } from '../codslap-events'
 import { CodslapCommonCommands } from '../codslap-common-commands'
 import { Codslap } from '../codslap-static'
 
 @Arena()
-class PrimedAndReadyArena extends ArenaBase<CodslapEvents> {
+class PrimedAndReadyArena extends ArenaBase<CodslapEvents, CodslapCommonCommands> {
 
   public static readonly title = text('Primed and Ready').bold
   public static readonly description = text(`Watch me exploooooooode!!!`)
@@ -26,7 +26,7 @@ class PrimedAndReadyArena extends ArenaBase<CodslapEvents> {
   private static readonly explosionInterval = 5000
   private static readonly explosionIntervalVariation = 5000
   private static readonly explosionCount = 30
-  private static readonly removeRowScheduler = new RandomIntervalScheduler(PrimedAndReadyArena.explosionIntervalVariation)
+  private static readonly explosionScheduler = new RandomIntervalScheduler(PrimedAndReadyArena.explosionIntervalVariation)
 
   public readonly layers: PlatformLayer[] = [
     {
@@ -39,10 +39,10 @@ class PrimedAndReadyArena extends ArenaBase<CodslapEvents> {
 
   public readonly hooks = {
     arenaStart$: [
-      summonBehavior(Mob.cow, { base: 10, playerBonus: generateRandomInt(1, 3), playerMultiplier: 1 }),
+      this.common.summonCowsOnStartBehavior,
     ],
     playerRespawn$: [
-      summonBehavior(Mob.cow, { base: 10, playerBonus: generateRandomInt(1, 3), playerMultiplier: 1 }),
+      this.common.summonCowsOnRespawnBehavior,
     ],
   }
 
@@ -63,8 +63,6 @@ class PrimedAndReadyArena extends ArenaBase<CodslapEvents> {
       tap(() => this.logger.debug('minimum arenas age met, waiting for next available arenas to start exploding')),
       switchMapTo(events.arenaAvailable$),
 
-      tap(() => this.logger.debug('next arenas is available, starting explode timer')),
-
       switchMap(() =>
 
         // next explosion location - down 1 because spawn locations are up 1 from the floor
@@ -73,16 +71,24 @@ class PrimedAndReadyArena extends ArenaBase<CodslapEvents> {
 
           map(loc => this.getTntCommand(loc)),
           switchMap(([cmd, tntState]) => combineLatest([of(cmd).pipe(this.command()), of(tntState)])),
-          delay(5000),
+          delay(6000),
           map(([,tntState]) => this.replaceBlock(tntState)),
           this.command(),
+          catchError(err => {
+            if (err instanceof RequestError && err.type === 'commands.setblock.failed') {
+              // FIXME: why is this error happening?
+              this.logger.warn(err)
+              return of(undefined)
+            }
+            throw err
+          }),
           repeat(PrimedAndReadyArena.explosionCount),
       )),
     )
   }
 
   private getTimer(): Observable<true> {
-    return timer(PrimedAndReadyArena.explosionInterval, PrimedAndReadyArena.removeRowScheduler).pipe(
+    return timer(PrimedAndReadyArena.explosionInterval, PrimedAndReadyArena.explosionScheduler).pipe(
       tap(() => this.logger.debug('explosion timer tick')),
       map(() => true),
     )

@@ -54,8 +54,8 @@ export const CodslapArenasModule = new ArenasModuleBuilder(localToken.PKG)
         Codslap.requirements.count('codslap$', 500),
       ],
       exit: [
-        Codslap.requirements.minArenaAge(20),
-        Codslap.requirements.count('codslap$', 15),
+        Codslap.requirements.minArenaAge(120),
+        Codslap.requirements.count('codslap$', 500),
       ],
     })
 

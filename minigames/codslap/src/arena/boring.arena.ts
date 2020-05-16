@@ -1,14 +1,13 @@
 import { Inject } from '@dandi/core'
 import { text, block } from '@ts-mc/core/cmd'
-import { Block, loc, Mob } from '@ts-mc/core/types'
-import { generateRandomInt } from '@ts-mc/common'
-import { Arena, ArenaBase, ArenaConstructor, PlatformLayer, summonBehavior } from '@ts-mc/minigames/arenas'
+import { Block, loc } from '@ts-mc/core/types'
+import { Arena, ArenaBase, ArenaConstructor, PlatformLayer } from '@ts-mc/minigames/arenas'
 
 import { CodslapEvents } from '../codslap-events'
 import { CodslapCommonCommands } from '../codslap-common-commands'
 
 @Arena()
-class BoringArena extends ArenaBase<CodslapEvents> {
+class BoringArena extends ArenaBase<CodslapEvents, CodslapCommonCommands> {
 
   public static readonly title = text('Boring Arena').bold
   public static readonly description = text(`Give me a break, it's just the first level...`)
@@ -23,10 +22,10 @@ class BoringArena extends ArenaBase<CodslapEvents> {
 
   public readonly hooks = {
     arenaStart$: [
-      summonBehavior(Mob.cow, { base: 10, playerBonus: generateRandomInt(1, 3), playerMultiplier: 1 }),
+      this.common.summonCowsOnStartBehavior,
     ],
     playerRespawn$: [
-      summonBehavior(Mob.cow, { base: 10, playerBonus: generateRandomInt(1, 3), playerMultiplier: 1 }),
+      this.common.summonCowsOnRespawnBehavior,
     ],
   }
 

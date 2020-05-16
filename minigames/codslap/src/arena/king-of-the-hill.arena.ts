@@ -1,8 +1,8 @@
 import { Inject } from '@dandi/core'
-import { generateRandomInt, range } from '@ts-mc/common'
+import { range } from '@ts-mc/common'
 import { block, text } from '@ts-mc/core/cmd'
-import { Block, Direction, loc, Mob } from '@ts-mc/core/types'
-import { Arena, ArenaBase, ArenaConstructor, PlatformLayer, summonBehavior } from '@ts-mc/minigames/arenas'
+import { Block, Direction, loc } from '@ts-mc/core/types'
+import { Arena, ArenaBase, ArenaConstructor, PlatformLayer } from '@ts-mc/minigames/arenas'
 
 import { CodslapCommonCommands } from '../codslap-common-commands'
 import { CodslapEvents } from '../codslap-events'
@@ -27,7 +27,7 @@ const STAIRS = [
 ]
 
 @Arena()
-class KingOfTheHillArena extends ArenaBase<CodslapEvents> {
+class KingOfTheHillArena extends ArenaBase<CodslapEvents, CodslapCommonCommands> {
 
   public static readonly title = text('King of the Hill').bold
   public static readonly description = text('Mmmmmhm.')
@@ -56,10 +56,10 @@ class KingOfTheHillArena extends ArenaBase<CodslapEvents> {
 
   public readonly hooks = {
     arenaStart$: [
-      summonBehavior(Mob.cow, { base: 10, playerBonus: generateRandomInt(1, 3), playerMultiplier: 1 }),
+      this.common.summonCowsOnStartBehavior,
     ],
     playerRespawn$: [
-      summonBehavior(Mob.cow, { base: 10, playerBonus: generateRandomInt(1, 3), playerMultiplier: 1 }),
+      this.common.summonCowsOnRespawnBehavior,
     ],
   }
 

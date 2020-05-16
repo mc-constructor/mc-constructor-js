@@ -39,17 +39,21 @@ function getSummonCount(args: HookHandlerArgs<any>, count: SummonCount): number 
   const playerCount = args.players.players.length
   const base = getNumber(count.base, 1)
   const playerBonus = getNumber(count.playerBonus, 0)
-  const playerMultiplier = getNumber(count.playerBonus, 1)
-  return (base + (playerBonus * playerCount)) * (playerMultiplier * playerCount)
+  const playerMultiplier = getNumber(count.playerMultiplier, 0)
+  const totalPlayerMultiplier = (playerMultiplier * playerCount) || 1
+  return (base + (playerBonus * playerCount)) * totalPlayerMultiplier
 }
 
 export function summonBehavior<TEntity extends AnyEntity>(entityOrSpec: TEntity | [TEntity, EntityData[TEntity]], count: SummonCount = 1): HookHandler<any> {
   return (args: HookHandlerArgs<any>): CommandRequest => {
-    const [entity, data] = Array.isArray(entityOrSpec) ? entityOrSpec : [entityOrSpec]
+    const [entity, data] = Array.isArray(entityOrSpec) ? entityOrSpec : [entityOrSpec, {}]
     const c = getSummonCount(args, count)
     return parallel(...range(0, c).map(() => {
       const spawn = args.arena.getRandomSpawn()
-      console.log('SUMMON')
+      if (!data.Tags) {
+        data.Tags = []
+      }
+      data.Tags.push('codslap')
       return summon(entity, spawn, data)
     }))
   }

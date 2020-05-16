@@ -46,7 +46,7 @@ export abstract class ArenaBase<TEvents extends MinigameEvents, TCommon extends 
   private readonly spawnBlacklist = new Map<Area, Area>()
 
   protected constructor(
-    protected readonly common: CommonCommands,
+    protected readonly common: TCommon,
   ) {}
 
   public cleanup(): CommandRequest {

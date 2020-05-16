@@ -60,5 +60,8 @@
  - killing player takes a random piece of armor or fish if it is better
 
 ### NEXT:
+- arenaAvailable$ doesn't work correctly when adding new subscriptions? - prevents primed and ready from working correctly
+- why is setblock failing?
 - Finish arena change sequence (add countdown)
-- Default/global hooks (e.g. cow spawning)    
+- Default/global hooks (e.g. cow spawning)  
+- Fix codslap kills not getting counted if a player is dead - might be due to the event not coming from the server?  

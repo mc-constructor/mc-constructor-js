@@ -8,7 +8,7 @@ import { CodslapCommonCommands } from '../codslap-common-commands'
 import { CodslapEvents } from '../codslap-events'
 
 @Arena()
-class BedrockPitArena extends ArenaBase<CodslapEvents> {
+class BedrockPitArena extends ArenaBase<CodslapEvents, CodslapCommonCommands> {
 
   public static readonly title = text('Bedrock Pit').bold
   public static readonly description = text('Mind the gap...')
@@ -58,10 +58,11 @@ class BedrockPitArena extends ArenaBase<CodslapEvents> {
     playerRespawn$: [
       summonBehavior(Mob.creeper, { base: generateRandomInt(1, 3), playerMultiplier: generateRandomInt(1, 2) }),
       summonBehavior([Mob.creeper, { powered: Creeper.powered }], generateRandom([0, 0, 0, 0, 1])),
+      this.common.summonCowsOnRespawnBehavior,
     ],
     arenaStart$: [
-      summonBehavior(Mob.cow, { base: 10, playerBonus: generateRandomInt(1, 3), playerMultiplier: 1 }),
-    ]
+      this.common.summonCowsOnStartBehavior,
+    ],
   }
 
   constructor(
