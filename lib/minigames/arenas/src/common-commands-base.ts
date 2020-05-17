@@ -50,7 +50,7 @@ export class CommonCommandsBase implements CommonCommands {
 
   public initHoldingArea(): CommandRequest {
     return series(
-      'codslap.initHoldingArea',
+      'common.initHoldingArea',
       forceLoadAdd(this.holdingArea),
       parallel(
         'initHoldArea blocks and clear',

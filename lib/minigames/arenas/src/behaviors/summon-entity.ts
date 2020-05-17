@@ -53,7 +53,7 @@ export function summonBehavior<TEntity extends AnyEntity>(entityOrSpec: TEntity 
       if (!data.Tags) {
         data.Tags = []
       }
-      data.Tags.push('codslap')
+      data.Tags.push('summoned')
       return summon(entity, spawn, data)
     }))
   }

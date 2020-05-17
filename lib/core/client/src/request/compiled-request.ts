@@ -1,4 +1,3 @@
-import { Uuid } from '@dandi/common'
 import { Observable } from 'rxjs'
 
 export interface PendingRequest<TResponse = any> extends Observable<TResponse> {

@@ -1,8 +1,8 @@
 import { MinigameEvents } from '@ts-mc/minigames'
 import { Observable, of } from 'rxjs'
 import { filter, take } from 'rxjs/operators'
-import { Arena } from './arena'
 
+import { Arena } from './arena'
 import { ArenaHookEvents } from './arena-hook'
 import { ArenaMinigameEvents } from './arena-minigame-events'
 import { ArenaRequirement } from './arena-requirement'

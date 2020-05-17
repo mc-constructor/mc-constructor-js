@@ -5,7 +5,7 @@ import { RequestClient } from '@ts-mc/core/client'
 import { CommandOperator, CommandOperatorFn } from '@ts-mc/core/command'
 import { Players } from '@ts-mc/core/players'
 import { GameScope, MinigameEvents, EventsAccessor, Accessor } from '@ts-mc/minigames'
-import { combineLatest, forkJoin, merge, Observable, of, ReplaySubject, defer, timer } from 'rxjs'
+import { combineLatest, forkJoin, merge, Observable, of, ReplaySubject, defer, timer, NEVER } from 'rxjs'
 import {
   buffer,
   concatMap,
@@ -19,6 +19,7 @@ import {
   take,
   tap,
   delay,
+  catchError,
 } from 'rxjs/operators'
 
 import { ConfiguredArena, ConfiguredArenas, arenaDescriptor } from './arena'
@@ -62,12 +63,12 @@ export class ArenaManager<TEvents extends MinigameEvents> {
     // start with "defer" so that the entry requirements aren't created until the game is started (by subscribing to
     // this observable)
     return defer(() => {
-      this.logger.debug('starting arena', this.arenas.map(arena => arenaDescriptor(arena.instance).title.toString()))
+      this.logger.debug('starting arena', this.arenas.map(arena => arenaDescriptor(arena).title.toString()))
       // this will emit any time an arenas's entry requirements have all been met
       return merge(...this.arenas.map(arena => this.arenaEntryRequirements(arena)))
     }).pipe(
-      tap(arena => console.log('arena available:', arenaDescriptor(arena.instance).title)),
-      tap(arena => this.logger.debug('arena available:', arenaDescriptor(arena.instance).title)),
+      tap(arena => console.log('arena available:', arenaDescriptor(arena).title)),
+      tap(arena => this.logger.debug('arena available:', arenaDescriptor(arena).title)),
       dequeueReplay(this.arenaStart$),
       // note: share is not needed here because dequeueReplay effectively accomplishes the same thing
     )
@@ -90,7 +91,7 @@ export class ArenaManager<TEvents extends MinigameEvents> {
         return this.initArena([prevArena, arena]).pipe(
           switchMap(() => {
             const prev = prevArena ? arenaDescriptor(prevArena.instance).title : undefined
-            console.log('after initArena', { prev, arena: arenaDescriptor(arena.instance).title })
+            console.log('after initArena', { prev, arena: arenaDescriptor(arena).title })
             // set up the arenas's hooks to listen for their server-events
             return merge(
               defer(() => this.initArenaHooks(arena)),
@@ -98,31 +99,30 @@ export class ArenaManager<TEvents extends MinigameEvents> {
               // arenaStart$ behaviors on the newly initialized arenas can receive the event
               defer(() => timer(1)).pipe(
                 tap(() => {
-                  console.log('arenaStart', arena.instance.constructor.name)
-                  this.logger.debug('arena start', arena.instance.constructor.name)
+                  console.log('arenaStart', arenaDescriptor(arena).title)
+                  this.logger.debug('arena start', arenaDescriptor(arena).title)
                   this.arenaStart$$.next(arena)
                 }),
                 silence,
               ),
             )
           }),
-          tap(() => console.log('after initArena/switchMap')),
           // buffer until exit requirements are complete, and at least one new arena is available
           // this allows the current arena's hooks to continue receiving server-events until all exit requirements are
           // completed and a new arena is ready to be started
           buffer(
             combineLatest([
-              this.arenaExitRequirements(arena).pipe(tap(() => console.log('GOT EXIT REQUIREMENTS!', arenaDescriptor(arena.instance).title))),
+              this.arenaExitRequirements(arena).pipe(tap(() => console.log('GOT EXIT REQUIREMENTS!', arenaDescriptor(arena).title))),
               this.arenaAvailable$.pipe(
                 // this is complicated for now - since arenaStart doesn't get emitted until after a delay (see above),
                 // arenaAvailable$ immediately emits an event for the current arena. if it is not filtered out, the
                 // arena will responding to event hooks after its exit requirements are met until the REAL next arena
                 // becomes available
                 filter(nextArena => nextArena !== arena),
-                tap(() => console.log('GOT NEXT AVAILABLE ARENA!', arenaDescriptor(arena.instance).title)),
+                tap(nextArena => console.log('GOT NEXT AVAILABLE ARENA!', arenaDescriptor(nextArena).title)),
               ),
             ]).pipe(
-              tap(() => console.log('buffer emit', arenaDescriptor(arena.instance).title)),
+              tap(() => console.log('buffer emit', arenaDescriptor(arena).title)),
             ),
           ),
 
@@ -137,7 +137,7 @@ export class ArenaManager<TEvents extends MinigameEvents> {
   }
 
   private initArena([prevArena, arena]: [ConfiguredArena<TEvents>, ConfiguredArena<TEvents>]): Observable<ConfiguredArena<TEvents>> {
-    const descriptor = arenaDescriptor(arena.instance)
+    const descriptor = arenaDescriptor(arena)
     console.log('initArena', descriptor.title)
     return defer(() => {
       this.logger.debug('initArena', descriptor.title)
@@ -160,6 +160,10 @@ export class ArenaManager<TEvents extends MinigameEvents> {
   private initArenaHooks(arena: ConfiguredArena<TEvents>): Observable<any> {
     console.log('initArenaHooks')
     const keys = Object.keys(arena.instance.hooks || {}) as (keyof ArenaHooks<TEvents>)[]
+    if (!keys.length) {
+      // even if there are no hooks, *something* must be returned in order to keep the arena running
+      return NEVER
+    }
     const hooks = keys.map((hook: keyof ArenaHooks<TEvents>) => {
       const handlers = arena.instance.hooks[hook] as HookHandler<any>[]
       return merge(...handlers.map((handler: HookHandler<any>) => {
@@ -195,12 +199,16 @@ export class ArenaManager<TEvents extends MinigameEvents> {
   }
 
   private arenaRequirements(arena: ConfiguredArena<TEvents>, type: 'entry' | 'exit', requirements: ArenaRequirement<TEvents>[]): Observable<ConfiguredArena<TEvents>> {
-    console.log('arenaRequirements', arenaDescriptor(arena.instance).title)
+    console.log('arenaRequirements', arenaDescriptor(arena).title)
     const reqs$ = (requirements || [])
       .concat(arena.config[type])
       .map(req => req(this.events, arena.instance).pipe(
+        catchError(err => {
+          console.error(err)
+          throw err
+        }),
         finalize(() => {
-          console.log(`arenaRequirements ${type} req complete`, arenaDescriptor(arena.instance).title)
+          console.log(`arenaRequirements ${type} req complete`, arenaDescriptor(arena).title)
           this.logger.debug(`${type} req complete`, arena.constructor.name, req)
         })),
         share(),
@@ -208,7 +216,7 @@ export class ArenaManager<TEvents extends MinigameEvents> {
     return forkJoin(...reqs$).pipe(
       map(() => arena),
       tap(arena => {
-        console.log(`arenaRequirements ${type} complete`, arenaDescriptor(arena.instance).title)
+        console.log(`arenaRequirements ${type} all complete`, arenaDescriptor(arena).title)
         this.logger.debug(`${type} reqs complete`, arena.constructor.name)
       }),
       share(),

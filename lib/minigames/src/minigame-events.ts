@@ -17,6 +17,7 @@ export class MinigameEvents {
   public readonly playerDeath$: Observable<EntityEvent>
   public readonly playerRespawn$: Observable<PlayerEvent>
   public readonly playerReady$: Observable<Player>
+  public readonly playerLimbo$: Observable<Player>
 
   public readonly minigameAge$: Observable<MinigameAgeEvent> = interval(1000).pipe(
     map(minigameAge => ({ minigameAge })),
@@ -53,13 +54,18 @@ export class MinigameEvents {
     this.playerDeath$ = this.entityDeath$.pipe(
       filter(event => players.hasNamedPlayer(event.entityId)),
       tap(event => this.logger.debug('playerDeath$', event.entityId)),
-      dequeueReplay(
-        this.playerRespawn$,
-        (respawnPlayer, playerDeath) => respawnPlayer.player.name === playerDeath.entityId,
-      ),
+      share(),
     )
     this.playerAttack$ = events$.pipe(
       eventType(ServerEventType.playerAttackEntity),
+      share(),
+    )
+    this.playerLimbo$ = this.playerDeath$.pipe(
+      map(event => this.players.getPlayerByName(event.entityId)),
+      dequeueReplay(
+        this.playerRespawn$,
+        (respawnPlayer, player) => respawnPlayer.player.name === player.name,
+      ),
     )
 
     // FIXME: convert playerReady$ to emit all players that are ready instead of only players that become ready after
@@ -82,13 +88,13 @@ export class MinigameEvents {
     //     ),
     //     (unreadyPlayerName, respawnedPlayer) => respawnPlayer.player.name === playerDeath.entityId,
     //   ),
-    this.playerReady$ = this.playerDeath$.pipe(
-      switchMap(playerDeath => race(
+    this.playerReady$ = this.playerLimbo$.pipe(
+      switchMap(limboPlayer => race(
         this.playerRespawn$.pipe(
-          filter(respawn => respawn.player.name === playerDeath.entityId),
+          filter(respawn => respawn.player.name === limboPlayer.name),
           map(respawn => this.players.players.find(player => player.name === respawn.player.name)),
         ),
-        this.players.playerLeave$.pipe(filter(leavingPlayer => leavingPlayer.name === playerDeath.entityId)),
+        this.players.playerLeave$.pipe(filter(leavingPlayer => leavingPlayer.name === limboPlayer.name)),
       )),
       share(),
     )

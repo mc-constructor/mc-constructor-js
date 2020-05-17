@@ -1,3 +1,4 @@
+export * from './src/command-request-fixture'
 export * from './src/request-client.fixture'
 export * from './src/socket-connection.fixture'
 export * from './src/test-command'

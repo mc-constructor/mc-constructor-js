@@ -1,14 +1,13 @@
 import { Constructor } from '@dandi/common'
-import { Injectable, InjectionToken, Multi } from '@dandi/core'
+import { Injectable, InjectionToken, Multi, RestrictScope } from '@dandi/core'
 import { isTextComponent, TextComponent } from '@ts-mc/core/cmd'
 import { CommandRequest } from '@ts-mc/core/command'
 import { Coordinates } from '@ts-mc/core/types'
-import { MinigameEvents } from '@ts-mc/minigames'
+import { GameScope, MinigameEvents } from '@ts-mc/minigames'
 
+import { ArenaHooks } from './arena-hook'
 import { ArenaRequirement } from './arena-requirement'
 import { localToken } from './local-token'
-import { ArenaHooks } from './arena-hook'
-
 
 export interface ArenaDescriptor<TEvents extends MinigameEvents> {
   title: TextComponent
@@ -51,7 +50,7 @@ function ArenaDecorator(): ClassDecorator {
     if (!isArenaDescriptor(target)) {
       throw new Error(`${target.name} must statically implement ArenaDescriptor`)
     }
-    Injectable(Arena, Multi)(target)
+    Injectable(Arena, Multi, RestrictScope(GameScope))(target)
   }
 }
 
@@ -71,6 +70,7 @@ export function isConfiguredArena(obj: any): obj is ConfiguredArena<any> {
 
 export const ConfiguredArenas: InjectionToken<ConfiguredArena<MinigameEvents>[]> = localToken.opinionated('ConfiguredArenas', {
   multi: false,
+  restrictScope: GameScope,
 })
 
 export const Arena: ArenaDecorator = ArenaDecorator

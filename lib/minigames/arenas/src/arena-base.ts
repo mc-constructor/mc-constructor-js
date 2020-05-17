@@ -2,10 +2,10 @@ import { block, BlockCommandBuilder } from '@ts-mc/core/cmd'
 import { CommandRequest, parallel } from '@ts-mc/core/command'
 import { area, Area, Block, Coordinates, loc } from '@ts-mc/core/types'
 import { MinigameEvents } from '@ts-mc/minigames'
-import { CommonCommands } from '@ts-mc/minigames/arenas'
 
 import { Arena } from './arena'
 import { ArenaHooks } from './arena-hook'
+import { CommonCommands } from './common-commands'
 
 export interface PlatformLayer<TBlock extends Block = Block> {
   block: BlockCommandBuilder<TBlock>
