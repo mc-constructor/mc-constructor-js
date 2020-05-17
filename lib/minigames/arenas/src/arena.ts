@@ -59,9 +59,9 @@ export interface ArenaConfiguration<TEvents extends MinigameEvents> {
   exit: [ArenaRequirement<TEvents>, ...ArenaRequirement<TEvents>[]]
 }
 
-export interface ConfiguredArena<TEvents extends MinigameEvents> {
-  instance: Arena<TEvents>
+export interface ConfiguredArena<TEvents extends MinigameEvents> extends ArenaDescriptor<TEvents> {
   config: ArenaConfiguration<TEvents>
+  instance: Arena<TEvents>
 }
 
 export function isConfiguredArena(obj: any): obj is ConfiguredArena<any> {

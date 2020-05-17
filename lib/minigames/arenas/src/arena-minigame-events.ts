@@ -5,7 +5,7 @@ import { MinigameEvents } from '@ts-mc/minigames'
 import { Observable } from 'rxjs'
 import { map, scan, share, switchMap, tap } from 'rxjs/operators'
 
-import { Arena, arenaDescriptor, ConfiguredArena } from './arena'
+import { Arena, ConfiguredArena } from './arena'
 import { ArenaAgeEvent } from './arena-age-event'
 import { ArenaManager } from './arena-manager'
 
@@ -26,11 +26,11 @@ export class ArenaMinigameEvents extends MinigameEvents {
     super(events$, players, logger)
 
     this.arenaAvailable$ = this.arenaManager.arenaAvailable$.pipe(
-      this.debug(arena => ['arenaAvailable$', arenaDescriptor(arena.instance).title]),
+      this.debug(arena => ['arenaAvailable$', arena.title]),
       share(),
     )
     this.arenaStart$ = this.arenaManager.arenaStart$.pipe(
-      this.debug(arena => ['arenaStart$', arenaDescriptor(arena.instance).title]),
+      this.debug(arena => ['arenaStart$', arena.title]),
       share(),
     )
     this.arenaAge$ = this.arenaStart$.pipe(

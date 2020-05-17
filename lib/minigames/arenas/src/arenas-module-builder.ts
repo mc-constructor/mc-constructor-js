@@ -1,9 +1,44 @@
+import { inspect } from 'util'
+
 import { ModuleBuilder } from '@dandi/core'
-import { MinigameEvents } from '@ts-mc/minigames'
+import { TextComponent } from '@ts-mc/core/cmd'
 
-import { Arena, ArenaConfiguration, ArenaConstructor, ConfiguredArena, ConfiguredArenas } from './arena'
+import {
+  Arena,
+  ArenaConfiguration,
+  ArenaConstructor,
+  arenaDescriptor,
+  ConfiguredArena,
+  ConfiguredArenas
+} from './arena'
+import { ArenaMinigameEvents } from './arena-minigame-events'
 
-export class ArenasModuleBuilder<TEvents extends MinigameEvents> extends ModuleBuilder<ArenasModuleBuilder<TEvents>> {
+class ModuleConfiguredArena<TEvents extends ArenaMinigameEvents> implements ConfiguredArena<TEvents> {
+
+  public readonly title: TextComponent
+  public readonly description: TextComponent
+
+  private _debug: string
+  protected get debug(): string {
+    if (!this._debug) {
+      this._debug = this.title[inspect.custom]()
+    }
+    return this._debug
+  }
+
+  constructor(
+    public readonly instance: Arena<TEvents>,
+    public readonly config: ArenaConfiguration<TEvents>,
+  ) {
+    Object.assign(this, arenaDescriptor(instance))
+  }
+
+  public get [Symbol.toStringTag](): string {
+    return `[${this.constructor.name} ${this.debug}]`
+  }
+}
+
+export class ArenasModuleBuilder<TEvents extends ArenaMinigameEvents> extends ModuleBuilder<ArenasModuleBuilder<TEvents>> {
 
   private readonly arenaConfigurations = new Map<ArenaConstructor<TEvents>, ArenaConfiguration<TEvents>>()
 
@@ -11,12 +46,11 @@ export class ArenasModuleBuilder<TEvents extends MinigameEvents> extends ModuleB
     super(ArenasModuleBuilder, pkg,
       {
         provide: ConfiguredArenas,
-        useFactory: (arenas: Arena<TEvents>[]): ConfiguredArena<TEvents>[] => {
-          return arenas.map(arena => ({
-            instance: arena,
-            config: this.arenaConfigurations.get(arena.constructor as ArenaConstructor<TEvents>),
-          }))
-        },
+        useFactory: (arenas: Arena<TEvents>[]): ConfiguredArena<TEvents>[] =>
+          arenas.map(arena => new ModuleConfiguredArena(
+            arena,
+            this.arenaConfigurations.get(arena.constructor as ArenaConstructor<TEvents>),
+          )),
         deps: [Arena],
       },
     )

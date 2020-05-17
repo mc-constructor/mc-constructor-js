@@ -202,7 +202,7 @@ describe.marbles.only('ArenaManager', ({ cold, hot }) => {
         expect(manager.run$, 'run$').and.marbleValues(values).to.equal('36s a')
       })
 
-      it('continues subscribing to hooks after exit requirements are complete', () => {
+      it.only('continues subscribing to hooks after exit requirements are complete', () => {
         const [hook] = arenaHooks
         const hook$ = cold('a')
         hook.onCall(26).returns(hook$)
@@ -210,7 +210,7 @@ describe.marbles.only('ArenaManager', ({ cold, hot }) => {
         client.config(cold('a'), cold('b'))
         events.config({
 
-          playerDeath$: minigameEventFixture(hot('3500ms ' + Array(26).join('a') + ' 26500ms aaa').pipe(
+          playerDeath$: minigameEventFixture(hot('3500ms ' + Array(26).join('a') + ' 27500ms aaa').pipe(
             map(() => ({
               type: ServerEventType.entityLivingDeath,
               player: { name: 'someguy' } as any,
@@ -220,9 +220,15 @@ describe.marbles.only('ArenaManager', ({ cold, hot }) => {
 
         const expectedStart = '2500ms -a 41499ms b'
 
-        expect(manager.run$, 'run$').and.marbleValues(values).to.equal('36s a 31s')
+        expect(manager.run$, 'run$').and.marbleValues(values).to.equal('36s a')
         expect(manager.arenaStart$, 'arenaStart$').with.marbleValues(values).to.equal(expectedStart)
-        expect(hook$).to.have.been.subscribedWith('32526ms (^!)')
+
+        // 31026ms = sum of timings from playerDeath$ above:
+        //  3500ms : initial delay
+        //    25ms : 25 sequenced marble emits for exit reqs @ 1ms each
+        // 27500ms : delay after prev sequence
+        //     1ms : next sequence marble emit
+        expect(hook$).to.have.been.subscribedWith('31026ms (^!)')
       })
     })
 
