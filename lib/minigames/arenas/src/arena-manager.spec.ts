@@ -27,7 +27,6 @@ import { EventsAccessorProvider } from '../../src/events-accessor-provider'
 import { ConfiguredArena, ConfiguredArenas } from './arena'
 import { ArenaManager } from './arena-manager'
 import { ArenasModuleBuilder } from './arenas-module-builder'
-import { CommonCommands } from './common-commands'
 
 describe.marbles('ArenaManager', ({ cold }) => {
 
@@ -50,7 +49,7 @@ describe.marbles('ArenaManager', ({ cold }) => {
       provide: MinigameEvents,
       useFactory: () => events,
     },
-    CommonCommands.provide(CodslapCommonCommands),
+    CodslapCommonCommands.provide(),
     {
       provide: Players,
       useFactory: () => players,
@@ -92,6 +91,7 @@ describe.marbles('ArenaManager', ({ cold }) => {
           entry: Codslap.requirements.none,
           exit: [
             Codslap.requirements.minArenaAge(30),
+            Codslap.requirements.count('codslap$', 25),
           ],
         })
         .arena(KingOfTheHill, {
@@ -140,16 +140,17 @@ describe.marbles('ArenaManager', ({ cold }) => {
         sub.unsubscribe()
       })
 
-      it('starts the first arenas', () => {
+      it('starts the first arena', () => {
         const values = {
           a: arenas[0]
         }
         client.config(cold('a'))
 
-        const expectedStart = '-a'
+        const expectedStart = '2500ms -a'
+        const expectedRun = '31s |' // minArenaAge(30) +
 
         expect(manager.arenaStart$, 'arenaStart$').with.marbleValues(values).to.equal(expectedStart)
-        expect(manager.run$, 'run$').to.equal('')
+        expect(manager.run$, 'run$').to.equal(expectedRun)
       })
     })
 
@@ -157,20 +158,21 @@ describe.marbles('ArenaManager', ({ cold }) => {
       beforeEach(registerTwoArenas)
       beforeEach(init)
 
-      it('starts the first arenas', () => {
+      it('starts the first arena', () => {
         const values = {
           a: arenas[0],
           b: arenas[1],
         }
         client.config(cold('a'))
 
-        const expectedStart = '-a'
+        const expectedStart = '2500ms -a'
+        const expectedRun = ''
 
         expect(manager.arenaStart$, 'arenaStart$').with.marbleValues(values).to.equal(expectedStart)
-        expect(manager.run$, 'run$').to.equal('')
+        expect(manager.run$, 'run$').with.marbleValues(values).to.equal(expectedRun)
       })
 
-      it('starts the second arenas once it is ready and the first arenas completes its exit requirements', () => {
+      it('starts the second arena once it is ready and the first arena completes its exit requirements', () => {
         const values = {
           a: arenas[0],
           b: arenas[1],
@@ -187,10 +189,10 @@ describe.marbles('ArenaManager', ({ cold }) => {
           ),
         })
 
-        const expectedStart = '-a 35999ms b'
+        const expectedStart = '2500ms -a 41499ms b'
 
         expect(manager.arenaStart$, 'arenaStart$').with.marbleValues(values).to.equal(expectedStart)
-        expect(manager.run$, 'run$').and.marbleValues(values).to.equal('31s a')
+        expect(manager.run$, 'run$').and.marbleValues(values).to.equal('36s a')
       })
     })
 

@@ -4,7 +4,7 @@ import { Creeper, loc, Mob } from '@ts-mc/core/types'
 import { expect } from 'chai'
 import { text } from '@ts-mc/core/cmd/src/text'
 
-describe.only('summon', () => {
+describe('summon', () => {
 
   it('renders a simple summon command', () => {
     expect(summon(Mob.creeper, loc(0, 0, 0)).toString()).to.equal('summon minecraft:creeper 0 0 0')

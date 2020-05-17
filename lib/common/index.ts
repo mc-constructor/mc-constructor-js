@@ -1,5 +1,6 @@
+export * from './src/class-factory-provider'
 export * from './src/lazy'
 export * from './src/logger'
 export * from './src/random-int'
 export * from './src/range'
-export * from './src/subcass-factory-provider'
+export * from './src/subclass-factory-provider'

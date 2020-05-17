@@ -15,7 +15,8 @@ import {
   pairwise,
   share,
   startWith,
-  switchMap, take,
+  switchMap,
+  take,
   tap,
   delay,
 } from 'rxjs/operators'
@@ -61,12 +62,12 @@ export class ArenaManager<TEvents extends MinigameEvents> {
     // start with "defer" so that the entry requirements aren't created until the game is started (by subscribing to
     // this observable)
     return defer(() => {
-      this.logger.debug('starting arenas', this.arenas.map(arena => arenaDescriptor(arena.instance).title.toString()))
+      this.logger.debug('starting arena', this.arenas.map(arena => arenaDescriptor(arena.instance).title.toString()))
       // this will emit any time an arenas's entry requirements have all been met
       return merge(...this.arenas.map(arena => this.arenaEntryRequirements(arena)))
     }).pipe(
-      tap(arena => console.log('arenas available:', arenaDescriptor(arena.instance).title)),
-      tap(arena => this.logger.debug('arenas available:', arenaDescriptor(arena.instance).title)),
+      tap(arena => console.log('arena available:', arenaDescriptor(arena.instance).title)),
+      tap(arena => this.logger.debug('arena available:', arenaDescriptor(arena.instance).title)),
       dequeueReplay(this.arenaStart$),
       // note: share is not needed here because dequeueReplay effectively accomplishes the same thing
     )
@@ -98,7 +99,7 @@ export class ArenaManager<TEvents extends MinigameEvents> {
               defer(() => timer(1)).pipe(
                 tap(() => {
                   console.log('arenaStart', arena.instance.constructor.name)
-                  this.logger.debug('arenas start', arena.instance.constructor.name)
+                  this.logger.debug('arena start', arena.instance.constructor.name)
                   this.arenaStart$$.next(arena)
                 }),
                 silence,
@@ -165,7 +166,7 @@ export class ArenaManager<TEvents extends MinigameEvents> {
         const hook$ = this.events[hook] as unknown as Observable<any>
         return hook$.pipe(
           map(event => {
-            this.logger.debug('arenas hook:', arena.constructor.name, hook, handler)
+            this.logger.debug('arena hook:', arena.constructor.name, hook, handler)
             return handler({ arena: arena.instance, event, players: this.players })
           }),
           this.command(),

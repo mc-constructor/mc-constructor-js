@@ -1,12 +1,12 @@
 import { Inject } from '@dandi/core'
+import { generateRandomInt } from '@ts-mc/common'
 import { clear, rawCmd } from '@ts-mc/core/cmd'
 import { CommandRequest, parallel } from '@ts-mc/core/command'
 import { Players } from '@ts-mc/core/players'
 import { area, Coordinates, Item, loc, Mob } from '@ts-mc/core/types'
-import { CommonCommands, summonBehavior } from '@ts-mc/minigames/arenas'
+import { CommonCommandsBase, summonBehavior } from '@ts-mc/minigames/arenas'
 
 import { CodslapObjectives } from './codslap-objectives'
-import { generateRandomInt } from '@ts-mc/common'
 
 export type Codslapper = Item.codslapper | Item.diamondCodslapper | Item.goldCodslapper | Item.ironCodslapper | Item.stoneCodslapper | Item.woodenCodslapper
 
@@ -25,7 +25,7 @@ export function isCodslapper(item: any): item is Codslapper {
   return LEVELED_WEAPONS.includes(item)
 }
 
-export class CodslapCommonCommands extends CommonCommands {
+export class CodslapCommonCommands extends CommonCommandsBase {
 
   public readonly arenaSize = 35
   public readonly center: Coordinates = loc(0, 100, 0)

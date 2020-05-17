@@ -60,7 +60,7 @@ class PrimedAndReadyArena extends ArenaBase<CodslapEvents, CodslapCommonCommands
   private run(events: CodslapEvents): Observable<any> {
     this.logger.debug('run')
     return Codslap.requirements.minArenaAge(PrimedAndReadyArena.minDelay)(events, this).pipe(
-      tap(() => this.logger.debug('minimum arenas age met, waiting for next available arenas to start exploding')),
+      tap(() => this.logger.debug('minimum arena age met, waiting for next available arena to start exploding')),
       switchMapTo(events.arenaAvailable$),
 
       switchMap(() =>
@@ -71,7 +71,7 @@ class PrimedAndReadyArena extends ArenaBase<CodslapEvents, CodslapCommonCommands
 
           map(loc => this.getTntCommand(loc)),
           switchMap(([cmd, tntState]) => combineLatest([of(cmd).pipe(this.command()), of(tntState)])),
-          delay(6000),
+          delay(5000),
           map(([,tntState]) => this.replaceBlock(tntState)),
           this.command(),
           catchError(err => {

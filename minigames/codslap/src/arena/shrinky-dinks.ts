@@ -61,9 +61,9 @@ class ShrinkyDinksArena extends ArenaBase<CodslapEvents, CodslapCommonCommands> 
   private run(events: CodslapEvents): Observable<any> {
     this.logger.debug('run')
     return Codslap.requirements.minArenaAge(ShrinkyDinksArena.minDelay)(events, this).pipe(
-      tap(() => this.logger.debug('minimum arenas age met, waiting for next available arenas to start shrinking')),
+      tap(() => this.logger.debug('minimum arena age met, waiting for next available arena to start shrinking')),
       switchMapTo(events.arenaAvailable$),
-      tap(() => this.logger.debug('next arenas is available, starting shrink timer')),
+      tap(() => this.logger.debug('next arena is available, starting shrink timer')),
       switchMap(() => interval(ShrinkyDinksArena.removeRowInterval, ShrinkyDinksArena.removeRowScheduler)),
       tap(() => this.logger.debug('shrink timer tick')),
       this.command(title('@a', text('Watch out!'))),
