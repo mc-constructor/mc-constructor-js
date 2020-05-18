@@ -6,6 +6,7 @@ import { requestClientFixture, RequestClientFixture } from '@ts-mc/core/client/t
 import { CommandModule } from '@ts-mc/core/command'
 import { Players } from '@ts-mc/core/players'
 import { playersFixture, PlayersFixture } from '@ts-mc/core/players/testing'
+import { createGameScope } from '@ts-mc/minigames'
 import { Arena } from '@ts-mc/minigames/arenas'
 
 import { expect } from 'chai'
@@ -25,7 +26,7 @@ describe('PrimedAndReadyArena', () => {
   stubLoggerFactory()
 
   const harness = testHarness(PrimedAndReady,
-    CodslapCommonCommands,
+    CodslapCommonCommands.provide(),
     CommandModule,
     ConsoleLogListener,
     {
@@ -56,7 +57,8 @@ describe('PrimedAndReadyArena', () => {
     events = codslapEventsFixture()
     players = playersFixture()
     players.players.push({ name: 'testguy', uuid: '12345' })
-    arena = (await harness.injectMulti<Arena<CodslapEvents>>(Arena))[0]
+    const injector = harness.createChild(createGameScope())
+    arena = (await injector.injectMulti<Arena<CodslapEvents>>(Arena))[0]
     arena.init()
   })
   afterEach(() => {

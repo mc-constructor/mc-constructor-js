@@ -14,6 +14,7 @@ import { playersFixture, PlayersFixture } from '@ts-mc/core/players/testing'
 import { ServerEventType } from '@ts-mc/core/server-events'
 import { createGameScope, MinigameEvents } from '@ts-mc/minigames'
 import { ArenaMinigameEvents, CommonCommands, CommonCommandsBase } from '@ts-mc/minigames/arenas'
+import { minigameEventFixture } from '@ts-mc/minigames/testing'
 import {
   arenaMinigameEventsFixture,
   ArenaMinigameEventsFixture,
@@ -24,16 +25,15 @@ import {
 import { expect } from 'chai'
 import { Observable, of } from 'rxjs'
 import { map } from 'rxjs/operators'
+import { SinonStub } from 'sinon'
 
 import { EventsAccessorProvider } from '../../src/events-accessor-provider'
 
 import { ConfiguredArena, ConfiguredArenas } from './arena'
 import { ArenaManager } from './arena-manager'
 import { ArenasModuleBuilder } from './arenas-module-builder'
-import { SinonStub } from 'sinon'
-import { minigameEventFixture } from '@ts-mc/minigames/testing'
 
-describe.marbles.only('ArenaManager', ({ cold, hot }) => {
+describe.marbles('ArenaManager', ({ cold, hot }) => {
 
   stubLoggerFactory()
 
@@ -76,11 +76,16 @@ describe.marbles.only('ArenaManager', ({ cold, hot }) => {
   let manager: ArenaManager<ArenaMinigameEvents>
   let arenas: ConfiguredArena<ArenaMinigameEvents>[]
   let arenaHooks: SinonStub<[], Observable<any>>[]
+  let arenaMarbles: { [marble: string]: ConfiguredArena<ArenaMinigameEvents> }
 
   async function init() {
     const injector = harness.createChild(createGameScope())
     manager = await injector.inject<ArenaManager<ArenaMinigameEvents>>(ArenaManager)
     arenas = await injector.inject(ConfiguredArenas)
+    arenaMarbles = arenas.reduce((result, arena, index) => {
+      result['abcdefghijklmnopqrstuvwxyz'[index]] = arena
+      return result
+    }, {} as { [marble: string]: ConfiguredArena<ArenaMinigameEvents> })
   }
 
   function registerArenas(count: number) {
@@ -166,22 +171,13 @@ describe.marbles.only('ArenaManager', ({ cold, hot }) => {
       beforeEach(registerArenas(2))
       beforeEach(init)
 
-      let values: any
-
-      beforeEach(() => {
-        values = {
-          a: arenas[0],
-          b: arenas[1],
-        }
-      })
-
       it('starts the first arena', () => {
         client.config(cold('a'))
 
         const expectedStart = '2500ms -a'
 
-        expect(manager.arenaStart$, 'arenaStart$').with.marbleValues(values).to.equal(expectedStart)
-        expect(manager.run$, 'run$').with.marbleValues(values).to.equal('')
+        expect(manager.arenaStart$, 'arenaStart$').with.marbleValues(arenaMarbles).to.equal(expectedStart)
+        expect(manager.run$, 'run$').with.marbleValues(arenaMarbles).to.equal('')
       })
 
       it('starts the second arena once it is ready and the first arena completes its exit requirements', () => {
@@ -198,16 +194,16 @@ describe.marbles.only('ArenaManager', ({ cold, hot }) => {
 
         const expectedStart = '2500ms -a 41499ms b'
 
-        expect(manager.arenaStart$, 'arenaStart$').with.marbleValues(values).to.equal(expectedStart)
-        expect(manager.run$, 'run$').and.marbleValues(values).to.equal('36s a')
+        expect(manager.arenaStart$, 'arenaStart$').with.marbleValues(arenaMarbles).to.equal(expectedStart)
+        expect(manager.run$, 'run$').and.marbleValues(arenaMarbles).to.equal('36s a')
       })
 
-      it.only('continues subscribing to hooks after exit requirements are complete', () => {
+      it('continues subscribing to hooks after exit requirements are complete', () => {
         const [hook] = arenaHooks
         const hook$ = cold('a')
         hook.onCall(26).returns(hook$)
 
-        client.config(cold('a'), cold('b'))
+        client.config(cold('a'))
         events.config({
 
           playerDeath$: minigameEventFixture(hot('3500ms ' + Array(26).join('a') + ' 27500ms aaa').pipe(
@@ -220,8 +216,8 @@ describe.marbles.only('ArenaManager', ({ cold, hot }) => {
 
         const expectedStart = '2500ms -a 41499ms b'
 
-        expect(manager.run$, 'run$').and.marbleValues(values).to.equal('36s a')
-        expect(manager.arenaStart$, 'arenaStart$').with.marbleValues(values).to.equal(expectedStart)
+        expect(manager.run$, 'run$').and.marbleValues(arenaMarbles).to.equal('36s a')
+        expect(manager.arenaStart$, 'arenaStart$').with.marbleValues(arenaMarbles).to.equal(expectedStart)
 
         // 31026ms = sum of timings from playerDeath$ above:
         //  3500ms : initial delay
@@ -230,6 +226,16 @@ describe.marbles.only('ArenaManager', ({ cold, hot }) => {
         //     1ms : next sequence marble emit
         expect(hook$).to.have.been.subscribedWith('31026ms (^!)')
       })
+    })
+
+  })
+
+  describe('arenaAvailable$', () => {
+
+    it('emits when all entry requirements are met for an arena', () => {
+
+
+
     })
 
   })

@@ -13,6 +13,7 @@ export class ArenaMinigameEvents extends MinigameEvents {
 
   public readonly arenaAge$: Observable<ArenaAgeEvent>
   public readonly arenaAvailable$: Observable<ConfiguredArena<this>>
+  public readonly arenaInit$: Observable<ConfiguredArena<this>>
   public readonly arenaStart$: Observable<ConfiguredArena<this>>
 
   private readonly arenaAgeMap = new Map<Arena<this>, Observable<ArenaAgeEvent>>()
@@ -33,7 +34,11 @@ export class ArenaMinigameEvents extends MinigameEvents {
       this.debug(arena => ['arenaStart$', arena.title]),
       share(),
     )
-    this.arenaAge$ = this.arenaStart$.pipe(
+    this.arenaInit$ = this.arenaManager.arenaInit$.pipe(
+      this.debug(arena => ['arenaInit$', arena.title]),
+      share(),
+    )
+    this.arenaAge$ = this.arenaInit$.pipe(
       switchMap(arena => this.getArenaAge$(arena.instance)),
       share(),
     )
@@ -58,6 +63,7 @@ export class ArenaMinigameEvents extends MinigameEvents {
   protected getRunStreams(): Observable<any>[] {
     return super.getRunStreams().concat(
       this.arenaAvailable$,
+      this.arenaInit$,
       this.arenaStart$,
       this.arenaAge$,
     )

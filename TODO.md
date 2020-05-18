@@ -31,12 +31,21 @@
 
 ## Arenas
 - Default/global hooks (e.g. cow spawning)                                                            
-- use a generator to automatically create incremental entry/exit requirements                                                                                                                                                                                                                                                                                                                                                                                        
+- use a generator to automatically create incremental entry/exit requirements
+- end sequence
+    - arena descriptor updates:
+        - define winning objective
+        - define broadcasted objectives
+    - teleport back to holding area
+    - use title (is there something better?) to show overall / objective winners
+    - use DMs to show objective scores to each player                                                                                                                                                                                                                                                                                                                                                                                  
 
 ## Arena Ideas
 - ice floor - with polar bears?
 - "virtual insanity" - platform "moves", splits, etc
 - something involving a volcano?
+- multiple separated platforms
+    - connect via bridges and/or teleporting?
 
 ## Codslap
  - how does the codslapper level up?
@@ -64,4 +73,6 @@
 - why is setblock failing?
 - Finish arena change sequence (add countdown)
 - Default/global hooks (e.g. cow spawning)  
-- Fix codslap kills not getting counted if a player is dead - might be due to the event not coming from the server?  
+- Fix codslap kills not getting counted if a player is dead
+    - was this fixed by separating playerDeath$ and playerLimbo$ ?
+    - might be due to the event not coming from the server?  

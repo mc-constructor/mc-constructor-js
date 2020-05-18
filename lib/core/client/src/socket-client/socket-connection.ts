@@ -2,7 +2,7 @@ import { createConnection, Socket } from 'net'
 
 import { InjectionToken, Logger, Provider } from '@dandi/core'
 import { Observable } from 'rxjs'
-import { delay, filter, retryWhen, share, shareReplay, tap } from 'rxjs/operators'
+import { delay, filter, retryWhen, shareReplay, tap } from 'rxjs/operators'
 
 import { localToken } from '../local-token'
 import { SocketClientConfig } from './socket-client-config'

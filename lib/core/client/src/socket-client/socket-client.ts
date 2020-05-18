@@ -8,7 +8,7 @@ import {
   skip,
   switchMap,
   switchMapTo,
-  take, tap,
+  take,
 } from 'rxjs/operators'
 
 import { CompiledSimpleRequest, ExecuteResponse, RequestType, PendingRequest } from '../request'

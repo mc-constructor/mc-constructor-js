@@ -38,7 +38,7 @@ export class CodslapMinigame implements Minigame {
     @Inject(Logger) private readonly logger: Logger,
   ) {
     this.logger.debug('ctr', )
-    const onPlayerDeath$ = combineLatest([this.events.playerDeath$, this.arena.arenaStart$])
+    const onPlayerDeath$ = combineLatest([this.events.playerDeath$, this.arena.arenaInit$])
 
     this.run$ = merge(
       this.events.codslap$.pipe(this.mergeCmd(this.onCodslap.bind(this))),
@@ -91,6 +91,7 @@ export class CodslapMinigame implements Minigame {
     this.obj.codslapMobKill.incrementScore(event.attacker.name, 1)
     return actionbar(event.attacker.name, text('Oh George, not the livestock!'))
   }
+
   private onCodslapPlayerKill(event: AttackedByPlayerEvent): CommandRequest {
     this.obj.codslapPlayerKill.incrementScore(event.attacker.name, 1)
     return title(event.attacker.name, text('CODSLAP KILL'))

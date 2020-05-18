@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger, RestrictScope } from '@dandi/core'
 import { dequeueReplay, silence } from '@ts-mc/common/rxjs'
-import { title } from '@ts-mc/core/cmd'
+import { text, title } from '@ts-mc/core/cmd'
 import { RequestClient } from '@ts-mc/core/client'
 import { CommandOperator, CommandOperatorFn } from '@ts-mc/core/command'
 import { Players } from '@ts-mc/core/players'
@@ -27,13 +27,15 @@ import { ArenaHooks } from './arena-hook'
 import { ArenaRequirement } from './arena-requirement'
 import { HookHandler } from './behaviors'
 import { CommonCommands } from './common-commands'
-import { text } from '@ts-mc/core/cmd/src/text'
 
 @Injectable(RestrictScope(GameScope))
 export class ArenaManager<TEvents extends MinigameEvents> {
 
   public readonly arenaAvailable$: Observable<ConfiguredArena<TEvents>>
   public readonly arenaComplete$: Observable<ConfiguredArena<TEvents>>
+
+  private readonly arenaInit$$ = new ReplaySubject<ConfiguredArena<TEvents>>(1)
+  public readonly arenaInit$ = this.arenaInit$$.asObservable()
 
   private readonly arenaStart$$ = new ReplaySubject<ConfiguredArena<TEvents>>(1)
   public readonly arenaStart$ = this.arenaStart$$.asObservable()
@@ -69,7 +71,7 @@ export class ArenaManager<TEvents extends MinigameEvents> {
     }).pipe(
       tap(arena => console.log('arena available:', arena.title)),
       tap(arena => this.logger.debug('arena available:', arena.title)),
-      dequeueReplay(this.arenaStart$),
+      dequeueReplay(this.arenaInit$),
       // note: share is not needed here because dequeueReplay effectively accomplishes the same thing
     )
   }
@@ -88,7 +90,7 @@ export class ArenaManager<TEvents extends MinigameEvents> {
       concatMap(([prevArena, arena]) => {
         console.log('in concatMap')
         // set up the new arenas (includes moving players into it once it's done)
-        return this.initArena([prevArena, arena]).pipe(
+        return this.initArena(prevArena, arena).pipe(
           switchMap(() => {
             const prev = prevArena ? prevArena.title : undefined
             console.log('after initArena', { prev, arena: arena.title })
@@ -136,7 +138,10 @@ export class ArenaManager<TEvents extends MinigameEvents> {
     )
   }
 
-  private initArena([prevArena, arena]: [ConfiguredArena<TEvents>, ConfiguredArena<TEvents>]): Observable<ConfiguredArena<TEvents>> {
+  private initArena(
+    prevArena: ConfiguredArena<TEvents>,
+    arena: ConfiguredArena<TEvents>,
+  ): Observable<ConfiguredArena<TEvents>> {
     console.log('initArena', arena.title)
     return defer(() => {
       this.logger.debug('initArena', arena.title)
@@ -150,8 +155,11 @@ export class ArenaManager<TEvents extends MinigameEvents> {
       delay(2500),
       this.command(() => this.common.movePlayersToArena(arena.instance)),
       this.command(title('@a', arena.title, arena.description)),
-      map(() => arena),
-      tap(() => console.log('initArena complete', arena.title)),
+      map(() => {
+        console.log('initArena complete', arena.title)
+        this.arenaInit$$.next(arena)
+        return arena
+      }),
       share(),
     )
   }

@@ -12,6 +12,7 @@ export function arenaMinigameEventsFixture<TEvents extends ArenaMinigameEvents =
   const fixture = minigameEventsFixture<TEvents>(Object.assign({
     arenaAvailable$: NEVER,
     arenaAge$: NEVER,
+    arenaInit$: NEVER,
     arenaStart$: NEVER,
   }, config))
 

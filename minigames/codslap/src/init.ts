@@ -1,8 +1,6 @@
 import { Inject, Injectable, Logger } from '@dandi/core'
 import {
   block,
-  clear,
-  clearEffect,
   FillMethod,
   gamerule,
   rawCmd,
