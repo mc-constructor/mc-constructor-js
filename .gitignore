@@ -1,6 +1,6 @@
+.coverage
 .env
 .idea
-.jar
+.nyc_output
 .out
-.server
 node_modules
