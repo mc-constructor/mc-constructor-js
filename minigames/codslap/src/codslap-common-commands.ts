@@ -2,28 +2,14 @@ import { Inject } from '@dandi/core'
 import { generateRandomInt } from '@ts-mc/common'
 import { clear, rawCmd } from '@ts-mc/core/cmd'
 import { CommandRequest, parallel } from '@ts-mc/core/command'
-import { Players } from '@ts-mc/core/players'
 import { area, Coordinates, Item, loc, Mob } from '@ts-mc/core/types'
 import { CommonCommandsBase, summonBehavior } from '@ts-mc/minigames/arenas'
 
 import { CodslapObjectives } from './codslap-objectives'
-
-export type Codslapper = Item.codslapper | Item.diamondCodslapper | Item.goldCodslapper | Item.ironCodslapper | Item.stoneCodslapper | Item.woodenCodslapper
-
-const LEVELED_WEAPONS: [Codslapper, Codslapper, Codslapper, Codslapper, Codslapper, Codslapper] = [
-  Item.codslapper,
-  Item.diamondCodslapper,
-  Item.goldCodslapper,
-  Item.ironCodslapper,
-  Item.stoneCodslapper,
-  Item.woodenCodslapper,
-]
+import { CodslapEvents } from './codslap-events'
+import { LEVELED_WEAPONS } from './codslapper'
 
 const LEVELS: [number, number, number, number, number, number] = [500, 234, 104, 42, 15, 0]
-
-export function isCodslapper(item: any): item is Codslapper {
-  return LEVELED_WEAPONS.includes(item)
-}
 
 export class CodslapCommonCommands extends CommonCommandsBase {
 
@@ -49,9 +35,9 @@ export class CodslapCommonCommands extends CommonCommandsBase {
 
   constructor(
     @Inject(CodslapObjectives) private objectives: CodslapObjectives,
-    @Inject(Players) players: Players,
+    @Inject(CodslapEvents) events: CodslapEvents,
   ) {
-    super(players)
+    super(events)
   }
 
   public equip(target: string, weapon?: Item): CommandRequest {

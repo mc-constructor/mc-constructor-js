@@ -3,7 +3,7 @@ import { Inject, Injectable, Injector, Logger } from '@dandi/core'
 import { CommandOperator, CommandOperatorFn } from '@ts-mc/core/command'
 import { RequestClient } from '@ts-mc/core/client'
 import { defer, from, Observable, of } from 'rxjs'
-import { catchError, share, switchMap, tap } from 'rxjs/operators'
+import { catchError, share, switchMap, switchMapTo, tap } from 'rxjs/operators'
 
 import { createGameScope } from './game-scope'
 import { getMinigameMeta, Minigame } from './minigame'
@@ -59,7 +59,7 @@ export class MinigameRunner {
       this.command(game.init()),
       tap(() => this.logger.info(`${gameInfo.title}: ready`)),
       this.command(game.ready()),
-      switchMap(() => game.run$),
+      switchMapTo(game.run$),
     )
   }
 }

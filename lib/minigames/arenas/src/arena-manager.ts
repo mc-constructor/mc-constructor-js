@@ -3,7 +3,6 @@ import { dequeueReplay, silence } from '@ts-mc/common/rxjs'
 import { text, title } from '@ts-mc/core/cmd'
 import { RequestClient } from '@ts-mc/core/client'
 import { CommandOperator, CommandOperatorFn } from '@ts-mc/core/command'
-import { Players } from '@ts-mc/core/players'
 import { GameScope, MinigameEvents, EventsAccessor, Accessor } from '@ts-mc/minigames'
 import { combineLatest, forkJoin, merge, Observable, of, ReplaySubject, defer, timer, NEVER } from 'rxjs'
 import {
@@ -19,7 +18,7 @@ import {
   take,
   tap,
   delay,
-  catchError,
+  catchError, mapTo,
 } from 'rxjs/operators'
 
 import { ConfiguredArena, ConfiguredArenas } from './arena'
@@ -50,7 +49,6 @@ export class ArenaManager<TEvents extends MinigameEvents> {
     @Inject(CommonCommands) private common: CommonCommands,
     @Inject(EventsAccessor) eventsAccessor: Accessor<TEvents>,
     @Inject(CommandOperator) private readonly command: CommandOperatorFn,
-    @Inject(Players) private readonly players: Players,
     @Inject(Logger) private readonly logger: Logger,
   ) {
     this.logger.debug('ctr')
@@ -130,7 +128,7 @@ export class ArenaManager<TEvents extends MinigameEvents> {
 
           // important to avoid re-emitting an already completed arenas
           take(1),
-          map(() => arena),
+          mapTo(arena),
         )
       }),
       share(),
@@ -178,7 +176,7 @@ export class ArenaManager<TEvents extends MinigameEvents> {
         return hook$.pipe(
           map(event => {
             this.logger.debug('arena hook:', arena.title, hook, handler)
-            return handler({ arena: arena.instance, event, players: this.players })
+            return handler({ arena: arena.instance, event, events: this.events })
           }),
           this.command(),
         )
@@ -221,7 +219,7 @@ export class ArenaManager<TEvents extends MinigameEvents> {
         share(),
     )
     return forkJoin(...reqs$).pipe(
-      map(() => arena),
+      mapTo(arena),
       tap(arena => {
         console.log(`arenaRequirements ${type} all complete`, arena.title)
         this.logger.debug(`${type} reqs complete`, arena.title)

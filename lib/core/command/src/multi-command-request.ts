@@ -17,6 +17,7 @@ import {
   takeWhile,
   tap,
   toArray,
+  switchMapTo,
 } from 'rxjs/operators'
 
 import { loggerFactory } from '@ts-mc/common'
@@ -122,16 +123,14 @@ export abstract class MultiCommandRequest extends CommandRequest {
         const debug$: Observable<any> = msgState$.pipe(
           takeWhile(() => execState.remaining > 0), // IMPORTANT so it stops when there are no more pending request
           tap(() => this.logger.debug(`${this.debug} ${execState.remaining} response(s) remaining`)),
-          switchMap(() =>
-            interval(DEBUG_TIMEOUT).pipe(
-              takeUntil(msgState$),
-              switchMap(() => remainingArray$),
-              tap(remaining => {
-                const detail = remaining.map(msgState => msgState.compiled.debug).join('\n  ')
-                this.logger.warn(`${this.debug} ${remaining.length} response(s) remaining:\n  ${detail}`)
-              }),
-            )
-          ),
+          switchMapTo(interval(DEBUG_TIMEOUT).pipe(
+            takeUntil(msgState$),
+            switchMapTo(remainingArray$),
+            tap(remaining => {
+              const detail = remaining.map(msgState => msgState.compiled.debug).join('\n  ')
+              this.logger.warn(`${this.debug} ${remaining.length} response(s) remaining:\n  ${detail}`)
+            }),
+          )),
           filter(() => false),
           finalize(() => this.logger.debug(`${this.debug} complete`))
         )
@@ -147,7 +146,7 @@ export abstract class MultiCommandRequest extends CommandRequest {
 
     const remainingArray$ = complete$.pipe(
       delay(1), // needs to be delayed by 1 to let the dequeue take effect
-      switchMap(() => remaining$.pipe(
+      switchMapTo(remaining$.pipe(
         bufferTime(0),
       )),
       tap(() => console.log(this.constructor.name, this.debug, 'NO MORE REMAINING'))

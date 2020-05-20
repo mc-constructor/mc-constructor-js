@@ -10,7 +10,7 @@ import {
   setObjectiveDisplay,
   setScore,
   TextComponent
-} from '../../cmd'
+} from '@ts-mc/core/cmd'
 import { CommandRequest, parallel } from '@ts-mc/core/command'
 import { RequestClient } from '@ts-mc/core/client'
 

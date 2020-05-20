@@ -1,13 +1,12 @@
 import { Inject, Logger } from '@dandi/core'
 import { RandomIntervalScheduler } from '@ts-mc/common/rxjs'
 import { RequestError } from '@ts-mc/core/client'
-import { block, rawCmd, text, title } from '@ts-mc/core/cmd'
+import { block, rawCmd, summon, text, title } from '@ts-mc/core/cmd'
 import { CommandRequest, CommandOperator, CommandOperatorFn, parallel, series } from '@ts-mc/core/command'
-import { Players } from '@ts-mc/core/players'
-import { area, Area, Block, Coordinates, loc } from '@ts-mc/core/types'
+import { area, Area, Block, Coordinates, EntityBlock, loc } from '@ts-mc/core/types'
 import { Arena, ArenaBase, ArenaConstructor, PlatformLayer } from '@ts-mc/minigames/arenas'
 import { combineLatest, defer, Observable, of, timer } from 'rxjs'
-import { catchError, delay, map, repeat, switchMap, switchMapTo, tap } from 'rxjs/operators'
+import { catchError, delay, map, mapTo, repeat, switchMap, switchMapTo, tap } from 'rxjs/operators'
 
 import { CodslapEvents } from '../codslap-events'
 import { CodslapCommonCommands } from '../codslap-common-commands'
@@ -27,6 +26,7 @@ class PrimedAndReadyArena extends ArenaBase<CodslapEvents, CodslapCommonCommands
   private static readonly explosionIntervalVariation = 5000
   private static readonly explosionCount = 30
   private static readonly explosionScheduler = new RandomIntervalScheduler(PrimedAndReadyArena.explosionIntervalVariation)
+  private static readonly spawnBlacklistOffset = loc(3, 0, 3)
 
   public readonly layers: PlatformLayer[] = [
     {
@@ -46,12 +46,11 @@ class PrimedAndReadyArena extends ArenaBase<CodslapEvents, CodslapCommonCommands
     ],
   }
 
-  private static readonly minDelay = 20 // seconds
+  private static readonly minDelay = 10 // seconds
 
   constructor(
     @Inject(CodslapCommonCommands) common: CodslapCommonCommands,
     @Inject(CommandOperator) private readonly command: CommandOperatorFn,
-    @Inject(Players) private readonly players: Players,
     @Inject(Logger) private logger: Logger,
   ) {
     super(common)
@@ -63,10 +62,10 @@ class PrimedAndReadyArena extends ArenaBase<CodslapEvents, CodslapCommonCommands
       tap(() => this.logger.debug('minimum arena age met, waiting for next available arena to start exploding')),
       switchMapTo(events.arenaAvailable$),
 
-      switchMap(() =>
+      switchMapTo(
 
         // next explosion location - down 1 because spawn locations are up 1 from the floor
-        defer(() => of(this.getRandomSpawn().modify.down(1))).pipe(
+        defer(() => of(this.getRandomSpawn().modify.subtractOffset(this.common.spawnOffsetFromFloor))).pipe(
           events.timedPlayerReadyEvent(this.getTimer.bind(this)),
 
           map(loc => this.getTntCommand(loc)),
@@ -90,7 +89,7 @@ class PrimedAndReadyArena extends ArenaBase<CodslapEvents, CodslapCommonCommands
   private getTimer(): Observable<true> {
     return timer(PrimedAndReadyArena.explosionInterval, PrimedAndReadyArena.explosionScheduler).pipe(
       tap(() => this.logger.debug('explosion timer tick')),
-      map(() => true),
+      mapTo(true),
     )
   }
 
@@ -99,13 +98,14 @@ class PrimedAndReadyArena extends ArenaBase<CodslapEvents, CodslapCommonCommands
       series(
         block(Block.air).set(coords),
         block(Block.bedrock).set(coords.modify.down(1)),
+        summon(EntityBlock.tnt, coords, { Fuse: 80 }),
         rawCmd(`summon ${Block.tnt} ${coords} {"Fuse":80}`),
       ),
       title('@a', text('Watch out!')),
     )
     const blacklistArea = area(
-      coords.modify.offset(loc(1, 0, 1)),
-      coords.modify.offset(loc(-1, 0, -1)),
+      coords.modify.offset(PrimedAndReadyArena.spawnBlacklistOffset),
+      coords.modify.subtractOffset(PrimedAndReadyArena.spawnBlacklistOffset),
     )
     this.blacklistSpawnArea(blacklistArea)
     return [cmd, [coords, blacklistArea]]

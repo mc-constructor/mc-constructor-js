@@ -70,7 +70,7 @@ export class CompiledSimpleRequest<TResponse = any> implements CompiledRequest<T
           return of(undefined)
         }
         if (typeof this.hasResponse === 'number') {
-          return race(response$, timer(this.hasResponse).pipe(map(() => {})))
+          return race(response$, timer(this.hasResponse).pipe(mapTo({})))
         }
         return response$
       }),

@@ -9,8 +9,6 @@ import {
   RequestClientFixture,
 } from '@ts-mc/core/client/testing'
 import { CommandModule } from '@ts-mc/core/command'
-import { Players } from '@ts-mc/core/players'
-import { playersFixture, PlayersFixture } from '@ts-mc/core/players/testing'
 import { ServerEventType } from '@ts-mc/core/server-events'
 import { createGameScope, MinigameEvents } from '@ts-mc/minigames'
 import { ArenaMinigameEvents, CommonCommands, CommonCommandsBase } from '@ts-mc/minigames/arenas'
@@ -24,7 +22,7 @@ import {
 
 import { expect } from 'chai'
 import { Observable, of } from 'rxjs'
-import { map } from 'rxjs/operators'
+import { mapTo } from 'rxjs/operators'
 import { SinonStub } from 'sinon'
 
 import { EventsAccessorProvider } from '../../src/events-accessor-provider'
@@ -56,23 +54,18 @@ describe.marbles('ArenaManager', ({ cold, hot }) => {
     },
     {
       provide: CommonCommandsBase,
-      useFactory: (players: Players) => new CommonCommandsBase(players),
-      deps: [Players],
+      useFactory: (events: ArenaMinigameEvents) => new CommonCommandsBase(events),
+      deps: [MinigameEvents],
     },
     {
       provide: CommonCommands,
       useFactory: (common: CommonCommandsBase) => common,
       deps: [CommonCommandsBase],
     },
-    {
-      provide: Players,
-      useFactory: () => players,
-    },
   )
 
   let client: RequestClientFixture
   let events: ArenaMinigameEventsFixture
-  let players: PlayersFixture
   let manager: ArenaManager<ArenaMinigameEvents>
   let arenas: ConfiguredArena<ArenaMinigameEvents>[]
   let arenaHooks: SinonStub<[], Observable<any>>[]
@@ -121,13 +114,11 @@ describe.marbles('ArenaManager', ({ cold, hot }) => {
   beforeEach(async () => {
     client = requestClientFixture()
     events = arenaMinigameEventsFixture()
-    players = playersFixture()
-    players.players.push({ name: 'testguy', uuid: '12345' })
+    events.players.push({ name: 'testguy', uuid: '12345' })
   })
   afterEach(() => {
     client = undefined
     events = undefined
-    players = undefined
     manager = undefined
     arenas = undefined
     arenaHooks = undefined
@@ -185,10 +176,10 @@ describe.marbles('ArenaManager', ({ cold, hot }) => {
         events.config({
 
           playerDeath$: minigameEventFixture(hot('5000ms ' + Array(26).join('a')).pipe(
-            map(() => ({
+            mapTo({
               type: ServerEventType.entityLivingDeath,
               player: { name: 'someguy' } as any,
-            } as any)),
+            } as any),
           )),
         })
 
@@ -207,10 +198,10 @@ describe.marbles('ArenaManager', ({ cold, hot }) => {
         events.config({
 
           playerDeath$: minigameEventFixture(hot('3500ms ' + Array(26).join('a') + ' 27500ms aaa').pipe(
-            map(() => ({
+            mapTo({
               type: ServerEventType.entityLivingDeath,
               player: { name: 'someguy' } as any,
-            } as any)),
+            } as any),
           )),
         })
 
@@ -232,9 +223,23 @@ describe.marbles('ArenaManager', ({ cold, hot }) => {
 
   describe('arenaAvailable$', () => {
 
+    beforeEach(registerArenas(2))
+    beforeEach(init)
+
     it('emits when all entry requirements are met for an arena', () => {
 
+      expect(manager.arenaAvailable$).with.marbleValues(arenaMarbles).to.equal('a 35999ms (b|)')
 
+    })
+
+    it('re-emits arenas that are ready but have not initialized on subsequent subscriptions', () => {
+
+      const expected1 = 'a 35999ms (b|)'
+      const expected2 = '10s a 25999ms (b|)'
+      const sub2      = '10s ^'
+
+      expect(manager.arenaAvailable$, 'expected1').with.marbleValues(arenaMarbles).to.equal(expected1)
+      expect(manager.arenaAvailable$, 'expected2').with.marbleValues(arenaMarbles).and.subscription(sub2).to.equal(expected2)
 
     })
 

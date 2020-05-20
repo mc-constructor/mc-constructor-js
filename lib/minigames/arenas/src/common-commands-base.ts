@@ -1,12 +1,12 @@
 import { classFactoryProvider, randomInt } from '@ts-mc/common'
 import { MinigameEvents } from '@ts-mc/minigames'
 import { area, Area, Block, Coordinates, Effect, loc } from '@ts-mc/core/types'
-import { Players } from '@ts-mc/core/players'
 import { CommandRequest, parallel, series } from '@ts-mc/core/command'
 import { block, clear, clearEffect, forceLoadAdd, giveEffect, teleport, wait } from '@ts-mc/core/cmd'
 
 import { Arena } from './arena'
 import { CommonCommands } from './common-commands'
+import { ArenaMinigameEvents } from './arena-minigame-events'
 
 export class CommonCommandsBase implements CommonCommands {
 
@@ -31,7 +31,7 @@ export class CommonCommandsBase implements CommonCommands {
   )
 
   constructor(
-    protected players: Players,
+    protected events: ArenaMinigameEvents,
   ) {}
 
   public movePlayersToHolding(): CommandRequest {
@@ -39,10 +39,10 @@ export class CommonCommandsBase implements CommonCommands {
   }
 
   public movePlayersToArena(arena: Arena<MinigameEvents>): CommandRequest {
-    console.log('movePlayersToArena', this.players.players)
+    console.log('movePlayersToArena', this.events.players)
     return parallel(
       'command.movePlayersToArena',
-      ...this.players.players.map(player => this.teleportPlayer(player.name, arena.getRandomSpawn(), this.center)),
+      ...this.events.players.map(player => this.teleportPlayer(player.name, arena.getRandomSpawn(), this.center)),
       giveEffect('@a', Effect.instantHealth, 10),
       giveEffect('@a', Effect.saturation, 10),
     )
@@ -69,7 +69,7 @@ export class CommonCommandsBase implements CommonCommands {
   }
 
   public teleportPlayersToRandomWithin(areas: Area[], facing?: Coordinates | string): CommandRequest {
-    return parallel('teleportPlayersToRandomWithin', ...this.players.players.map(player => {
+    return parallel('teleportPlayersToRandomWithin', ...this.events.players.map(player => {
       const spawn = this.getRandomLocation(areas)
       return this.teleportPlayer(player.name, spawn, facing)
     }))

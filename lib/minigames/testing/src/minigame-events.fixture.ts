@@ -3,6 +3,7 @@ import { Fixture } from '@ts-mc/common/testing'
 import { MinigameEvents } from '@ts-mc/minigames'
 import { interval, NEVER, Observable } from 'rxjs'
 import { map, share } from 'rxjs/operators'
+import { playerEventsFixture } from '@ts-mc/core/server-events/testing'
 
 export type MinigameEventsFixture<TEvents extends MinigameEvents = MinigameEvents> =
   Fixture<TEvents> & { config(config: Partial<TEvents>): MinigameEventsFixture<TEvents> }
@@ -18,7 +19,7 @@ export function minigameEventsFixture<TEvents extends MinigameEvents>(
     map(minigameAge => ({ minigameAge })),
     share(),
   )
-  return Object.assign({
+  return Object.assign(playerEventsFixture(), {
     minigameAge$,
     playerDeath$: NEVER,
     playerRespawn$: NEVER,

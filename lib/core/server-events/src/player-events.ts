@@ -1,27 +1,28 @@
-import { Uuid } from '@dandi/common'
-import { Inject, Injectable, Logger } from '@dandi/core'
-import { dequeueReplay } from '@ts-mc/common/rxjs'
-import { RequestClient } from '@ts-mc/core/client'
-import { listPlayers } from '@ts-mc/core/cmd'
-import { eventType, PlayerEvent, ServerEvents, ServerEventType } from '@ts-mc/core/server-events'
+import { Logger } from '@dandi/core'
 import { Player } from '@ts-mc/core/types'
 import { defer, merge, Observable } from 'rxjs'
+import { RequestClient } from '@ts-mc/core/client'
 import { map, share, tap } from 'rxjs/operators'
+import { dequeueReplay } from '@ts-mc/common/rxjs'
+import { listPlayers } from '@ts-mc/core/cmd'
 
-@Injectable()
-export class Players {
+import { PlayerEvent } from './player-event'
+import { ServerEventType } from './server-event-type'
+import { ServerEvents, eventType } from './server-events'
 
-  private readonly playersByName: Map<string, Player> = new Map<string, Player>()
-  private readonly playersByUuid: Map<Uuid, Player> = new Map<Uuid, Player>()
+export class PlayerEvents {
+
+  protected readonly playersByName: Map<string, Player> = new Map<string, Player>()
+  protected readonly playersByUuid: Map<string, Player> = new Map<string, Player>()
 
   public readonly player$: Observable<Player>
   public readonly playerLeave$: Observable<Player>
   public readonly players$: Observable<Player[]>
 
   constructor(
-    @Inject(RequestClient) client: RequestClient,
-    @Inject(ServerEvents) events$: ServerEvents,
-    @Inject(Logger) private logger: Logger,
+    protected readonly client: RequestClient,
+    protected readonly events$: ServerEvents,
+    protected readonly logger: Logger,
   ) {
     logger.debug('ctr')
     const playerJoin$ = events$.pipe(
@@ -39,7 +40,6 @@ export class Players {
       dequeueReplay(this.playerLeave$),
     )
 
-    // FIXME: refactor this to pipe instead of subscribe?
     const init$ = this.init(client)
 
     this.players$ = merge(init$, playerJoin$, this.playerLeave$).pipe(
@@ -60,6 +60,19 @@ export class Players {
     return this.playersByName.get(name)
   }
 
+  protected addPlayer(player: Player): void {
+    this.playersByName.set(player.name, player)
+    this.playersByUuid.set(player.uuid, player)
+  }
+
+  protected removePlayer(player: Player): void {
+    if (!player) {
+      return
+    }
+    this.playersByName.delete(player.name)
+    this.playersByUuid.delete(player.uuid)
+  }
+
   private init(client: RequestClient): Observable<Player[]> {
     return defer(() => listPlayers(true).execute(client)).pipe(
       map(result => {
@@ -78,17 +91,10 @@ export class Players {
     this.removePlayer(event.player)
   }
 
-  private addPlayer(player: Player): void {
-    this.playersByName.set(player.name, player)
-    this.playersByUuid.set(player.uuid, player)
-  }
-
-  private removePlayer(player: Player): void {
-    if (!player) {
-      return
-    }
-    this.playersByName.delete(player.name)
-    this.playersByUuid.delete(player.uuid)
+  protected getRunStreams(): Observable<any>[] {
+    return [
+      this.players$,
+    ]
   }
 
 }

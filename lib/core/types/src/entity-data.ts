@@ -1,8 +1,10 @@
 import { AnyEntity } from './entity'
+import { EntityBlock } from './entity-block'
 import { Mob } from './mob'
-import { BaseEntityData, CreeperData } from './specific-entity-data'
+import { BaseEntityData, CreeperData, TntBlockEntityData } from './specific-entity-data'
 
 export interface EntityDataMap {
+  [EntityBlock.tnt]: TntBlockEntityData
   [Mob.creeper]: CreeperData
 }
 

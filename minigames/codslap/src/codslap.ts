@@ -2,9 +2,7 @@ import { Inject, Logger } from '@dandi/core'
 import { silence } from '@ts-mc/common/rxjs'
 import { RequestClient } from '@ts-mc/core/client'
 import { actionbar, clearEffect, rawCmd, text, title } from '@ts-mc/core/cmd'
-import { CommandRequest } from '@ts-mc/core/command'
-import { parallel } from '@ts-mc/core/command/src/multi-command-request'
-import { Players } from '@ts-mc/core/players'
+import { CommandRequest, parallel } from '@ts-mc/core/command'
 import { AttackedByPlayerEvent, EntityEvent, PlayerEvent } from '@ts-mc/core/server-events'
 import { Minigame } from '@ts-mc/minigames'
 import { ArenaManager, CommonCommands, ConfiguredArena } from '@ts-mc/minigames/arenas'
@@ -29,7 +27,6 @@ export class CodslapMinigame implements Minigame {
 
   constructor(
     @Inject(RequestClient) private client: RequestClient,
-    @Inject(Players) private players$: Players,
     @Inject(CodslapEvents) private events: CodslapEvents,
     @Inject(CommonCommands) private common: CodslapCommonCommands,
     @Inject(CodslapInit) private readonly initCmd: CodslapInit,

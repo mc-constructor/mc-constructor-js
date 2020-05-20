@@ -1,6 +1,6 @@
 import { defer, NEVER, Observable, of } from 'rxjs'
 
-import { CompiledSimpleRequest, ExecuteResponse } from '../../index'
+import { CompiledSimpleRequest, ExecuteResponse } from '@ts-mc/core/client'
 
 export class TestCompiledRequest<TResponse = any> extends CompiledSimpleRequest<TResponse> {
 

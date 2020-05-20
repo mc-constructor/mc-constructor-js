@@ -1,5 +1,7 @@
 import { Observable } from 'rxjs'
 
+import { Fixture } from './fixture'
+
 export type ObservableServiceFixture<TService> = {
-  [TProp in keyof TService]: TService[TProp] extends Observable<infer TItem> ? Observable<TItem> : TService[TProp]
+  [TProp in keyof Fixture<TService>]: Fixture<TService>[TProp] extends Observable<infer TItem> ? Observable<TItem> : Fixture<TService>[TProp]
 }

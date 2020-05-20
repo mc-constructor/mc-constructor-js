@@ -4,8 +4,6 @@ import { stubLoggerFactory } from '@ts-mc/common/testing'
 import { RequestClient } from '@ts-mc/core/client'
 import { requestClientFixture, RequestClientFixture } from '@ts-mc/core/client/testing'
 import { CommandModule } from '@ts-mc/core/command'
-import { Players } from '@ts-mc/core/players'
-import { playersFixture, PlayersFixture } from '@ts-mc/core/players/testing'
 import { createGameScope } from '@ts-mc/minigames'
 import { Arena } from '@ts-mc/minigames/arenas'
 
@@ -38,10 +36,6 @@ describe('PrimedAndReadyArena', () => {
       useFactory: () => events,
     },
     {
-      provide: Players,
-      useFactory: () => players,
-    },
-    {
       provide: CodslapObjectives,
       useFactory: codslapObjectivesFixture,
     }
@@ -49,14 +43,12 @@ describe('PrimedAndReadyArena', () => {
 
   let client: RequestClientFixture
   let events: CodslapEventsFixture
-  let players: PlayersFixture
   let arena: Arena<CodslapEvents>
 
   beforeEach(async () => {
     client = requestClientFixture()
     events = codslapEventsFixture()
-    players = playersFixture()
-    players.players.push({ name: 'testguy', uuid: '12345' })
+    events.players.push({ name: 'testguy', uuid: '12345' })
     const injector = harness.createChild(createGameScope())
     arena = (await injector.injectMulti<Arena<CodslapEvents>>(Arena))[0]
     arena.init()
@@ -64,7 +56,6 @@ describe('PrimedAndReadyArena', () => {
   afterEach(() => {
     client = undefined
     events = undefined
-    players = undefined
     arena = undefined
   })
 
@@ -83,10 +74,10 @@ describe('PrimedAndReadyArena', () => {
 
       const run$ = merge(...arena.exitRequirements.map(req => req(events as any, arena)))
 
-      // first boom = 20s minDelay + 5s delay after tnt cmd
+      // first boom = 10s minDelay + 5s delay after tnt cmd
       // FIXME: where's the 100ms coming from?
 
-      expect(run$.pipe(take(1))).to.equal('26s (b|)')
+      expect(run$.pipe(take(1))).to.equal('16s (b|)')
     })
 
     it('makes tnt explosions every 5s', () => {
@@ -98,7 +89,7 @@ describe('PrimedAndReadyArena', () => {
 
       const run$ = merge(...arena.exitRequirements.map(req => req(events as any, arena)))
 
-      expect(run$.pipe(take(5))).to.equal('26s b 4999ms b 4999ms b 4999ms b 4999ms (b|)')
+      expect(run$.pipe(take(5))).to.equal('16s b 4999ms b 4999ms b 4999ms b 4999ms (b|)')
     })
 
     it('stops after 30 explosions', () => {
@@ -111,7 +102,7 @@ describe('PrimedAndReadyArena', () => {
       const run$ = merge(...arena.exitRequirements.map(req => req(events as any, arena)))
 
       // TODO: why no completion?
-      const expected = '26s' + Array(30).join(' b 4999ms') + ' b'
+      const expected = '16s' + Array(30).join(' b 4999ms') + ' b'
       expect(run$).to.equal(expected)
     })
 

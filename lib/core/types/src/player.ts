@@ -1,5 +1,3 @@
-import { Uuid } from '@dandi/common'
-
 import { Item } from './item'
 
 export interface Player {

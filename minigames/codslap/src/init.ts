@@ -10,7 +10,6 @@ import {
   kill,
 } from '@ts-mc/core/cmd'
 import { CommandRequest, parallel, series } from '@ts-mc/core/command'
-import { Players } from '@ts-mc/core/players'
 import { Block } from '@ts-mc/core/types'
 
 import { CodslapCommonCommands } from './codslap-common-commands'
@@ -19,7 +18,6 @@ import { CodslapCommonCommands } from './codslap-common-commands'
 export class CodslapInit {
 
   constructor(
-    @Inject(Players) private players: Players,
     @Inject(CodslapCommonCommands) private common: CodslapCommonCommands,
     @Inject(Logger) private logger: Logger,
   ) {

@@ -1,5 +1,5 @@
 import { defer, timer } from 'rxjs'
-import { map, tap } from 'rxjs/operators'
+import { mapTo, tap } from 'rxjs/operators'
 
 import { CommandRequest } from '@ts-mc/core/command'
 import { RequestClient, CompiledRequest, CompiledSimpleRequest, ExecuteResponse } from '@ts-mc/core/client'
@@ -13,7 +13,7 @@ class CompiledWaitMessage extends CompiledSimpleRequest<void> {
   public execute(): ExecuteResponse<void> {
     return defer(() => timer(this.duration).pipe(
       tap(() => console.log(this.constructor.name, this.debug, 'COMPLETE')),
-      map(() => undefined),
+      mapTo(undefined),
     ))
   }
 }

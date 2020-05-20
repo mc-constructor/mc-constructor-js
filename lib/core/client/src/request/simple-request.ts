@@ -1,4 +1,4 @@
-import { map, tap } from 'rxjs/operators'
+import { map, tap, mapTo } from 'rxjs/operators'
 
 import { RequestClient } from '../request-client'
 import { ClientErrorResponse, ClientResponse, ClientSuccessResponse } from '../response-client'
@@ -36,7 +36,7 @@ export abstract class SimpleRequest<TResponse extends any = any> extends Request
     // console.log('executeInternal.send')
     return clientReq.sent$.pipe(
       // tap(v => console.log('executeInternal.sent$')),
-      map(() => clientReq.pipe(
+      mapTo(clientReq.pipe(
         // tap(res => console.log('executeInternal.response$', res)),
         map((response: ClientResponse) => {
           // console.log('response', response)

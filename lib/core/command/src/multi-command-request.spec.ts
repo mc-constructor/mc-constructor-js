@@ -21,6 +21,7 @@ import {
   takeUntil,
   takeWhile,
   tap,
+  mapTo,
 } from 'rxjs/operators'
 import { TestScheduler } from 'rxjs/testing'
 
@@ -79,7 +80,7 @@ describe.marbles('MultiCommandRequest', (helpers) => {
                   tap(v => log(scheduler.frame, 'interval stopper', v[1])),
                 )),
                 tap(() => log(scheduler.frame, 'warn remaining', execState.remaining)),
-                map(() => [undefined, 'W']),
+                mapTo([undefined, 'W']),
               )
             ),
             finalize(() => log(scheduler.frame, 'debug$ done')),

@@ -1,5 +1,5 @@
 import { Logger } from '@dandi/core'
-import { Players } from '@ts-mc/core/players'
+import { RequestClient } from '@ts-mc/core/client'
 import { ServerEvents } from '@ts-mc/core/server-events'
 import { MinigameEvents } from '@ts-mc/minigames'
 import { Observable } from 'rxjs'
@@ -20,11 +20,11 @@ export class ArenaMinigameEvents extends MinigameEvents {
 
   constructor(
     protected readonly arenaManager: ArenaManager<any>,
+    client: RequestClient,
     events$: ServerEvents,
-    players: Players,
     logger: Logger,
   ) {
-    super(events$, players, logger)
+    super(client, events$, logger)
 
     this.arenaAvailable$ = this.arenaManager.arenaAvailable$.pipe(
       this.debug(arena => ['arenaAvailable$', arena.title]),

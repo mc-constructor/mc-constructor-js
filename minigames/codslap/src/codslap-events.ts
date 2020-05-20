@@ -7,14 +7,13 @@ import {
   PlayerEvent,
   ServerEvents
 } from '@ts-mc/core/server-events'
-import { Players } from '@ts-mc/core/players'
 import { ArenaManager, ArenaMinigameEvents } from '@ts-mc/minigames/arenas'
 
 import { Observable, partition } from 'rxjs'
 import { filter, share } from 'rxjs/operators'
 
 import { CodslapObjectives } from './codslap-objectives'
-import { isCodslapper } from './codslap-common-commands'
+import { isCodslapper } from './codslapper'
 
 export class CodslapEvents extends ArenaMinigameEvents {
 
@@ -25,14 +24,13 @@ export class CodslapEvents extends ArenaMinigameEvents {
   private readonly codslapKill$: Observable<AttackedByPlayerEvent>
 
   constructor(
-    @Inject(RequestClient) private client: RequestClient,
+    @Inject(RequestClient) client: RequestClient,
     @Inject(ServerEvents) events$: ServerEvents,
-    @Inject(Players) players: Players,
     @Inject(CodslapObjectives) private readonly obj: CodslapObjectives,
-    @Inject(ArenaManager) arenaManager: ArenaManager<any>,
+    @Inject(ArenaManager) arenaManager: ArenaManager<CodslapEvents>,
     @Inject(Logger) logger: Logger,
   ) {
-    super(arenaManager, events$, players, logger)
+    super(arenaManager, client, events$, logger)
     this.codslap$ = this.playerAttack$.pipe(
       filter(event => isCodslapper(event.player.mainHand.item)),
     )
@@ -41,7 +39,7 @@ export class CodslapEvents extends ArenaMinigameEvents {
       filter(event => isCodslapper(event.attacker.mainHand.item)),
       share(),
     )
-    const [codslapPlayerKill$, codslapMobKill$] = partition(this.codslapKill$, event => players.hasNamedPlayer(event.entityId))
+    const [codslapPlayerKill$, codslapMobKill$] = partition(this.codslapKill$, event => this.hasNamedPlayer(event.entityId))
     this.codslapPlayerKill$ = codslapPlayerKill$
     this.codslapMobKill$ = codslapMobKill$
   }

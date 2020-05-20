@@ -1,23 +1,45 @@
 import { Logger } from '@dandi/core'
 import { subclassFactoryProvider } from '@ts-mc/common'
+import { RequestClient } from '@ts-mc/core/client'
 import { dequeueReplay } from '@ts-mc/common/rxjs'
-import { EntityEvent, eventType, PlayerEvent, ServerEvents, ServerEventType } from '@ts-mc/core/server-events'
-import { Players } from '@ts-mc/core/players'
+import {
+  EntityEvent,
+  eventType,
+  PlayerEvent,
+  PlayerEvents,
+  ServerEvents,
+  ServerEventType
+} from '@ts-mc/core/server-events'
 import { Player } from '@ts-mc/core/types'
 import { interval, merge, MonoTypeOperatorFunction, Observable, of, race } from 'rxjs'
-import { delay, filter, map, share, switchMap, tap } from 'rxjs/operators'
+import {
+  delay,
+  distinctUntilChanged,
+  filter,
+  map,
+  mergeMap,
+  scan,
+  share,
+  shareReplay,
+  startWith,
+  switchMap,
+  take,
+  tap,
+  mapTo,
+} from 'rxjs/operators'
 
 import { GameScope } from './game-scope'
 import { MinigameAgeEvent } from './minigame-age-event'
 
-export class MinigameEvents {
+export class MinigameEvents extends PlayerEvents {
 
   public static readonly provide = subclassFactoryProvider(MinigameEvents, { restrictScope: GameScope })
 
   public readonly playerDeath$: Observable<EntityEvent>
-  public readonly playerRespawn$: Observable<PlayerEvent>
-  public readonly playerReady$: Observable<Player>
   public readonly playerLimbo$: Observable<Player>
+  public readonly playerReady$: Observable<Player>
+  public readonly playerRespawn$: Observable<PlayerEvent>
+  public readonly playersReady$: Observable<boolean>
 
   public readonly minigameAge$: Observable<MinigameAgeEvent> = interval(1000).pipe(
     map(minigameAge => ({ minigameAge })),
@@ -36,11 +58,11 @@ export class MinigameEvents {
   }
 
   constructor(
-    protected readonly events$: ServerEvents,
-    protected readonly players: Players,
-    protected readonly logger: Logger,
+    client: RequestClient,
+    events$: ServerEvents,
+    logger: Logger,
   ) {
-    this.logger.debug('ctr')
+    super(client, events$, logger)
     this.entityDeath$ = events$.pipe(
       eventType(ServerEventType.entityLivingDeath),
       tap(event => this.logger.debug('entityDeath$ - entityLivingDeath', event.entityId)),
@@ -52,7 +74,7 @@ export class MinigameEvents {
       share(),
     )
     this.playerDeath$ = this.entityDeath$.pipe(
-      filter(event => players.hasNamedPlayer(event.entityId)),
+      filter(event => this.hasNamedPlayer(event.entityId)),
       tap(event => this.logger.debug('playerDeath$', event.entityId)),
       share(),
     )
@@ -61,10 +83,10 @@ export class MinigameEvents {
       share(),
     )
     this.playerLimbo$ = this.playerDeath$.pipe(
-      map(event => this.players.getPlayerByName(event.entityId)),
+      map(event => this.getPlayerByName(event.entityId)),
       dequeueReplay(
-        this.playerRespawn$,
-        (respawnPlayer, player) => respawnPlayer.player.name === player.name,
+        merge(this.playerRespawn$.pipe(map(respawn => respawn.player)), this.playerLeave$),
+        (eventPlayer, player) => eventPlayer.name === player.name,
       ),
     )
 
@@ -89,14 +111,28 @@ export class MinigameEvents {
     //     (unreadyPlayerName, respawnedPlayer) => respawnPlayer.player.name === playerDeath.entityId,
     //   ),
     this.playerReady$ = this.playerLimbo$.pipe(
-      switchMap(limboPlayer => race(
-        this.playerRespawn$.pipe(
-          filter(respawn => respawn.player.name === limboPlayer.name),
-          map(respawn => this.players.players.find(player => player.name === respawn.player.name)),
+      mergeMap(limboPlayer =>
+        race(
+          this.playerRespawn$.pipe(
+            filter(respawn => respawn.player.name === limboPlayer.name),
+            map(respawn => this.getPlayerByName(respawn.player.name)),
+          ),
+          this.playerLeave$.pipe(filter(leavingPlayer => leavingPlayer.name === limboPlayer.name)),
+        ).pipe(
+          take(1),
         ),
-        this.players.playerLeave$.pipe(filter(leavingPlayer => leavingPlayer.name === limboPlayer.name)),
-      )),
+      ),
       share(),
+    )
+    this.playersReady$ = merge(
+      this.playerReady$.pipe(mapTo(-1)),
+      this.playerLimbo$.pipe(mapTo(1)),
+    ).pipe(
+      startWith(0),
+      scan((acc, curr) => acc + curr, 0),
+      map(limboCount => limboCount === 0),
+      distinctUntilChanged(),
+      shareReplay(1),
     )
   }
 
@@ -104,6 +140,14 @@ export class MinigameEvents {
     return this.playerReady$.pipe(
       filter(readyPlayer => readyPlayer.name === playerName),
       delay(delayAfterReady),
+    )
+  }
+
+  public waitForAllPlayersReady(playerName: string, delayAfterReady: number = 0): Observable<void> {
+    return this.playersReady$.pipe(
+      filter(ready => ready === true),
+      delay(delayAfterReady),
+      mapTo(undefined)
     )
   }
 
@@ -117,15 +161,15 @@ export class MinigameEvents {
     return switchMap((state: T) =>
       race(
         timedEventFn(state),
-        this.playerDeath$,
+        this.playerLimbo$,
       ).pipe(
         map(raceResult => ({ raceResult, state })),
         switchMap(({ raceResult, state }) => {
           if (raceResult === true) {
             return of(state)
           }
-          return this.waitForPlayerReady(raceResult.entityId, 2500).pipe(
-            map(() => state)
+          return this.waitForPlayerReady(raceResult.name, 2500).pipe(
+            mapTo(state)
           )
         })
       ),
@@ -133,12 +177,14 @@ export class MinigameEvents {
   }
 
   protected getRunStreams(): Observable<any>[] {
-    return [
+    // TODO: is this even needed?
+    return super.getRunStreams().concat(
       this.playerDeath$,
-      this.playerRespawn$,
-      this.playerAttack$,
+      this.playerLimbo$,
       this.playerReady$,
-    ]
+      this.playerRespawn$,
+      this.playersReady$,
+    )
   }
 
   protected debug<T>(tapFn: ((event: T) => any[])): MonoTypeOperatorFunction<T> {
