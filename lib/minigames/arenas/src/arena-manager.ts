@@ -4,21 +4,22 @@ import { text, title } from '@ts-mc/core/cmd'
 import { RequestClient } from '@ts-mc/core/client'
 import { CommandOperator, CommandOperatorFn } from '@ts-mc/core/command'
 import { GameScope, MinigameEvents, EventsAccessor, Accessor } from '@ts-mc/minigames'
-import { combineLatest, forkJoin, merge, Observable, of, ReplaySubject, defer, timer, NEVER } from 'rxjs'
+import { combineLatest, defer, forkJoin, merge, Observable, of, ReplaySubject, timer, NEVER } from 'rxjs'
 import {
   buffer,
+  catchError,
   concatMap,
+  delay,
   filter,
   finalize,
   map,
+  mapTo,
   pairwise,
   share,
   startWith,
-  switchMap,
+  switchMap, switchMapTo,
   take,
   tap,
-  delay,
-  catchError, mapTo,
 } from 'rxjs/operators'
 
 import { ConfiguredArena, ConfiguredArenas } from './arena'
@@ -141,17 +142,11 @@ export class ArenaManager<TEvents extends MinigameEvents> {
     arena: ConfiguredArena<TEvents>,
   ): Observable<ConfiguredArena<TEvents>> {
     console.log('initArena', arena.title)
-    return defer(() => {
-      this.logger.debug('initArena', arena.title)
-      if (prevArena) {
-        return this.clearArena(prevArena, arena)
-      }
-      return of(undefined)
-    }).pipe(
+    return defer(() => this.clearArena(prevArena, arena)).pipe(
       tap(() => console.log('initArena start')),
       this.command(arena.instance.init()),
       delay(2500),
-      this.command(() => this.common.movePlayersToArena(arena.instance)),
+      this.command(() => this.common.movePlayersToArena(this.events.players, arena.instance)),
       this.command(title('@a', arena.title, arena.description)),
       map(() => {
         console.log('initArena complete', arena.title)
@@ -186,12 +181,20 @@ export class ArenaManager<TEvents extends MinigameEvents> {
   }
 
   private clearArena(arena: ConfiguredArena<TEvents>, nextArena: ConfiguredArena<TEvents>): Observable<ConfiguredArena<TEvents>> {
-    return of(undefined).pipe(
-      this.command(title('@a', text('Coming up...'), nextArena.title)),
-      delay(5000),
-      this.command(() => this.common.movePlayersToHolding()),
+    return defer(() => {
+      if (!arena) {
+        return of(undefined)
+      }
+      return of(title('@a', text('Coming up...'), nextArena.title)).pipe(
+        this.command(),
+        delay(5000),
+      )
+    }).pipe(
+      switchMapTo(this.events.players$),
+      map(players => this.common.movePlayersToHolding(players)),
+      this.command(),
       delay(500),
-      this.command(arena.instance.cleanup()),
+      arena ? this.command(arena.instance.cleanup()) : tap(),
     )
   }
 

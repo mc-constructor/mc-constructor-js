@@ -9,12 +9,6 @@ import { localToken } from './local-token'
 const MINIGAME_META = Symbol.for('@ts-mc/minigame#meta')
 
 export interface Minigame {
-
-  // TODO: move these to decorators?
-
-  init(): CommandRequest
-  validateGameState(): CommandRequest
-  ready(): CommandRequest
   run$: Observable<any>
 }
 

@@ -1,13 +1,13 @@
 import { classFactoryProvider, randomInt } from '@ts-mc/common'
 import { MinigameEvents } from '@ts-mc/minigames'
-import { area, Area, Block, Coordinates, Effect, loc } from '@ts-mc/core/types'
+import { area, Area, Block, Coordinates, Effect, loc, Player } from '@ts-mc/core/types'
 import { CommandRequest, parallel, series } from '@ts-mc/core/command'
-import { block, clear, clearEffect, forceLoadAdd, giveEffect, teleport, wait } from '@ts-mc/core/cmd'
+import { block, clear, clearEffect, forceLoadAdd, giveEffect, teleport, tellraw } from '@ts-mc/core/cmd'
 
 import { Arena } from './arena'
 import { CommonCommands } from './common-commands'
-import { ArenaMinigameEvents } from './arena-minigame-events'
 
+// IMPORTANT: do not add dependencies on MinigameEvents / PlayerEvents - it will cause a circular dependency
 export class CommonCommandsBase implements CommonCommands {
 
   public static provide = classFactoryProvider(CommonCommands)
@@ -30,19 +30,20 @@ export class CommonCommandsBase implements CommonCommands {
     this.holdingCenter.modify.east(this.holdingSize).modify.south(this.holdingSize),
   )
 
-  constructor(
-    protected events: ArenaMinigameEvents,
-  ) {}
-
-  public movePlayersToHolding(): CommandRequest {
-    return this.teleportPlayersToRandomWithin([this.holdingArea])
+  public movePlayersToHolding(players: Player[]): CommandRequest {
+    return parallel(
+      'movePlayersToHolding',
+      tellraw('@a', 'Off to holding you go...'),
+      this.teleportPlayersToRandomWithin(players, [this.holdingArea])
+    )
   }
 
-  public movePlayersToArena(arena: Arena<MinigameEvents>): CommandRequest {
-    console.log('movePlayersToArena', this.events.players)
+  public movePlayersToArena(players: Player[], arena: Arena<MinigameEvents>): CommandRequest {
+    console.log('movePlayersToArena', players)
     return parallel(
       'command.movePlayersToArena',
-      ...this.events.players.map(player => this.teleportPlayer(player.name, arena.getRandomSpawn(), this.center)),
+      tellraw('@a', 'In to the fray...'),
+      ...players.map(player => this.teleportPlayer(player.name, arena.getRandomSpawn(), this.center)),
       giveEffect('@a', Effect.instantHealth, 10),
       giveEffect('@a', Effect.saturation, 10),
     )
@@ -58,9 +59,6 @@ export class CommonCommandsBase implements CommonCommands {
         clearEffect('@a'),
         block(Block.whiteWool).fill(this.holdingArea),
       ),
-      wait(1500),
-      this.movePlayersToHolding(),
-      wait(2500),
     )
   }
 
@@ -68,8 +66,8 @@ export class CommonCommandsBase implements CommonCommands {
     return block(Block.air).fill(this.holdingArea)
   }
 
-  public teleportPlayersToRandomWithin(areas: Area[], facing?: Coordinates | string): CommandRequest {
-    return parallel('teleportPlayersToRandomWithin', ...this.events.players.map(player => {
+  public teleportPlayersToRandomWithin(players: Player[], areas: Area[], facing?: Coordinates | string): CommandRequest {
+    return parallel('teleportPlayersToRandomWithin', ...players.map(player => {
       const spawn = this.getRandomLocation(areas)
       return this.teleportPlayer(player.name, spawn, facing)
     }))

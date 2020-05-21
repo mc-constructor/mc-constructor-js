@@ -1,9 +1,10 @@
 import { Inject, Injectable, Logger } from '@dandi/core'
+import { silence } from '@ts-mc/common/rxjs'
 import { RequestClient } from '@ts-mc/core/client'
 import { CommandOperator, CommandOperatorFn } from '@ts-mc/core/command'
 import { eventType, MinigameStartEvent, ServerEvents, ServerEventType } from '@ts-mc/core/server-events'
 import { combineLatest, defer, Observable, of, merge } from 'rxjs'
-import { bufferCount, filter, map, mergeMap, pluck, share, switchMap, switchMapTo, tap } from 'rxjs/operators'
+import { bufferCount, map, mergeMap, pluck, share, switchMapTo, tap } from 'rxjs/operators'
 
 import { register, unregister } from './cmd/register-minigame'
 import { GameInfo, MinigameLoader } from './minigame-loader'
@@ -30,18 +31,15 @@ export class MinigameManager {
     @Inject(Logger) private logger: Logger,
   ) {
     const initMinigames$ = this.init().pipe(
-      switchMapTo(this.waitForMinigameStart()),
+      switchMapTo(this.listenForMinigameStart()),
       share(),
     )
     this.run$ = merge(
       initMinigames$.pipe(map(event => ({ source: 'init', event }))),
 
-      // these are required to ensure events and players are always tracked correctly
-      this.events$.pipe(
-        map(event => ({ source: 'serverEvents', event })),
-        // don't spam the entrypoint with all the events
-        filter(() => false),
-      ),
+      // these are required to ensure incoming messages
+      // but don't spam the output with all the events
+      this.events$.pipe(silence),
     ).pipe(
       share(),
     )
@@ -73,10 +71,10 @@ export class MinigameManager {
     )
   }
 
-  protected waitForMinigameStart(): Observable<any> {
+  protected listenForMinigameStart(): Observable<any> {
     return this.events$.pipe(
       eventType(ServerEventType.minigameStart),
-      switchMap(this.startGame.bind(this)),
+      mergeMap(this.startGame.bind(this)),
       share(),
     )
   }

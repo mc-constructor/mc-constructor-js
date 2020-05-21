@@ -1,5 +1,5 @@
 import { InjectionToken } from '@dandi/core'
-import { Area, Coordinates } from '@ts-mc/core/types'
+import { Area, Coordinates, Player } from '@ts-mc/core/types'
 import { CommandRequest } from '@ts-mc/core/command'
 import { GameScope, MinigameEvents } from '@ts-mc/minigames'
 
@@ -21,11 +21,11 @@ export interface CommonCommands {
   readonly holdingCenter: Coordinates
   readonly holdingArea: Area
 
-  movePlayersToHolding(): CommandRequest
-  movePlayersToArena(arena: Arena<MinigameEvents>): CommandRequest
-  initHoldingArea(): CommandRequest
+  movePlayersToHolding(players: Player[]): CommandRequest
+  movePlayersToArena(players: Player[], arena: Arena<MinigameEvents>): CommandRequest
+  initHoldingArea(players: Player[]): CommandRequest
   removeHoldingArea(): CommandRequest
-  teleportPlayersToRandomWithin(areas: Area[], facing?: Coordinates | string): CommandRequest
+  teleportPlayersToRandomWithin(players: Player[], areas: Area[], facing?: Coordinates | string): CommandRequest
   teleportPlayer(target: string, loc: Coordinates, facing?: Coordinates | string): CommandRequest
   getRandomLocation(areas: Area[], blacklist: Area[]): Coordinates
 }

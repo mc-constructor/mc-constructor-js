@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@dandi/core'
-import { Observable, Observer, Subject, Subscriber, Subscription } from 'rxjs'
+import { Observable, Observer, Subject, Subscription } from 'rxjs'
 import { share } from 'rxjs/operators'
 
 import { ObjectiveDisplay, TextComponent } from '../../cmd'

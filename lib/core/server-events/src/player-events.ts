@@ -2,7 +2,7 @@ import { Logger } from '@dandi/core'
 import { Player } from '@ts-mc/core/types'
 import { defer, merge, Observable } from 'rxjs'
 import { RequestClient } from '@ts-mc/core/client'
-import { map, share, tap } from 'rxjs/operators'
+import { map, share, tap, shareReplay } from 'rxjs/operators'
 import { dequeueReplay } from '@ts-mc/common/rxjs'
 import { listPlayers } from '@ts-mc/core/cmd'
 
@@ -44,7 +44,7 @@ export class PlayerEvents {
 
     this.players$ = merge(init$, playerJoin$, this.playerLeave$).pipe(
       map(() => this.players),
-      share(),
+      shareReplay(1),
     )
   }
 

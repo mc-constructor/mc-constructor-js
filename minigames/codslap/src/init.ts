@@ -6,7 +6,6 @@ import {
   rawCmd,
   time,
   weather,
-  wait,
   kill,
 } from '@ts-mc/core/cmd'
 import { CommandRequest, parallel, series } from '@ts-mc/core/command'
@@ -27,18 +26,12 @@ export class CodslapInit {
   public compile(): CommandRequest {
     return series(
       'codslap.compile',
-      this.common.initHoldingArea(),
       parallel(
         'codslap.compile.rulesAndArena',
         this.initRules(),
         this.initArena(),
       ),
-      wait(1500),
-      parallel(
-        'codslap.initRules.initPlayers',
-        this.initPlayers(),
-        // this.removeHoldingArea(),
-      ),
+      this.initPlayers(),
     )
   }
 

@@ -6,7 +6,6 @@ import { area, Coordinates, Item, loc, Mob } from '@ts-mc/core/types'
 import { CommonCommandsBase, summonBehavior } from '@ts-mc/minigames/arenas'
 
 import { CodslapObjectives } from './codslap-objectives'
-import { CodslapEvents } from './codslap-events'
 import { LEVELED_WEAPONS } from './codslapper'
 
 const LEVELS: [number, number, number, number, number, number] = [500, 234, 104, 42, 15, 0]
@@ -35,9 +34,8 @@ export class CodslapCommonCommands extends CommonCommandsBase {
 
   constructor(
     @Inject(CodslapObjectives) private objectives: CodslapObjectives,
-    @Inject(CodslapEvents) events: CodslapEvents,
   ) {
-    super(events)
+    super()
   }
 
   public equip(target: string, weapon?: Item): CommandRequest {

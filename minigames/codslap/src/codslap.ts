@@ -2,13 +2,13 @@ import { Inject, Logger } from '@dandi/core'
 import { silence } from '@ts-mc/common/rxjs'
 import { RequestClient } from '@ts-mc/core/client'
 import { actionbar, clearEffect, rawCmd, text, title } from '@ts-mc/core/cmd'
-import { CommandRequest, parallel } from '@ts-mc/core/command'
+import { CommandOperator, CommandOperatorFn, CommandRequest, parallel } from '@ts-mc/core/command'
 import { AttackedByPlayerEvent, EntityEvent, PlayerEvent } from '@ts-mc/core/server-events'
 import { Minigame } from '@ts-mc/minigames'
 import { ArenaManager, CommonCommands, ConfiguredArena } from '@ts-mc/minigames/arenas'
 
 import { combineLatest, EMPTY, merge, Observable, OperatorFunction } from 'rxjs'
-import { mergeMap } from 'rxjs/operators'
+import { map, mergeMap, switchMapTo } from 'rxjs/operators'
 
 import { CodslapEvents } from './codslap-events'
 import { Codslap } from './codslap-metadata'
@@ -32,12 +32,13 @@ export class CodslapMinigame implements Minigame {
     @Inject(CodslapInit) private readonly initCmd: CodslapInit,
     @Inject(CodslapObjectives) private readonly obj: CodslapObjectives,
     @Inject(ArenaManager) private readonly arena: ArenaManager<CodslapEvents>,
+    @Inject(CommandOperator) private readonly command: CommandOperatorFn,
     @Inject(Logger) private readonly logger: Logger,
   ) {
-    this.logger.debug('ctr', )
+    this.logger.debug('ctr')
     const onPlayerDeath$ = combineLatest([this.events.playerDeath$, this.arena.arenaInit$])
 
-    this.run$ = merge(
+    const run$ = merge(
       this.events.codslap$.pipe(this.mergeCmd(this.onCodslap.bind(this))),
       onPlayerDeath$.pipe(this.mergeCmd(this.onPlayerDeath.bind(this))),
       this.events.codslapPlayerKill$.pipe(this.mergeCmd(this.onCodslapPlayerKill.bind(this))),
@@ -49,18 +50,18 @@ export class CodslapMinigame implements Minigame {
       this.obj.codslapMobKill.events$,
       this.obj.codslapPlayerKill.events$,
     )
+    this.run$ = this.init().pipe(switchMapTo(run$))
   }
 
-  public validateGameState(): CommandRequest {
-    return title('@a', text(`CODSLAP!`).bold, text('The game will begin in a moment...'))
-  }
-
-  public init(): CommandRequest {
-    return this.initCmd.compile()
-  }
-
-  public ready(): CommandRequest {
-    return title('@a', text('Get ready!'), text('May the best codslapper win!').bold)
+  private init(): Observable<any> {
+    return title('@a', text(`CODSLAP!`).bold, text('The game will begin in a moment...')).execute(this.client).pipe(
+      this.command(this.common.initHoldingArea()),
+      switchMapTo(this.events.players$),
+      map(players => this.common.movePlayersToHolding(players)),
+      this.command(),
+      this.command(this.initCmd.compile()),
+      this.command(title('@a', text('Get ready!'), text('May the best codslapper win!').bold)),
+    )
   }
 
   private mergeCmd(fn: (value: any) => CommandRequest): OperatorFunction<any, any> {

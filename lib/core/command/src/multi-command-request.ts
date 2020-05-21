@@ -149,14 +149,12 @@ export abstract class MultiCommandRequest extends CommandRequest {
       switchMapTo(remaining$.pipe(
         bufferTime(0),
       )),
-      tap(() => console.log(this.constructor.name, this.debug, 'NO MORE REMAINING'))
     )
 
     const output$ = complete$.pipe(
       map(msgState => msgState.result),
       toArray(),
       map(this.parseResponses.bind(this)),
-      tap(() => console.log(this.constructor.name, this.debug, 'output$ complete')),
       take(1),
       share(),
     )

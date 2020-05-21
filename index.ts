@@ -3,7 +3,6 @@ import { ConsoleLogListener, LoggingModule } from '@dandi/core/logging'
 import { PrettyColorsLogging } from '@dandi/logging'
 import { CommandModule } from '@ts-mc/core/command'
 import { ClientModule } from '@ts-mc/core/client'
-import { PlayersModule } from '@ts-mc/core/players'
 import { ScoreboardModule } from '@ts-mc/core/scoreboard'
 import { ServerEventsModule } from '@ts-mc/core/server-events'
 import { MinigameManagementModule } from '@ts-mc/minigames'
@@ -16,7 +15,6 @@ const app = new DandiApplication({
     CommandModule,
     LoggingModule.use(ConsoleLogListener),
     MinigameManagementModule,
-    PlayersModule,
     PrettyColorsLogging.set({ filter: LogLevel.debug }),
     ScoreboardModule,
     ServerEventsModule,
