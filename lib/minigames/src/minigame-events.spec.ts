@@ -1,18 +1,21 @@
 import { NoopLogger } from '@dandi/core'
-import { impersonate } from '@ts-mc/common/testing'
+import { silence } from '@ts-mc/common/rxjs'
+import { impersonate, stubLoggerFactory } from '@ts-mc/common/testing'
 import { requestClientFixture } from '@ts-mc/core/client/testing'
-import { AttackedEntityEvent, ServerEvent, ServerEventType } from '@ts-mc/core/server-events'
+import { ServerEvent, ServerEventType } from '@ts-mc/core/server-events'
 import { ServerEventFixtures } from '@ts-mc/core/server-events/testing'
-import { Player } from '@ts-mc/core/types'
+import { PlayerWithHeldItems } from '@ts-mc/core/types'
 import { TypesFixtures } from '@ts-mc/core/types/testing'
 import { MinigameEvents } from '@ts-mc/minigames'
 import { expect } from 'chai'
 import { Observable } from 'rxjs'
-import { map, share } from 'rxjs/operators'
+import { map, mapTo, share } from 'rxjs/operators'
 
-describe.marbles.only('MinigameEvents', ({ cold, hot }) => {
+describe.marbles('MinigameEvents', ({ cold, hot }) => {
 
-  let playerValues: { [key: string]: Player }
+  stubLoggerFactory()
+
+  let playerValues: { [key: string]: PlayerWithHeldItems }
   let serverEvents: { [key: string] : ServerEvent }
 
   function initEvents(source$: Observable<string>): MinigameEvents {
@@ -204,8 +207,8 @@ describe.marbles.only('MinigameEvents', ({ cold, hot }) => {
 
       it('emits when all players are respawned or leave the game after dying', () => {
 
-        const source$ =  hot('--abcd')
-        const expected =     'r-x--r'
+        const source$ =  hot('--ab--cd')
+        const expected =     'r-x----r'
         // start with true, emit false on first player death, then true when there are no longer any "limbo" players
 
         const readyValues = {
@@ -232,13 +235,70 @@ describe.marbles.only('MinigameEvents', ({ cold, hot }) => {
   })
 
   describe('timedPlayerReadyEvent', () => {
-    it('emits without further waiting if the timed event emits before a player dies')
 
-    it('delays emitting if a player dies before the timer emits')
+    // logic used to time when the event happens - for example, when removing a block after 5 seconds, this would be an
+    // observable that waits 5 seconds and then emits true
+    let trigger$: Observable<string>
 
-    it('emits if a dead player respawns')
+    // server events source - to simulates players dying and possibly respawning or leaving
+    let source$: Observable<string>
 
-    it('emits if a dead player disconnects')
+    // expects that the resulting observable emits when the player respawns and not when trigger$ emits
+    let expected: string
+
+    function execTest() {
+      const eventTrigger$: Observable<true> = trigger$.pipe(mapTo(true))
+      const events = initEvents(source$)
+
+      // run$ needs to be subscribed in order to correctly track the server events required to make
+      // timedPlayerReadyEvent work. Pipe to silence so we don't have to worry about what actually gets emitted,
+      // because it doesn't matter for these tests
+      expect(events.run$.pipe(silence), 'run$').to.equal('')
+
+      const timedEvent$ = cold('a').pipe(
+        events.timedPlayerReadyEvent(() => eventTrigger$),
+      )
+
+      expect(timedEvent$, 'timedEvent$').to.equal(expected)
+    }
+
+    it('emits without further waiting if the timed event emits before a player dies', () => {
+      trigger$ = cold('1s -x')
+      source$ =   hot('1s --d')
+      expected =      '1s -a'
+
+      serverEvents = {
+        d: ServerEventFixtures.attackedByPlayer(ServerEventType.entityLivingDeath, { entityId: playerValues.a.name }),
+      }
+
+      execTest()
+    })
+
+    it('delays emitting if a player dies before the timer emits', () => {
+      trigger$ = cold('1s -x')
+      source$ =   hot('1s d---r')
+      expected =      '1s ----a'
+
+      serverEvents = {
+        d: ServerEventFixtures.attackedByPlayer(ServerEventType.entityLivingDeath, { entityId: playerValues.a.name }),
+        r: ServerEventFixtures.player(ServerEventType.playerRespawn, { player: playerValues.a })
+      }
+
+      execTest()
+    })
+
+    it('delays emitting if a player leaves before the timer emits', () => {
+      trigger$ = cold('1s -x')
+      source$ =   hot('1s d---l')
+      expected =      '1s ----a'
+
+      serverEvents = {
+        d: ServerEventFixtures.attackedByPlayer(ServerEventType.entityLivingDeath, { entityId: playerValues.a.name }),
+        l: ServerEventFixtures.player(ServerEventType.playerLeft, { player: playerValues.a })
+      }
+
+      execTest()
+    })
   })
 
 })

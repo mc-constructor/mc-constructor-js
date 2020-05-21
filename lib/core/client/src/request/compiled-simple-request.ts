@@ -3,7 +3,6 @@ import { Logger } from '@dandi/core'
 import { loggerFactory } from '@ts-mc/common'
 import { defer, Observable, of, race, timer } from 'rxjs'
 import {
-  map,
   mapTo,
   share,
   shareReplay,
@@ -70,23 +69,23 @@ export class CompiledSimpleRequest<TResponse = any> implements CompiledRequest<T
           return of(undefined)
         }
         if (typeof this.hasResponse === 'number') {
-          return race(response$, timer(this.hasResponse).pipe(mapTo({})))
+          return race(response$, timer(this.hasResponse).pipe(mapTo(undefined)))
         }
         return response$
       }),
-      tap(v => {
-        // console.log(`${this.constructor.name} got response`, v)
-        this.response = Date.now()
-        const untilSent = this.sent - this.created
-        const sentToResponse = this.response - this.sent
-        const totalTime = this.response - this.created
-        // this.logger.debug(
-        //   `cmd ${this.debug} request stats:\n` +
-        //   `  queued: ${untilSent}ms\n` +
-        //   `  in flight: ${sentToResponse}ms\n` +
-        //   `  total: ${totalTime}ms`
-        // )
-      }),
+      // tap(v => {
+      //   console.log(`${this.constructor.name} got response`, v)
+      //   this.response = Date.now()
+      //   const untilSent = this.sent - this.created
+      //   const sentToResponse = this.response - this.sent
+      //   const totalTime = this.response - this.created
+      //   this.logger.debug(
+      //     `cmd ${this.debug} request stats:\n` +
+      //     `  queued: ${untilSent}ms\n` +
+      //     `  in flight: ${sentToResponse}ms\n` +
+      //     `  total: ${totalTime}ms`
+      //   )
+      // }),
       take(1),
       share(),
     )

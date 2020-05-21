@@ -1,4 +1,3 @@
-import { Uuid } from '@dandi/common'
 import {
   RequestClient,
   ClientSuccessResponse,
@@ -6,7 +5,7 @@ import {
   CompiledSimpleRequest,
   RequestType,
   SimpleRequest
-} from '../../index'
+} from '@ts-mc/core/client'
 
 export class TestSimpleRequest extends SimpleRequest<string> {
   public readonly type = RequestType.cmd

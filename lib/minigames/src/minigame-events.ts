@@ -16,7 +16,9 @@ import {
   delay,
   distinctUntilChanged,
   filter,
+  pluck,
   map,
+  mapTo,
   mergeMap,
   scan,
   share,
@@ -25,7 +27,6 @@ import {
   switchMap,
   take,
   tap,
-  mapTo,
 } from 'rxjs/operators'
 
 import { GameScope } from './game-scope'
@@ -37,6 +38,7 @@ export class MinigameEvents extends PlayerEvents {
 
   public readonly playerDeath$: Observable<EntityEvent>
   public readonly playerLimbo$: Observable<Player>
+  public readonly playerUnlimbo$: Observable<Player>
   public readonly playerReady$: Observable<Player>
   public readonly playerRespawn$: Observable<PlayerEvent>
   public readonly playersReady$: Observable<boolean>
@@ -82,10 +84,16 @@ export class MinigameEvents extends PlayerEvents {
       eventType(ServerEventType.playerAttackEntity),
       share(),
     )
+    this.playerUnlimbo$ = merge(
+      this.playerRespawn$.pipe(pluck('player')),
+      this.playerLeave$,
+    ).pipe(
+      share(),
+    )
     this.playerLimbo$ = this.playerDeath$.pipe(
       map(event => this.getPlayerByName(event.entityId)),
       dequeueReplay(
-        merge(this.playerRespawn$.pipe(map(respawn => respawn.player)), this.playerLeave$),
+        this.playerUnlimbo$,
         (eventPlayer, player) => eventPlayer.name === player.name,
       ),
     )
@@ -111,19 +119,13 @@ export class MinigameEvents extends PlayerEvents {
     //     (unreadyPlayerName, respawnedPlayer) => respawnPlayer.player.name === playerDeath.entityId,
     //   ),
     this.playerReady$ = this.playerLimbo$.pipe(
-      mergeMap(limboPlayer =>
-        race(
-          this.playerRespawn$.pipe(
-            filter(respawn => respawn.player.name === limboPlayer.name),
-            map(respawn => this.getPlayerByName(respawn.player.name)),
-          ),
-          this.playerLeave$.pipe(filter(leavingPlayer => leavingPlayer.name === limboPlayer.name)),
-        ).pipe(
-          take(1),
-        ),
-      ),
+      mergeMap(limboPlayer => this.playerUnlimbo$.pipe(
+        filter(player => player.name === limboPlayer.name),
+        take(1),
+      )),
       share(),
     )
+
     this.playersReady$ = merge(
       this.playerReady$.pipe(mapTo(-1)),
       this.playerLimbo$.pipe(mapTo(1)),
@@ -143,10 +145,10 @@ export class MinigameEvents extends PlayerEvents {
     )
   }
 
-  public waitForAllPlayersReady(playerName: string, delayAfterReady: number = 0): Observable<void> {
+  public waitForAllPlayersReady(delayAfterReady: number = 0): Observable<void> {
     return this.playersReady$.pipe(
       filter(ready => ready === true),
-      delay(delayAfterReady),
+      delayAfterReady === 0 ? tap() : delay(delayAfterReady),
       mapTo(undefined)
     )
   }
@@ -154,9 +156,11 @@ export class MinigameEvents extends PlayerEvents {
   /**
    * A helper function for implementing timed server-events that are dependent on all players being ready
    * @param timedEventFn
+   * @param delay
    */
   public timedPlayerReadyEvent<T>(
-    timedEventFn: ((state?: T) => Observable<true>)
+    timedEventFn: ((state?: T) => Observable<true>),
+    delay: number = 0,
   ): MonoTypeOperatorFunction<T> {
     return switchMap((state: T) =>
       race(
@@ -168,7 +172,7 @@ export class MinigameEvents extends PlayerEvents {
           if (raceResult === true) {
             return of(state)
           }
-          return this.waitForPlayerReady(raceResult.name, 2500).pipe(
+          return this.waitForAllPlayersReady(delay).pipe(
             mapTo(state)
           )
         })
@@ -177,7 +181,6 @@ export class MinigameEvents extends PlayerEvents {
   }
 
   protected getRunStreams(): Observable<any>[] {
-    // TODO: is this even needed?
     return super.getRunStreams().concat(
       this.playerDeath$,
       this.playerLimbo$,
