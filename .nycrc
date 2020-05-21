@@ -16,6 +16,8 @@
     "**/*.*spec.ts",
     "mocha.config.js",
     "test",
+    "**/testing",
+    "**/*.fixture.ts",
     "**/local-token.ts"
   ],
   "reportDir": ".coverage"

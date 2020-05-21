@@ -274,6 +274,7 @@ class Parser {
   }
 
   private matchToken(token: Token, char: TokenChar): boolean {
+    // @ts-ignore
     const tokenChar = SyntaxChars[token]
 
     if (!tokenChar) {

@@ -18,8 +18,11 @@ module.exports = {
     resolve(__dirname, './test/mocha.config'),
   ],
   spec: [
+    'lib/**/index.ts',
     'lib/**/*.spec.ts',
+    'minigames/**/index.ts',
     'minigames/**/*.spec.ts',
+    'rxjs-marbles/**/index.ts',
     'rxjs-marbles/**/*.spec.ts',
 
     'lib/**/*.int-spec.ts',
