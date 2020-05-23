@@ -35,7 +35,7 @@ export class MinigameManager {
       share(),
     )
     this.run$ = merge(
-      initMinigames$.pipe(map(event => ({ source: 'init', event }))),
+      initMinigames$.pipe(map(event => ({ source: 'minigame', event }))),
 
       // these are required to ensure incoming messages
       // but don't spam the output with all the events

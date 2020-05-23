@@ -17,7 +17,8 @@ import {
   pairwise,
   share,
   startWith,
-  switchMap, switchMapTo,
+  switchMap,
+  switchMapTo,
   take,
   tap,
 } from 'rxjs/operators'
@@ -182,6 +183,7 @@ export class ArenaManager<TEvents extends MinigameEvents> {
 
   private clearArena(arena: ConfiguredArena<TEvents>, nextArena: ConfiguredArena<TEvents>): Observable<ConfiguredArena<TEvents>> {
     return defer(() => {
+      console.log('in clearArena')
       if (!arena) {
         return of(undefined)
       }

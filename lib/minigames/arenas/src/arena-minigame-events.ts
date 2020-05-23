@@ -3,7 +3,7 @@ import { RequestClient } from '@ts-mc/core/client'
 import { ServerEvents } from '@ts-mc/core/server-events'
 import { MinigameEvents } from '@ts-mc/minigames'
 import { Observable } from 'rxjs'
-import { map, scan, share, switchMap, tap } from 'rxjs/operators'
+import { map, scan, share, switchMap } from 'rxjs/operators'
 
 import { Arena, ConfiguredArena } from './arena'
 import { ArenaAgeEvent } from './arena-age-event'
@@ -52,7 +52,6 @@ export class ArenaMinigameEvents extends MinigameEvents {
         scan((result, event) => Object.assign({}, event, {
           arenaAge: result.arenaAge + 1,
         })),
-        tap(event => this.logger.debug('arenaAge$', event)),
         share(),
       )
       this.arenaAgeMap.set(arena, arenaAge$)

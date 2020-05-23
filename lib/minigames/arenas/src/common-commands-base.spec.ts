@@ -1,7 +1,6 @@
 import { repeat, stubLoggerFactory } from '@ts-mc/common/testing'
 import { area, loc } from '@ts-mc/core/types'
 import { CommonCommandsBase } from '@ts-mc/minigames/arenas'
-import { arenaMinigameEventsFixture } from '@ts-mc/minigames/arenas/testing'
 
 import { expect } from 'chai'
 
@@ -12,7 +11,7 @@ describe('CommonCommandsBase', () => {
   let common: CommonCommandsBase
 
   beforeEach(() => {
-    common = new CommonCommandsBase(arenaMinigameEventsFixture() as any)
+    common = new CommonCommandsBase()
   })
   afterEach(() => {
     common = undefined

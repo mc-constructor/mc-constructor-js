@@ -1,6 +1,5 @@
 import { Constructor } from '@dandi/common'
 import { Injectable, InjectionToken, Module } from '@dandi/core'
-import { CommandRequest } from '@ts-mc/core/command'
 import { Observable } from 'rxjs'
 
 import { GameScope } from './game-scope'
