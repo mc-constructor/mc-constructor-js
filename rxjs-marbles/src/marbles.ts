@@ -1,17 +1,26 @@
-import { Observable } from 'rxjs'
+import { Observable, Subject } from 'rxjs'
 import { SubscriptionLog } from 'rxjs/internal/testing/SubscriptionLog'
 
 import { ContextualTestScheduler } from './contextual-test-scheduler'
+import { MarbleKey, MarbleValues } from './types'
 
 export interface AssertDeepEqualFn {
   (actual: any, expected: any, context?: any): boolean | void
 }
 
+export interface CreateHotObservable<T = MarbleKey> {
+  (marbles: string, values?: MarbleValues<T>, error?: any): Subject<T>
+}
+
+export interface CreateColdObservable<T = MarbleKey> {
+  (marbles: string, values?: MarbleValues<T>, error?: any): Subject<T>
+}
+
 export interface MarblesHelpers {
-  readonly cold: typeof ContextualTestScheduler.prototype.createColdObservable
+  readonly cold: CreateColdObservable
   readonly expectObservable: typeof ContextualTestScheduler.prototype.expectObservable
   readonly expectSubscriptions: typeof ContextualTestScheduler.prototype.expectSubscriptions
-  readonly hot: typeof ContextualTestScheduler.prototype.createHotObservable
+  readonly hot: CreateHotObservable
   readonly scheduler: ContextualTestScheduler
   readonly helpers: MarblesHelpers
 }
@@ -29,7 +38,7 @@ class MarblesHelpersImpl implements MarblesHelpersStatic {
 
   private assertDeepEqual: AssertDeepEqualFn
 
-  public get cold(): typeof ContextualTestScheduler.prototype.createColdObservable {
+  public get cold(): CreateColdObservable {
     return (marbles: string): any => MarblesHelpersInternal.cold(marbles)
   }
 
@@ -43,7 +52,7 @@ class MarblesHelpersImpl implements MarblesHelpersStatic {
       MarblesHelpersInternal.expectSubscriptions(actualSubscriptionLogs, context)
   }
 
-  public get hot(): typeof ContextualTestScheduler.prototype.createHotObservable {
+  public get hot(): CreateHotObservable {
     return (marbles: string) => MarblesHelpersInternal.hot(marbles)
   }
 
