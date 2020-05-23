@@ -75,6 +75,8 @@ export const MarblesHelpers: MarblesHelpersStatic = new MarblesHelpersImpl()
 
 export function marblesTesting(): void {
 
+  frameConsole(MarblesHelpersInternal)
+
   beforeEach(() => {
     const scheduler = MarblesHelpers.createTestScheduler()
     const cold = scheduler.createColdObservable.bind(scheduler)
@@ -99,4 +101,28 @@ export function marblesTesting(): void {
     delete MarblesHelpersInternal.helpers
   })
 
+}
+
+type LogMethods = Pick<Console, 'debug' | 'log' | 'warn' | 'info' | 'error' | 'trace'>
+
+export function frameConsole(helpers: MarblesHelpers): void {
+
+  const ogConsole: LogMethods = (() => {
+    const { debug, log, warn, info, error, trace } = console
+    return { debug, log, warn, info, error, trace }
+  })()
+
+  function initConsole(): void {
+    Object.entries(ogConsole).forEach(([ name, fn ]) => {
+      console[name as keyof LogMethods] = (...args: any[]) =>
+        fn.call(console, `#${helpers.scheduler.frame}`, ...args)
+    })
+  }
+
+  function resetConsole(): void {
+    Object.entries(ogConsole).forEach(([ name, fn ]) => console[name as keyof LogMethods] = fn)
+  }
+
+  beforeEach(initConsole)
+  afterEach(resetConsole)
 }
