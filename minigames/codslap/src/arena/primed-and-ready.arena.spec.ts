@@ -8,7 +8,7 @@ import { createGameScope } from '@ts-mc/minigames'
 import { Arena } from '@ts-mc/minigames/arenas'
 
 import { expect } from 'chai'
-import { merge } from 'rxjs'
+import { merge, Observable } from 'rxjs'
 import { take, tap } from 'rxjs/operators'
 
 import { codslapEventsFixture, CodslapEventsFixture, codslapObjectivesFixture } from '../../testing'
@@ -67,7 +67,7 @@ describe('PrimedAndReadyArena', () => {
 
     it('starts making tnt explosions after the minDelay', () => {
       events.config({
-        arenaAvailable$: cold('b'),
+        arenaAvailable$: cold('b') as Observable<any>,
       })
       events.timedPlayerReadyEvent.returns(tap())
       client.config(cold('b|'))
@@ -75,34 +75,32 @@ describe('PrimedAndReadyArena', () => {
       const run$ = merge(...arena.exitRequirements.map(req => req(events as any, arena)))
 
       // first boom = 10s minDelay + 5s delay after tnt cmd
-      // FIXME: where's the 100ms coming from?
 
-      expect(run$.pipe(take(1))).to.equal('16s (b|)')
+      expect(run$.pipe(take(1))).to.equal('15s (b|)')
     })
 
     it('makes tnt explosions every 5s', () => {
       events.config({
-        arenaAvailable$: cold('b'),
+        arenaAvailable$: cold('b') as Observable<any>,
       })
       events.timedPlayerReadyEvent.returns(tap())
       client.config(cold('b|'))
 
       const run$ = merge(...arena.exitRequirements.map(req => req(events as any, arena)))
 
-      expect(run$.pipe(take(5))).to.equal('16s b 4999ms b 4999ms b 4999ms b 4999ms (b|)')
+      expect(run$.pipe(take(5))).to.equal('15s b 4999ms b 4999ms b 4999ms b 4999ms (b|)')
     })
 
     it('stops after 30 explosions', () => {
       events.config({
-        arenaAvailable$: cold('b'),
+        arenaAvailable$: cold('b') as Observable<any>,
       })
       events.timedPlayerReadyEvent.returns(tap())
       client.config(cold('b|'))
 
       const run$ = merge(...arena.exitRequirements.map(req => req(events as any, arena)))
 
-      // TODO: why no completion?
-      const expected = '16s' + Array(30).join(' b 4999ms') + ' b'
+      const expected = '15s' + Array(30).join(' b 4999ms') + ' (b|)'
       expect(run$).to.equal(expected)
     })
 

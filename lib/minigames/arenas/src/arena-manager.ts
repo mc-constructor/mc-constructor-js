@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger, RestrictScope } from '@dandi/core'
-import { dequeueReplay, silence } from '@ts-mc/common/rxjs'
+import { dequeueReplay, pass, silence } from '@ts-mc/common/rxjs'
 import { text, title } from '@ts-mc/core/cmd'
 import { RequestClient } from '@ts-mc/core/client'
 import { CommandOperator, CommandOperatorFn } from '@ts-mc/core/command'
@@ -29,8 +29,16 @@ import { ArenaRequirement } from './arena-requirement'
 import { HookHandler } from './behaviors'
 import { CommonCommands } from './common-commands'
 
+export interface ArenaManager<TEvents extends MinigameEvents> {
+  readonly arenaAvailable$: Observable<ConfiguredArena<TEvents>>
+  readonly arenaComplete$: Observable<ConfiguredArena<TEvents>>
+  readonly arenaInit$: Observable<ConfiguredArena<TEvents>>
+  readonly arenaStart$: Observable<ConfiguredArena<TEvents>>
+  readonly run$: Observable<any>
+}
+
 @Injectable(RestrictScope(GameScope))
-export class ArenaManager<TEvents extends MinigameEvents> {
+class ArenaManagerImpl<TEvents extends MinigameEvents> {
 
   public readonly arenaAvailable$: Observable<ConfiguredArena<TEvents>>
   public readonly arenaComplete$: Observable<ConfiguredArena<TEvents>>
@@ -196,7 +204,7 @@ export class ArenaManager<TEvents extends MinigameEvents> {
       map(players => this.common.movePlayersToHolding(players)),
       this.command(),
       delay(500),
-      arena ? this.command(arena.instance.cleanup()) : tap(),
+      arena ? this.command(arena.instance.cleanup()) : pass,
     )
   }
 
@@ -234,3 +242,5 @@ export class ArenaManager<TEvents extends MinigameEvents> {
   }
 
 }
+
+export const ArenaManager = ArenaManagerImpl

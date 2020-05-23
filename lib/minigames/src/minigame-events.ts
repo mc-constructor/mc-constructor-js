@@ -1,7 +1,7 @@
 import { Logger } from '@dandi/core'
 import { subclassFactoryProvider } from '@ts-mc/common'
 import { RequestClient } from '@ts-mc/core/client'
-import { dequeueReplay } from '@ts-mc/common/rxjs'
+import { dequeueReplay, pass } from '@ts-mc/common/rxjs'
 import {
   EntityEvent,
   eventType,
@@ -11,7 +11,7 @@ import {
   ServerEventType
 } from '@ts-mc/core/server-events'
 import { Player } from '@ts-mc/core/types'
-import { interval, merge, MonoTypeOperatorFunction, Observable, of, race } from 'rxjs'
+import { merge, MonoTypeOperatorFunction, Observable, of, race, timer } from 'rxjs'
 import {
   concatMap,
   delay,
@@ -43,7 +43,7 @@ export class MinigameEvents extends PlayerEvents {
   public readonly playerRespawn$: Observable<PlayerEvent>
   public readonly playersReady$: Observable<boolean>
 
-  public readonly minigameAge$: Observable<MinigameAgeEvent> = interval(1000).pipe(
+  public readonly minigameAge$: Observable<MinigameAgeEvent> = timer(0, 1000).pipe(
     map(minigameAge => ({ minigameAge })),
     share(),
   )
@@ -148,7 +148,7 @@ export class MinigameEvents extends PlayerEvents {
   public waitForAllPlayersReady(delayAfterReady: number = 0): Observable<void> {
     return this.playersReady$.pipe(
       filter(ready => ready === true),
-      delayAfterReady === 0 ? tap() : delay(delayAfterReady),
+      delayAfterReady === 0 ? pass : delay(delayAfterReady),
       mapTo(undefined)
     )
   }
@@ -187,6 +187,7 @@ export class MinigameEvents extends PlayerEvents {
 
   protected getRunStreams(): Observable<any>[] {
     return super.getRunStreams().concat(
+      this.minigameAge$, // required to ensure that it does not get reset due to unsubscriptions
       this.playerDeath$,
       this.playerLimbo$,
       this.playerReady$,

@@ -6,7 +6,7 @@ import { CommandRequest, CommandOperator, CommandOperatorFn, parallel, series } 
 import { area, Area, Block, Coordinates, EntityBlock, loc } from '@ts-mc/core/types'
 import { Arena, ArenaBase, ArenaConstructor, PlatformLayer } from '@ts-mc/minigames/arenas'
 import { combineLatest, defer, Observable, of, timer } from 'rxjs'
-import { catchError, delay, map, mapTo, repeat, switchMap, switchMapTo, tap } from 'rxjs/operators'
+import { catchError, delay, map, mapTo, repeat, switchMap, switchMapTo, take, tap } from 'rxjs/operators'
 
 import { CodslapEvents } from '../codslap-events'
 import { CodslapCommonCommands } from '../codslap-common-commands'
@@ -58,31 +58,37 @@ class PrimedAndReadyArena extends ArenaBase<CodslapEvents, CodslapCommonCommands
 
   private run(events: CodslapEvents): Observable<any> {
     this.logger.debug('run')
+    let count = 1
     return Codslap.requirements.minArenaAge(PrimedAndReadyArena.minDelay)(events, this).pipe(
       tap(() => this.logger.debug('minimum arena age met, waiting for next available arena to start exploding')),
       switchMapTo(events.arenaAvailable$),
 
       switchMapTo(
-
-        // next explosion location - down 1 because spawn locations are up 1 from the floor
-        defer(() => of(this.getRandomSpawn().modify.subtractOffset(this.common.spawnOffsetFromFloor))).pipe(
-          events.timedPlayerReadyEvent(this.getTimer.bind(this)),
-
-          map(loc => this.getTntCommand(loc)),
-          switchMap(([cmd, tntState]) => combineLatest([of(cmd).pipe(this.command()), of(tntState)])),
-          delay(5000),
-          map(([,tntState]) => this.replaceBlock(tntState)),
-          this.command(),
-          catchError(err => {
-            if (err instanceof RequestError && err.type === 'commands.setblock.failed') {
-              // FIXME: why is this error happening?
-              this.logger.warn(err)
-              return of(undefined)
-            }
-            throw err
+        defer(() =>
+          of(this.getRandomSpawn().modify.subtractOffset(this.common.spawnOffsetFromFloor)).pipe(
+            events.timedPlayerReadyEvent(this.getTimer.bind(this)),
+            map(loc => this.getTntCommand(loc)),
+            switchMap(([cmd, tntState]) => combineLatest([of(cmd).pipe(this.command()), of(tntState)])),
+            delay(5000),
+            map(([,tntState]) => this.replaceBlock(tntState)),
+            this.command(),
+            catchError(err => {
+              if (err instanceof RequestError && err.type === 'commands.setblock.failed') {
+                // FIXME: why is this error happening?
+                this.logger.warn(err)
+                return of(undefined)
+              }
+              throw err
+            }),
+          ),
+        ).pipe(
+          tap(() => {
+            console.log('boom #', count++)
           }),
-          repeat(PrimedAndReadyArena.explosionCount),
-      )),
+          repeat(),
+        ),
+      ),
+      take(PrimedAndReadyArena.explosionCount),
     )
   }
 

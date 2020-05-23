@@ -1,4 +1,4 @@
-import { map, tap, mapTo } from 'rxjs/operators'
+import { map, mapTo } from 'rxjs/operators'
 
 import { RequestClient } from '../request-client'
 import { ClientErrorResponse, ClientResponse, ClientSuccessResponse } from '../response-client'

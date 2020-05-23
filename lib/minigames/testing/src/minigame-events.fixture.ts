@@ -1,7 +1,7 @@
 import { stub } from '@dandi/core/testing'
 import { Fixture } from '@ts-mc/common/testing'
 import { MinigameEvents } from '@ts-mc/minigames'
-import { interval, NEVER, Observable } from 'rxjs'
+import { isObservable, merge, NEVER, Observable, timer } from 'rxjs'
 import { map, share } from 'rxjs/operators'
 import { playerEventsFixture } from '@ts-mc/core/server-events/testing'
 
@@ -15,17 +15,15 @@ export type MinigameEventsFixtureConfig<TEvents extends MinigameEvents = Minigam
 export function minigameEventsFixture<TEvents extends MinigameEvents>(
   config?: MinigameEventsFixtureConfig<TEvents>,
 ): MinigameEventsFixture<TEvents> {
-  const minigameAge$ = interval(1000).pipe(
+  const minigameAge$ = timer(0, 1000).pipe(
     map(minigameAge => ({ minigameAge })),
     share(),
   )
-  return Object.assign(playerEventsFixture(), {
+  const fixture = Object.assign(playerEventsFixture(), {
     minigameAge$,
     playerDeath$: NEVER,
     playerRespawn$: NEVER,
     playerReady$: NEVER,
-
-    run$: NEVER,
 
     timedPlayerReadyEvent: stub(),
     waitForPlayerReady: stub(),
@@ -37,4 +35,7 @@ export function minigameEventsFixture<TEvents extends MinigameEvents>(
       return Object.assign(this, config)
     }
   }, config) as any
+  return Object.assign(fixture, {
+    run$: merge(...Object.values(fixture).filter(isObservable)),
+  })
 }
