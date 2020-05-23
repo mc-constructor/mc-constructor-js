@@ -69,7 +69,7 @@
  - killing player takes a random piece of armor or fish if it is better
 
 ### NEXT:
-- arenaAvailable$ doesn't work correctly when adding new subscriptions? - prevents primed and ready from working correctly
+- fix primed and ready explosion sequence breaking sometimes after player deaths 
 - why is setblock failing?
 - Finish arena change sequence (add countdown)
 - Default/global hooks (e.g. cow spawning)  

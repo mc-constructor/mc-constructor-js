@@ -38,6 +38,7 @@ describe.marbles('ArenaManager', ({ cold, hot }) => {
   const harness = testHarness(
     ArenaManager,
     CommandModule,
+    CommonCommandsBase,
     ConsoleLogListener,
     EventsAccessorProvider,
     {
@@ -51,11 +52,6 @@ describe.marbles('ArenaManager', ({ cold, hot }) => {
     {
       provide: ArenaMinigameEvents,
       useFactory: () => events,
-    },
-    {
-      provide: CommonCommandsBase,
-      useFactory: (events: ArenaMinigameEvents) => new CommonCommandsBase(events),
-      deps: [MinigameEvents],
     },
     {
       provide: CommonCommands,
@@ -151,7 +147,7 @@ describe.marbles('ArenaManager', ({ cold, hot }) => {
         }
         client.config(cold('a'))
 
-        const expectedStart = '2500ms -a'
+        const expectedStart = '3s -a'
 
         expect(manager.run$, 'run$').to.equal('')
         expect(manager.arenaStart$, 'arenaStart$').with.marbleValues(values).to.equal(expectedStart)
@@ -165,7 +161,7 @@ describe.marbles('ArenaManager', ({ cold, hot }) => {
       it('starts the first arena', () => {
         client.config(cold('a'))
 
-        const expectedStart = '2500ms -a'
+        const expectedStart = '3s -a'
 
         expect(manager.arenaStart$, 'arenaStart$').with.marbleValues(arenaMarbles).to.equal(expectedStart)
         expect(manager.run$, 'run$').with.marbleValues(arenaMarbles).to.equal('')
@@ -183,7 +179,7 @@ describe.marbles('ArenaManager', ({ cold, hot }) => {
           )),
         })
 
-        const expectedStart = '2500ms -a 41499ms b'
+        const expectedStart = '3s -a 40999ms b'
 
         expect(manager.arenaStart$, 'arenaStart$').with.marbleValues(arenaMarbles).to.equal(expectedStart)
         expect(manager.run$, 'run$').and.marbleValues(arenaMarbles).to.equal('36s a')
@@ -205,7 +201,7 @@ describe.marbles('ArenaManager', ({ cold, hot }) => {
           )),
         })
 
-        const expectedStart = '2500ms -a 41499ms b'
+        const expectedStart = '3s -a 40999ms b'
 
         expect(manager.run$, 'run$').and.marbleValues(arenaMarbles).to.equal('36s a')
         expect(manager.arenaStart$, 'arenaStart$').with.marbleValues(arenaMarbles).to.equal(expectedStart)

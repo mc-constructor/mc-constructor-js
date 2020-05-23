@@ -9,7 +9,7 @@ import { TypesFixtures } from '@ts-mc/core/types/testing'
 import { MinigameEvents } from '@ts-mc/minigames'
 import { expect } from 'chai'
 import { Observable } from 'rxjs'
-import { map, mapTo, share } from 'rxjs/operators'
+import { map, mapTo, share, tap } from 'rxjs/operators'
 
 describe.marbles('MinigameEvents', ({ cold, hot }) => {
 
@@ -246,7 +246,7 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
     // expects that the resulting observable emits when the player respawns and not when trigger$ emits
     let expected: string
 
-    function execTest() {
+    function execTest(timedEventSource$: Observable<string> = cold('a')) {
       const eventTrigger$: Observable<true> = trigger$.pipe(mapTo(true))
       const events = initEvents(source$)
 
@@ -255,8 +255,10 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
       // because it doesn't matter for these tests
       expect(events.run$.pipe(silence), 'run$').to.equal('')
 
-      const timedEvent$ = cold('a').pipe(
+      const timedEvent$ = timedEventSource$.pipe(
+        tap(v => console.log('event', v)),
         events.timedPlayerReadyEvent(() => eventTrigger$),
+        tap(v => console.log('ready event', v))
       )
 
       expect(timedEvent$, 'timedEvent$').to.equal(expected)
@@ -298,6 +300,33 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
       }
 
       execTest()
+    })
+
+    it('continues emitting over multiple source events', () => {
+      trigger$ = cold('1s -x')
+      source$ =   hot('1s d---r')
+      expected =      '1s ----a 1s b 1s c 1s d'
+
+      serverEvents = {
+        d: ServerEventFixtures.attackedByPlayer(ServerEventType.entityLivingDeath, { entityId: playerValues.a.name }),
+        r: ServerEventFixtures.player(ServerEventType.playerRespawn, { player: playerValues.a })
+      }
+
+      execTest(cold('a 1s b 1s c 1s d'))
+    })
+
+    it('continues emitting over multiple source events with multiple interruptions', () => {
+      trigger$ =    cold('1s   -x')
+      source$ =      hot('1s   d---r 1s d---r 1s d---r 1s d---r')
+      expected =         '1s   ----a 1s ----b 1s ----c 1s ----d'
+      const emit$ = cold('a 1s         b 1s c 1s d')
+
+      serverEvents = {
+        d: ServerEventFixtures.attackedByPlayer(ServerEventType.entityLivingDeath, { entityId: playerValues.a.name }),
+        r: ServerEventFixtures.player(ServerEventType.playerRespawn, { player: playerValues.a })
+      }
+
+      execTest(emit$)
     })
   })
 

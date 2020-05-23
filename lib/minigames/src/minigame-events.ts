@@ -13,6 +13,7 @@ import {
 import { Player } from '@ts-mc/core/types'
 import { interval, merge, MonoTypeOperatorFunction, Observable, of, race } from 'rxjs'
 import {
+  concatMap,
   delay,
   distinctUntilChanged,
   filter,
@@ -24,7 +25,6 @@ import {
   share,
   shareReplay,
   startWith,
-  switchMap,
   take,
   tap,
 } from 'rxjs/operators'
@@ -162,22 +162,27 @@ export class MinigameEvents extends PlayerEvents {
     timedEventFn: ((state?: T) => Observable<true>),
     delay: number = 0,
   ): MonoTypeOperatorFunction<T> {
-    return switchMap((state: T) =>
-      race(
+    return concatMap((state: T) => {
+      console.log('before race', state)
+      return race(
         timedEventFn(state),
-        this.playerLimbo$,
+        this.playerLimbo$.pipe(
+          tap(v => console.log('waiting on limbo', v)),
+        ),
       ).pipe(
+        take(1),
         map(raceResult => ({ raceResult, state })),
-        switchMap(({ raceResult, state }) => {
+        mergeMap(({ raceResult, state }) => {
           if (raceResult === true) {
             return of(state)
           }
           return this.waitForAllPlayersReady(delay).pipe(
-            mapTo(state)
+            mapTo(state),
+            take(1),
           )
-        })
-      ),
-    )
+        }),
+      )
+    })
   }
 
   protected getRunStreams(): Observable<any>[] {
