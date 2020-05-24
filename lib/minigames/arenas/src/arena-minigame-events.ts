@@ -7,7 +7,7 @@ import { map, scan, share, switchMap } from 'rxjs/operators'
 
 import { Arena, ConfiguredArena } from './arena'
 import { ArenaAgeEvent } from './arena-age-event'
-import { ArenaManager } from './arena-manager'
+import { ArenaManagerEvents } from './arena-manager-events'
 
 export class ArenaMinigameEvents extends MinigameEvents {
 
@@ -19,22 +19,22 @@ export class ArenaMinigameEvents extends MinigameEvents {
   private readonly arenaAgeMap = new Map<Arena<this>, Observable<ArenaAgeEvent>>()
 
   constructor(
-    protected readonly arenaManager: ArenaManager<any>,
+    protected readonly arenaManagerEvents: ArenaManagerEvents<any>,
     client: RequestClient,
     events$: ServerEvents,
     logger: Logger,
   ) {
     super(client, events$, logger)
 
-    this.arenaAvailable$ = this.arenaManager.arenaAvailable$.pipe(
+    this.arenaAvailable$ = this.arenaManagerEvents.arenaAvailable$.pipe(
       this.debug(arena => ['arenaAvailable$', arena.title]),
       share(),
     )
-    this.arenaStart$ = this.arenaManager.arenaStart$.pipe(
+    this.arenaStart$ = this.arenaManagerEvents.arenaStart$.pipe(
       this.debug(arena => ['arenaStart$', arena.title]),
       share(),
     )
-    this.arenaInit$ = this.arenaManager.arenaInit$.pipe(
+    this.arenaInit$ = this.arenaManagerEvents.arenaInit$.pipe(
       this.debug(arena => ['arenaInit$', arena.title]),
       share(),
     )

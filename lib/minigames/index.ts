@@ -1,4 +1,3 @@
-export * from './src/events-accessor'
 export * from './src/game-scope'
 export * from './src/minigame'
 export * from './src/minigame-age-event'

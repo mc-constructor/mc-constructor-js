@@ -3,11 +3,10 @@ import { dequeueReplay, pass, silence } from '@ts-mc/common/rxjs'
 import { text, title } from '@ts-mc/core/cmd'
 import { RequestClient } from '@ts-mc/core/client'
 import { CommandOperator, CommandOperatorFn } from '@ts-mc/core/command'
-import { GameScope, MinigameEvents, EventsAccessor, Accessor } from '@ts-mc/minigames'
+import { GameScope, MinigameEvents } from '@ts-mc/minigames'
 import { combineLatest, defer, forkJoin, merge, Observable, of, ReplaySubject, timer, NEVER } from 'rxjs'
 import {
   buffer,
-  catchError,
   concatMap,
   delay,
   filter,
@@ -25,6 +24,7 @@ import {
 
 import { ConfiguredArena, ConfiguredArenas } from './arena'
 import { ArenaHooks } from './arena-hook'
+import { ArenaManagerEventsProxy } from './arena-manager-events-proxy'
 import { ArenaRequirement } from './arena-requirement'
 import { HookHandler } from './behaviors'
 import { CommonCommands } from './common-commands'
@@ -51,22 +51,22 @@ class ArenaManagerImpl<TEvents extends MinigameEvents> {
 
   public readonly run$: Observable<any>
 
-  private events: TEvents
-
   constructor(
     @Inject(RequestClient) private client: RequestClient,
     @Inject(ConfiguredArenas) private arenas: ConfiguredArena<TEvents>[],
     @Inject(CommonCommands) private common: CommonCommands,
-    @Inject(EventsAccessor) eventsAccessor: Accessor<TEvents>,
+    @Inject(MinigameEvents) private readonly events: TEvents,
+    @Inject(ArenaManagerEventsProxy) private readonly eventsProxy: ArenaManagerEventsProxy<TEvents>,
     @Inject(CommandOperator) private readonly command: CommandOperatorFn,
     @Inject(Logger) private readonly logger: Logger,
   ) {
     this.logger.debug('ctr')
     this.arenaAvailable$ = this.arenaAvailable()
     this.arenaComplete$ = this.runArenas()
-    eventsAccessor(this, 'events')
 
     this.run$ = this.arenaComplete$
+
+    this.eventsProxy.init(this)
   }
 
   private arenaAvailable(): Observable<ConfiguredArena<TEvents>> {
@@ -221,15 +221,15 @@ class ArenaManagerImpl<TEvents extends MinigameEvents> {
     const reqs$ = (requirements || [])
       .concat(arena.config[type])
       .map(req => req(this.events, arena.instance).pipe(
-        catchError(err => {
-          console.error(err)
-          throw err
-        }),
-        finalize(() => {
+        tap(() => {
           console.log(`arenaRequirements ${type} req complete`, arena.title)
           this.logger.debug(`${type} req complete`, arena.title, req)
-        })),
-        share(),
+        }, err => {
+          console.error(err)
+          this.logger.error(`${type} req error`, err)
+        }),
+      ),
+      share(),
     )
     return forkJoin(...reqs$).pipe(
       mapTo(arena),

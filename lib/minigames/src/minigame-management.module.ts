@@ -1,6 +1,5 @@
 import { ModuleBuilder, Registerable } from '@dandi/core'
 
-import { EventsAccessorProvider } from './events-accessor-provider'
 import { localToken } from './local-token'
 import { MinigameEntrypoint } from './minigame-entrypoint'
 import { MinigameLoader } from './minigame-loader'
@@ -14,7 +13,6 @@ export class MinigameManagementModuleBuilder extends ModuleBuilder<MinigameManag
 }
 
 export const MinigameManagementModule = new MinigameManagementModuleBuilder(
-  EventsAccessorProvider,
   MinigameEntrypoint,
   MinigameLoader,
   MinigameManager,

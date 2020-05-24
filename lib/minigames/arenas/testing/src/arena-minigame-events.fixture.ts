@@ -2,7 +2,7 @@ import { minigameEventsFixture, MinigameEventsFixture, MinigameEventsFixtureConf
 import { NEVER } from 'rxjs'
 import { ArenaMinigameEvents } from '@ts-mc/minigames/arenas'
 import { stub } from '@dandi/core/testing'
-import { map, scan, share } from 'rxjs/operators'
+import { map, scan, share, switchMap } from 'rxjs/operators'
 
 export type ArenaMinigameEventsFixture<TEvents extends ArenaMinigameEvents = ArenaMinigameEvents> = MinigameEventsFixture<TEvents>
 
@@ -11,7 +11,6 @@ export function arenaMinigameEventsFixture<TEvents extends ArenaMinigameEvents =
 ): ArenaMinigameEventsFixture<TEvents> {
   const fixture = minigameEventsFixture<TEvents>(Object.assign({
     arenaAvailable$: NEVER,
-    arenaAge$: NEVER,
     arenaInit$: NEVER,
     arenaStart$: NEVER,
   }, config))
@@ -24,5 +23,9 @@ export function arenaMinigameEventsFixture<TEvents extends ArenaMinigameEvents =
       })),
       share(),
     )),
+    arenaAge$: fixture.arenaInit$.pipe(
+      switchMap(arena => fixture.getArenaAge$(arena.instance)),
+      share(),
+    ),
   })
 }

@@ -1,6 +1,7 @@
 import { ConsoleLogListener } from '@dandi/core/logging'
 import { testHarness, stub } from '@dandi/core/testing'
 import { range } from '@ts-mc/common'
+import { silence } from '@ts-mc/common/rxjs'
 import { stubLoggerFactory } from '@ts-mc/common/testing'
 import { RequestClient } from '@ts-mc/core/client'
 import {
@@ -10,8 +11,18 @@ import {
 } from '@ts-mc/core/client/testing'
 import { CommandModule } from '@ts-mc/core/command'
 import { ServerEventType } from '@ts-mc/core/server-events'
-import { createGameScope, MinigameEvents } from '@ts-mc/minigames'
-import { ArenaMinigameEvents, CommonCommands, CommonCommandsBase } from '@ts-mc/minigames/arenas'
+import { createGameScope, GameScope, MinigameEvents } from '@ts-mc/minigames'
+import {
+  ArenaManager,
+  ArenaManagerEvents,
+  ArenaMinigameEvents,
+  ArenasModuleBuilder,
+  CommonCommands,
+  CommonCommandsBase,
+  ConfiguredArena,
+  ConfiguredArenas,
+  Arena,
+} from '@ts-mc/minigames/arenas'
 import { minigameEventFixture } from '@ts-mc/minigames/testing'
 import {
   arenaMinigameEventsFixture,
@@ -25,11 +36,9 @@ import { Observable, of } from 'rxjs'
 import { mapTo } from 'rxjs/operators'
 import { SinonStub } from 'sinon'
 
-import { EventsAccessorProvider } from '../../src/events-accessor-provider'
+import { ArenaManagerEventsProxy } from './arena-manager-events-proxy'
 
-import { ConfiguredArena, ConfiguredArenas } from './arena'
-import { ArenaManager } from './arena-manager'
-import { ArenasModuleBuilder } from './arenas-module-builder'
+type ArenaConfig = Pick<Arena<ArenaMinigameEvents>, 'entryRequirements' | 'exitRequirements'>
 
 describe.marbles('ArenaManager', ({ cold, hot }) => {
 
@@ -37,21 +46,25 @@ describe.marbles('ArenaManager', ({ cold, hot }) => {
 
   const harness = testHarness(
     ArenaManager,
+    ArenaManagerEventsProxy,
     CommandModule,
     CommonCommandsBase,
     ConsoleLogListener,
-    EventsAccessorProvider,
     {
       provide: RequestClient,
       useFactory: () => client,
     },
     {
       provide: MinigameEvents,
-      useFactory: () => events,
+      useFactory: (events: ArenaMinigameEvents) => events,
+      deps: [ArenaMinigameEvents],
+      restrictScope: GameScope,
     },
     {
       provide: ArenaMinigameEvents,
-      useFactory: () => events,
+      useFactory: (managerEvents: ArenaManagerEvents<MinigameEvents>) => arenaMinigameEventsFixture(managerEvents),
+      deps: [ArenaManagerEvents],
+      restrictScope: GameScope,
     },
     {
       provide: CommonCommands,
@@ -67,9 +80,13 @@ describe.marbles('ArenaManager', ({ cold, hot }) => {
   let arenaHooks: SinonStub<[], Observable<any>>[]
   let arenaMarbles: { [marble: string]: ConfiguredArena<ArenaMinigameEvents> }
 
-  async function init() {
+  async function init(): Promise<void> {
     const injector = harness.createChild(createGameScope())
     manager = await injector.inject<ArenaManager<ArenaMinigameEvents>>(ArenaManager)
+
+    events = (await injector.inject(ArenaMinigameEvents)) as unknown as ArenaMinigameEventsFixture
+    events.players.push({ name: 'testguy', uuid: '12345' })
+
     arenas = await injector.inject(ConfiguredArenas)
     arenaMarbles = arenas.reduce((result, arena, index) => {
       result['abcdefghijklmnopqrstuvwxyz'[index]] = arena
@@ -77,7 +94,7 @@ describe.marbles('ArenaManager', ({ cold, hot }) => {
     }, {} as { [marble: string]: ConfiguredArena<ArenaMinigameEvents> })
   }
 
-  function registerArenas(count: number) {
+  function registerArenas(count: number, config?: ArenaConfig): () => void {
     return () => {
       const testArenas = range(1, count).map(index => {
 
@@ -93,12 +110,11 @@ describe.marbles('ArenaManager', ({ cold, hot }) => {
       })
       const module = testArenas.reduce((result, { arena }, index) => {
         return result.arena(arena, {
-          entry: index === 0 ? TestArenaMinigame.requirements.none : [
-            TestArenaMinigame.requirements.minGameAge(35 * index),
-          ],
-          exit: [
-            TestArenaMinigame.requirements.minArenaAge(30),
+          entry: index === 0 ? TestArenaMinigame.requirements.none : config?.entryRequirements as any || [
             TestArenaMinigame.requirements.count('playerDeath$', 25),
+          ],
+          exit: config?.exitRequirements as any || [
+            TestArenaMinigame.requirements.minArenaAge(35),
           ]
         })
       }, new ArenasModuleBuilder('test'))
@@ -107,10 +123,8 @@ describe.marbles('ArenaManager', ({ cold, hot }) => {
     }
   }
 
-  beforeEach(async () => {
-    client = requestClientFixture()
-    events = arenaMinigameEventsFixture()
-    events.players.push({ name: 'testguy', uuid: '12345' })
+  beforeEach(() => {
+    client = requestClientFixture(cold('a'))
   })
   afterEach(() => {
     client = undefined
@@ -149,7 +163,7 @@ describe.marbles('ArenaManager', ({ cold, hot }) => {
 
         const expectedStart = '3s -a'
 
-        expect(manager.run$, 'run$').to.equal('')
+        expect(manager.run$, 'run$').with.subscription('^ 5s !').to.equal('-')
         expect(manager.arenaStart$, 'arenaStart$').with.marbleValues(values).to.equal(expectedStart)
       })
     })
@@ -179,10 +193,10 @@ describe.marbles('ArenaManager', ({ cold, hot }) => {
           )),
         })
 
-        const expectedStart = '3s -a 40999ms b'
+        const expectedStart = '3s -a 39999ms b'
 
         expect(manager.arenaStart$, 'arenaStart$').with.marbleValues(arenaMarbles).to.equal(expectedStart)
-        expect(manager.run$, 'run$').and.marbleValues(arenaMarbles).to.equal('36s a')
+        expect(manager.run$.pipe(silence), 'run$').and.marbleValues(arenaMarbles).to.equal('70s |')
       })
 
       it('continues subscribing to hooks after exit requirements are complete', () => {
@@ -201,10 +215,10 @@ describe.marbles('ArenaManager', ({ cold, hot }) => {
           )),
         })
 
-        const expectedStart = '3s -a 40999ms b'
+        const expectedStart = '3s -a 39999ms b'
 
-        expect(manager.run$, 'run$').and.marbleValues(arenaMarbles).to.equal('36s a')
         expect(manager.arenaStart$, 'arenaStart$').with.marbleValues(arenaMarbles).to.equal(expectedStart)
+        expect(manager.run$.pipe(silence), 'run$').and.marbleValues(arenaMarbles).to.equal('70s |')
 
         // 31026ms = sum of timings from playerDeath$ above:
         //  3500ms : initial delay
@@ -219,20 +233,20 @@ describe.marbles('ArenaManager', ({ cold, hot }) => {
 
   describe('arenaAvailable$', () => {
 
-    beforeEach(registerArenas(2))
+    beforeEach(registerArenas(2, { entryRequirements: [TestArenaMinigame.requirements.minGameAge(10)]}))
     beforeEach(init)
 
     it('emits when all entry requirements are met for an arena', () => {
 
-      expect(manager.arenaAvailable$).with.marbleValues(arenaMarbles).to.equal('a 35999ms (b|)')
+      expect(manager.arenaAvailable$).with.marbleValues(arenaMarbles).to.equal('a 9999ms (b|)')
 
     })
 
     it('re-emits arenas that are ready but have not initialized on subsequent subscriptions', () => {
 
-      const expected1 = 'a 35999ms (b|)'
-      const expected2 = '10s a 25999ms (b|)'
-      const sub2      = '10s ^'
+      const expected1 = 'a 9999ms (b|)'
+      const expected2 = '5s a 4999ms (b|)'
+      const sub2      = '5s ^'
 
       expect(manager.arenaAvailable$, 'expected1').with.marbleValues(arenaMarbles).to.equal(expected1)
       expect(manager.arenaAvailable$, 'expected2').with.marbleValues(arenaMarbles).and.subscription(sub2).to.equal(expected2)
