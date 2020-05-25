@@ -1,4 +1,4 @@
-import { map, mapTo } from 'rxjs/operators'
+import { map, mapTo, share, take } from 'rxjs/operators'
 
 import { RequestClient } from '../request-client'
 import { ClientErrorResponse, ClientResponse, ClientSuccessResponse } from '../response-client'
@@ -56,7 +56,11 @@ export abstract class SimpleRequest<TResponse extends any = any> extends Request
           console.log('DISALLOWED ERROR', err)
           throw err
         }),
+        take(1),
+        share(),
       )),
+      take(1),
+      share(),
     )
   }
 

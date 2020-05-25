@@ -1,12 +1,12 @@
 import { Inject, Logger } from '@dandi/core'
 import { RandomIntervalScheduler } from '@ts-mc/common/rxjs'
 import { block, text, title } from '@ts-mc/core/cmd'
-import { CommandOperator, CommandOperatorFn, CommandRequest, parallel } from '@ts-mc/core/command'
+import { MapCommand, MapCommandOperatorFn, CommandRequest, parallel } from '@ts-mc/core/command'
 import { area, Block, loc } from '@ts-mc/core/types'
 import { Arena, ArenaBase, ArenaConstructor, PlatformLayer } from '@ts-mc/minigames/arenas'
 
 import { interval, Observable } from 'rxjs'
-import { delay, map, switchMap, switchMapTo, takeWhile, tap } from 'rxjs/operators'
+import { delay, switchMap, switchMapTo, takeWhile, tap } from 'rxjs/operators'
 
 import { CodslapEvents } from '../codslap-events'
 import { CodslapCommonCommands } from '../codslap-common-commands'
@@ -52,7 +52,7 @@ class ShrinkyDinksArena extends ArenaBase<CodslapEvents, CodslapCommonCommands> 
 
   constructor(
     @Inject(CodslapCommonCommands) common: CodslapCommonCommands,
-    @Inject(CommandOperator) private readonly command: CommandOperatorFn,
+    @Inject(MapCommand) private readonly mapCommand: MapCommandOperatorFn,
     @Inject(Logger) private logger: Logger,
   ) {
     super(common)
@@ -66,12 +66,11 @@ class ShrinkyDinksArena extends ArenaBase<CodslapEvents, CodslapCommonCommands> 
       tap(() => this.logger.debug('next arena is available, starting shrink timer')),
       switchMap(() => interval(ShrinkyDinksArena.removeRowInterval, ShrinkyDinksArena.removeRowScheduler)),
       tap(() => this.logger.debug('shrink timer tick')),
-      this.command(title('@a', text('Watch out!'))),
-      map(this.getNextRow.bind(this)),
+      this.mapCommand(title('@a', text('Watch out!'))),
       delay(1500),
       // FIXME: if a player dies, pause until they respawn or disconnect before continuing
       tap(() => this.currentRadius--),
-      this.command(),
+      this.mapCommand(this.getNextRow.bind(this)),
       takeWhile(() => this.currentRadius > ShrinkyDinksArena.minRadius),
     )
   }

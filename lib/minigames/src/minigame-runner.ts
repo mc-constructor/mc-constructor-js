@@ -1,6 +1,6 @@
 import { Constructor, Disposable } from '@dandi/common'
 import { Inject, Injectable, Injector, Logger } from '@dandi/core'
-import { CommandOperator, CommandOperatorFn } from '@ts-mc/core/command'
+import { MapCommand, MapCommandOperatorFn } from '@ts-mc/core/command'
 import { RequestClient } from '@ts-mc/core/client'
 import { defer, from, Observable } from 'rxjs'
 import { catchError, share, switchMap } from 'rxjs/operators'
@@ -15,7 +15,7 @@ export class MinigameRunner {
   constructor(
     @Inject(Injector) private injector: Injector,
     @Inject(RequestClient) private client: RequestClient,
-    @Inject(CommandOperator) private command: CommandOperatorFn,
+    @Inject(MapCommand) private mapCommand: MapCommandOperatorFn,
     @Inject(Logger) private logger: Logger,
   ) {}
 

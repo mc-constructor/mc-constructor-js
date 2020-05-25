@@ -7,6 +7,7 @@ import { localToken } from './local-token'
 
 export interface ArenaManagerEvents<TEvents extends MinigameEvents> {
   readonly arenaAvailable$: Observable<ConfiguredArena<TEvents>>
+  readonly arenaComplete$: Observable<ConfiguredArena<TEvents>>
   readonly arenaInit$: Observable<ConfiguredArena<TEvents>>
   readonly arenaStart$: Observable<ConfiguredArena<TEvents>>
 }

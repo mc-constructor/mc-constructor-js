@@ -2,7 +2,7 @@ import { Inject, Injectable, Logger, RestrictScope } from '@dandi/core'
 import { dequeueReplay, pass, silence } from '@ts-mc/common/rxjs'
 import { text, title } from '@ts-mc/core/cmd'
 import { RequestClient } from '@ts-mc/core/client'
-import { CommandOperator, CommandOperatorFn } from '@ts-mc/core/command'
+import { MapCommand, MapCommandOperatorFn, CommandStatic, CommandStaticFn } from '@ts-mc/core/command'
 import { GameScope, MinigameEvents } from '@ts-mc/minigames'
 import { combineLatest, defer, forkJoin, merge, Observable, of, ReplaySubject, timer, NEVER } from 'rxjs'
 import {
@@ -57,7 +57,8 @@ class ArenaManagerImpl<TEvents extends MinigameEvents> {
     @Inject(CommonCommands) private common: CommonCommands,
     @Inject(MinigameEvents) private readonly events: TEvents,
     @Inject(ArenaManagerEventsProxy) private readonly eventsProxy: ArenaManagerEventsProxy<TEvents>,
-    @Inject(CommandOperator) private readonly command: CommandOperatorFn,
+    @Inject(MapCommand) private readonly mapCommand: MapCommandOperatorFn,
+    @Inject(CommandStatic) private readonly command: CommandStaticFn,
     @Inject(Logger) private readonly logger: Logger,
   ) {
     this.logger.debug('ctr')
@@ -153,10 +154,10 @@ class ArenaManagerImpl<TEvents extends MinigameEvents> {
     console.log('initArena', arena.title)
     return defer(() => this.clearArena(prevArena, arena)).pipe(
       tap(() => console.log('initArena start')),
-      this.command(arena.instance.init()),
+      this.mapCommand(arena.instance.init()),
       delay(2500),
-      this.command(() => this.common.movePlayersToArena(this.events.players, arena.instance)),
-      this.command(title('@a', arena.title, arena.description)),
+      this.mapCommand(() => this.common.movePlayersToArena(this.events.players, arena.instance)),
+      this.mapCommand(title('@a', arena.title, arena.description)),
       map(() => {
         console.log('initArena complete', arena.title)
         this.arenaInit$$.next(arena)
@@ -178,11 +179,10 @@ class ArenaManagerImpl<TEvents extends MinigameEvents> {
       return merge(...handlers.map((handler: HookHandler<any>) => {
         const hook$ = this.events[hook] as unknown as Observable<any>
         return hook$.pipe(
-          map(event => {
-            this.logger.debug('arena hook:', arena.title, hook, handler)
+          this.mapCommand(event => {
+            this.logger.debug('arena hook:', arena.title, hook)
             return handler({ arena: arena.instance, event, events: this.events })
           }),
-          this.command(),
         )
       }))
     })
@@ -195,16 +195,14 @@ class ArenaManagerImpl<TEvents extends MinigameEvents> {
       if (!arena) {
         return of(undefined)
       }
-      return of(title('@a', text('Coming up...'), nextArena.title)).pipe(
-        this.command(),
+      return this.command(title('@a', text('Coming up...'), nextArena.title)).pipe(
         delay(5000),
       )
     }).pipe(
       switchMapTo(this.events.players$),
-      map(players => this.common.movePlayersToHolding(players)),
-      this.command(),
+      this.mapCommand(players => this.common.movePlayersToHolding(players)),
       delay(500),
-      arena ? this.command(arena.instance.cleanup()) : pass,
+      arena ? this.mapCommand(arena.instance.cleanup()) : pass,
     )
   }
 

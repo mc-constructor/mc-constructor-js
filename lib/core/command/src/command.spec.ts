@@ -4,7 +4,7 @@ import { RequestClient } from '@ts-mc/core/client'
 import { RequestClientFixture, TestCommand, requestClientFixture } from '@ts-mc/core/client/testing'
 import { expect } from 'chai'
 
-import { CommandOperatorProvider, CommandOperatorFn, CommandOperator } from './command-operator'
+import { MapCommandProvider, MapCommandOperatorFn, MapCommand } from './map-command'
 import { parallel } from './multi-command-request'
 
 describe.marbles('command operator', ({ cold }) => {
@@ -12,7 +12,7 @@ describe.marbles('command operator', ({ cold }) => {
   stubLoggerFactory()
 
   const harness = testHarness(
-    CommandOperatorProvider,
+    MapCommandProvider,
     {
       provide: RequestClient,
       useFactory: () => client,
@@ -20,11 +20,11 @@ describe.marbles('command operator', ({ cold }) => {
   )
 
   let client: RequestClientFixture
-  let command: CommandOperatorFn
+  let mapCommand: MapCommandOperatorFn
 
   beforeEach(async () => {
     client = requestClientFixture()
-    command = await harness.inject(CommandOperator)
+    mapCommand = await harness.inject(MapCommand)
   })
 
   describe('explicitly passed commands', () => {
@@ -32,7 +32,7 @@ describe.marbles('command operator', ({ cold }) => {
     it('executes a single basic command', () => {
       const response$ = cold('a')
       const test$ = cold('a').pipe(
-        command(() => new TestCommand(true, 'a')),
+        mapCommand(() => new TestCommand(true, 'a')),
       )
 
       client.config(response$)
@@ -43,7 +43,7 @@ describe.marbles('command operator', ({ cold }) => {
     it('executes a parallel multi command that actually only has one command', () => {
       const response$ = cold('a|')
       const test$ = cold('a|').pipe(
-        command(() => parallel(new TestCommand(true, 'a'))),
+        mapCommand(() => parallel(new TestCommand(true, 'a'))),
       )
       const values = {
         a: ['a'],
@@ -57,7 +57,7 @@ describe.marbles('command operator', ({ cold }) => {
     it('executes a parallel multi command with multiple commands', () => {
       const response$ = [cold('a|'), cold('b|')]
       const test$ = cold('x|').pipe(
-        command(() => parallel(new TestCommand(true, 'a'), new TestCommand(true, 'b'))),
+        mapCommand(() => parallel(new TestCommand(true, 'a'), new TestCommand(true, 'b'))),
       )
       const values = {
         a: 'a',

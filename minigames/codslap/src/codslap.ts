@@ -2,13 +2,13 @@ import { Inject, Logger } from '@dandi/core'
 import { silence } from '@ts-mc/common/rxjs'
 import { RequestClient } from '@ts-mc/core/client'
 import { actionbar, clearEffect, rawCmd, text, title } from '@ts-mc/core/cmd'
-import { CommandOperator, CommandOperatorFn, CommandRequest, parallel } from '@ts-mc/core/command'
+import { MapCommand, MapCommandOperatorFn, CommandRequest, parallel } from '@ts-mc/core/command'
 import { AttackedByPlayerEvent, EntityEvent, PlayerEvent } from '@ts-mc/core/server-events'
 import { Minigame } from '@ts-mc/minigames'
 import { ArenaManager, CommonCommands, ConfiguredArena } from '@ts-mc/minigames/arenas'
 
-import { combineLatest, EMPTY, merge, Observable, OperatorFunction } from 'rxjs'
-import { map, mergeMap, switchMapTo } from 'rxjs/operators'
+import { combineLatest, EMPTY, merge, Observable } from 'rxjs'
+import { mergeMap, switchMapTo } from 'rxjs/operators'
 
 import { CodslapEvents } from './codslap-events'
 import { Codslap } from './codslap-metadata'
@@ -32,18 +32,18 @@ export class CodslapMinigame implements Minigame {
     @Inject(CodslapInit) private readonly initCmd: CodslapInit,
     @Inject(CodslapObjectives) private readonly obj: CodslapObjectives,
     @Inject(ArenaManager) private readonly arena: ArenaManager<CodslapEvents>,
-    @Inject(CommandOperator) private readonly command: CommandOperatorFn,
+    @Inject(MapCommand) private readonly mapCommand: MapCommandOperatorFn,
     @Inject(Logger) private readonly logger: Logger,
   ) {
     this.logger.debug('ctr')
     const onPlayerDeath$ = combineLatest([this.events.playerDeath$, this.arena.arenaInit$])
 
     const run$ = merge(
-      this.events.codslap$.pipe(this.mergeCmd(this.onCodslap.bind(this))),
-      onPlayerDeath$.pipe(this.mergeCmd(this.onPlayerDeath.bind(this))),
-      this.events.codslapPlayerKill$.pipe(this.mergeCmd(this.onCodslapPlayerKill.bind(this))),
-      this.events.codslapMobKill$.pipe(this.mergeCmd(this.onCodslapMobKill.bind(this))),
-      this.events.playerRespawn$.pipe(this.mergeCmd(this.onPlayerRespawn.bind(this))),
+      this.mergeCmd(this.events.codslap$, this.onCodslap),
+      this.mergeCmd(onPlayerDeath$, this.onPlayerDeath),
+      this.mergeCmd(this.events.codslapPlayerKill$, this.onCodslapPlayerKill),
+      this.mergeCmd(this.events.codslapMobKill$, this.onCodslapMobKill),
+      this.mergeCmd(this.events.playerRespawn$, this.onPlayerRespawn),
       this.events.run$,
       this.arena.run$,
       this.obj.codslap.events$,
@@ -55,20 +55,21 @@ export class CodslapMinigame implements Minigame {
 
   private init(): Observable<any> {
     return title('@a', text(`CODSLAP!`).bold, text('The game will begin in a moment...')).execute(this.client).pipe(
-      this.command(this.common.initHoldingArea()),
+      this.mapCommand(this.common.initHoldingArea()),
       switchMapTo(this.events.players$),
-      map(players => this.common.movePlayersToHolding(players)),
-      this.command(),
-      this.command(this.initCmd.compile()),
-      this.command(title('@a', text('Get ready!'), text('May the best codslapper win!').bold)),
+      this.mapCommand(players => this.common.movePlayersToHolding(players)),
+      this.mapCommand(this.initCmd.compile()),
+      this.mapCommand(title('@a', text('Get ready!'), text('May the best codslapper win!').bold)),
     )
   }
 
-  private mergeCmd(fn: (value: any) => CommandRequest): OperatorFunction<any, any> {
-    return mergeMap(v => {
-      const cmd = fn(v)
-      return cmd ? cmd.execute(this.client).pipe(silence) : EMPTY
-    })
+  private mergeCmd<T>(source$: Observable<T>, fn: (value: T) => CommandRequest): Observable<any> {
+    return source$.pipe(
+      mergeMap(v => {
+        const cmd = fn.call(this, v)
+        return cmd ? cmd.execute(this.client).pipe(silence) : EMPTY
+      }),
+    )
   }
 
   private onCodslap(event: PlayerEvent): CommandRequest {

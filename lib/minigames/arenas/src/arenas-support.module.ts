@@ -13,5 +13,5 @@ class ArenasSupportModuleBuilder extends ModuleBuilder<ArenasSupportModuleBuilde
 
 export const ArenasSupportModule = new ArenasSupportModuleBuilder(
   ArenaManager,
-  ArenaManagerEventsProxy,
+  ArenaManagerEventsProxy.provide(),
 )

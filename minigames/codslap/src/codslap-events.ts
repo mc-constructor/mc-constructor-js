@@ -7,7 +7,7 @@ import {
   PlayerEvent,
   ServerEvents
 } from '@ts-mc/core/server-events'
-import { ArenaManager, ArenaMinigameEvents } from '@ts-mc/minigames/arenas'
+import { ArenaManagerEvents, ArenaMinigameEvents } from '@ts-mc/minigames/arenas'
 
 import { Observable, partition } from 'rxjs'
 import { filter, share } from 'rxjs/operators'
@@ -24,13 +24,13 @@ export class CodslapEvents extends ArenaMinigameEvents {
   private readonly codslapKill$: Observable<AttackedByPlayerEvent>
 
   constructor(
+    @Inject(CodslapObjectives) private readonly obj: CodslapObjectives,
+    @Inject(ArenaManagerEvents) arenaManagerEvents: ArenaManagerEvents<CodslapEvents>,
     @Inject(RequestClient) client: RequestClient,
     @Inject(ServerEvents) events$: ServerEvents,
-    @Inject(CodslapObjectives) private readonly obj: CodslapObjectives,
-    @Inject(ArenaManager) arenaManager: ArenaManager<CodslapEvents>,
     @Inject(Logger) logger: Logger,
   ) {
-    super(arenaManager, client, events$, logger)
+    super(arenaManagerEvents, client, events$, logger)
     this.codslap$ = this.playerAttack$.pipe(
       filter(event => isCodslapper(event.player.mainHand.item)),
     )

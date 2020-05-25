@@ -69,7 +69,6 @@
  - killing player takes a random piece of armor or fish if it is better
 
 ### NEXT:
-- arena age broken between levels? - continue fixing in ArenaManager
 - why is setblock failing?
 - Finish arena change sequence (add countdown)
 - Default/global hooks (e.g. cow spawning)  

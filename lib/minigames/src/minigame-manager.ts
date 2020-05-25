@@ -1,7 +1,7 @@
 import { Inject, Injectable, Logger } from '@dandi/core'
 import { silence } from '@ts-mc/common/rxjs'
 import { RequestClient } from '@ts-mc/core/client'
-import { CommandOperator, CommandOperatorFn } from '@ts-mc/core/command'
+import { MapCommand, MapCommandOperatorFn } from '@ts-mc/core/command'
 import { eventType, MinigameStartEvent, ServerEvents, ServerEventType } from '@ts-mc/core/server-events'
 import { combineLatest, defer, Observable, of, merge } from 'rxjs'
 import { bufferCount, map, mergeMap, pluck, share, switchMapTo, tap } from 'rxjs/operators'
@@ -27,7 +27,7 @@ export class MinigameManager {
     @Inject(ServerEvents) private events$: ServerEvents,
     @Inject(MinigameLoader) private loader: MinigameLoader,
     @Inject(MinigameRunner) private runner: MinigameRunner,
-    @Inject(CommandOperator) private command: CommandOperatorFn,
+    @Inject(MapCommand) private mapCommand: MapCommandOperatorFn,
     @Inject(Logger) private logger: Logger,
   ) {
     const initMinigames$ = this.init().pipe(

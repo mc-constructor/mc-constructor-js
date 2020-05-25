@@ -2,11 +2,11 @@ import { Inject, Logger } from '@dandi/core'
 import { RandomIntervalScheduler } from '@ts-mc/common/rxjs'
 import { RequestError } from '@ts-mc/core/client'
 import { block, rawCmd, summon, text, title } from '@ts-mc/core/cmd'
-import { CommandRequest, CommandOperator, CommandOperatorFn, parallel, series } from '@ts-mc/core/command'
+import { CommandRequest, MapCommand, MapCommandOperatorFn, parallel, series } from '@ts-mc/core/command'
 import { area, Area, Block, Coordinates, EntityBlock, loc } from '@ts-mc/core/types'
 import { Arena, ArenaBase, ArenaConstructor, PlatformLayer } from '@ts-mc/minigames/arenas'
 import { combineLatest, defer, Observable, of, timer } from 'rxjs'
-import { catchError, delay, map, mapTo, repeat, switchMap, switchMapTo, take, tap } from 'rxjs/operators'
+import { bufferCount, catchError, delay, map, mapTo, repeat, switchMap, switchMapTo, take, tap } from 'rxjs/operators'
 
 import { CodslapEvents } from '../codslap-events'
 import { CodslapCommonCommands } from '../codslap-common-commands'
@@ -50,7 +50,7 @@ class PrimedAndReadyArena extends ArenaBase<CodslapEvents, CodslapCommonCommands
 
   constructor(
     @Inject(CodslapCommonCommands) common: CodslapCommonCommands,
-    @Inject(CommandOperator) private readonly command: CommandOperatorFn,
+    @Inject(MapCommand) private readonly mapCommand: MapCommandOperatorFn,
     @Inject(Logger) private logger: Logger,
   ) {
     super(common)
@@ -68,10 +68,12 @@ class PrimedAndReadyArena extends ArenaBase<CodslapEvents, CodslapCommonCommands
           of(this.getRandomSpawn().modify.subtractOffset(this.common.spawnOffsetFromFloor)).pipe(
             events.timedPlayerReadyEvent(this.getTimer.bind(this)),
             map(loc => this.getTntCommand(loc)),
-            switchMap(([cmd, tntState]) => combineLatest([of(cmd).pipe(this.command()), of(tntState)])),
+            switchMap(([cmd, tntState]) => combineLatest([
+              of(cmd).pipe(this.mapCommand(cmd => cmd)),
+              of(tntState),
+            ])),
             delay(5000),
-            map(([,tntState]) => this.replaceBlock(tntState)),
-            this.command(),
+            this.mapCommand(([,tntState]) => this.replaceBlock(tntState)),
             catchError(err => {
               if (err instanceof RequestError && err.type === 'commands.setblock.failed') {
                 // FIXME: why is this error happening?
@@ -88,7 +90,7 @@ class PrimedAndReadyArena extends ArenaBase<CodslapEvents, CodslapCommonCommands
           repeat(),
         ),
       ),
-      take(PrimedAndReadyArena.explosionCount),
+      bufferCount(PrimedAndReadyArena.explosionCount),
     )
   }
 

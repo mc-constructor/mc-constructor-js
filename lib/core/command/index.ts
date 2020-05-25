@@ -1,4 +1,5 @@
 export * from './src/command.module'
-export * from './src/command-operator'
+export * from './src/map-command'
 export * from './src/command-request'
+export * from './src/command-static'
 export * from './src/multi-command-request'

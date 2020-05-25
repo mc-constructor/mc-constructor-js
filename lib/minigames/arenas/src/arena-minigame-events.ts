@@ -13,6 +13,7 @@ export class ArenaMinigameEvents extends MinigameEvents {
 
   public readonly arenaAge$: Observable<ArenaAgeEvent>
   public readonly arenaAvailable$: Observable<ConfiguredArena<this>>
+  public readonly arenaComplete$: Observable<ConfiguredArena<this>>
   public readonly arenaInit$: Observable<ConfiguredArena<this>>
   public readonly arenaStart$: Observable<ConfiguredArena<this>>
 
@@ -27,6 +28,10 @@ export class ArenaMinigameEvents extends MinigameEvents {
     super(client, events$, logger)
 
     this.arenaAvailable$ = this.arenaManagerEvents.arenaAvailable$.pipe(
+      this.debug(arena => ['arenaAvailable$', arena.title]),
+      // IMPORTANT: arenaAvailable$ uses dequeueReplay, so don't use share()
+    )
+    this.arenaComplete$ = this.arenaManagerEvents.arenaComplete$.pipe(
       this.debug(arena => ['arenaAvailable$', arena.title]),
       share(),
     )
@@ -62,6 +67,7 @@ export class ArenaMinigameEvents extends MinigameEvents {
   protected getRunStreams(): Observable<any>[] {
     return super.getRunStreams().concat(
       this.arenaAvailable$,
+      this.arenaComplete$,
       this.arenaInit$,
       this.arenaStart$,
       this.arenaAge$,
