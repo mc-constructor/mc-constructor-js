@@ -40,7 +40,7 @@ export interface ArenaManager<TEvents extends MinigameEvents> {
 }
 
 @Injectable(RestrictScope(GameScope))
-class ArenaManagerImpl<TEvents extends MinigameEvents> {
+class ArenaManagerImpl<TEvents extends MinigameEvents> implements ArenaManager<TEvents>{
 
   public readonly arenaAvailable$: Observable<ConfiguredArena<TEvents>>
   public readonly arenaComplete$: Observable<ConfiguredArena<TEvents>>
