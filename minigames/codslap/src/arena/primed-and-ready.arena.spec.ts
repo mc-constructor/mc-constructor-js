@@ -19,7 +19,7 @@ import { CodslapCommonCommands } from '../codslap-common-commands'
 
 import { PrimedAndReady } from './primed-and-ready.arena'
 
-describe('PrimedAndReadyArena', () => {
+describe.marbles('PrimedAndReadyArena', ({ cold }) => {
 
   stubLoggerFactory()
 
@@ -63,7 +63,7 @@ describe('PrimedAndReadyArena', () => {
     expect(arena).to.exist
   })
 
-  describe.marbles('run', ({ cold }) => {
+  describe('run', () => {
 
     it('starts making tnt explosions after the minDelay', () => {
       events.config({

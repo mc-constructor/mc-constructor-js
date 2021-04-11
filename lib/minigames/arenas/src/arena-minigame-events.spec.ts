@@ -1,5 +1,5 @@
 import { Logger } from '@dandi/core'
-import { MarbleValues } from '@rxjs-marbles'
+import { MarbleValues } from '@rxjs-stuff/marbles'
 import { silence } from '@ts-mc/common/rxjs'
 import { RequestClientFixture } from '@ts-mc/core/client/testing'
 import { ServerEvent } from '@ts-mc/core/server-events'

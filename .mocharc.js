@@ -22,8 +22,6 @@ module.exports = {
     'lib/**/*.spec.ts',
     'minigames/**/index.ts',
     'minigames/**/*.spec.ts',
-    'rxjs-marbles/**/index.ts',
-    'rxjs-marbles/**/*.spec.ts',
 
     'lib/**/*.int-spec.ts',
   ]

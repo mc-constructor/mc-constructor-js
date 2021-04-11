@@ -6,7 +6,7 @@ import { CommandRequest, MapCommand, MapCommandOperatorFn, parallel, series } fr
 import { area, Area, Block, Coordinates, EntityBlock, loc } from '@ts-mc/core/types'
 import { Arena, ArenaBase, ArenaConstructor, PlatformLayer } from '@ts-mc/minigames/arenas'
 import { combineLatest, defer, Observable, of, timer } from 'rxjs'
-import { bufferCount, catchError, delay, map, mapTo, repeat, switchMap, switchMapTo, take, tap } from 'rxjs/operators'
+import { catchError, delay, map, mapTo, repeat, switchMap, switchMapTo, take, tap } from 'rxjs/operators'
 
 import { CodslapEvents } from '../codslap-events'
 import { CodslapCommonCommands } from '../codslap-common-commands'
@@ -90,7 +90,7 @@ class PrimedAndReadyArena extends ArenaBase<CodslapEvents, CodslapCommonCommands
           repeat(),
         ),
       ),
-      bufferCount(PrimedAndReadyArena.explosionCount),
+      take(PrimedAndReadyArena.explosionCount)
     )
   }
 

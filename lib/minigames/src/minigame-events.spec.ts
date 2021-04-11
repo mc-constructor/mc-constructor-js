@@ -1,6 +1,6 @@
-import { MarbleKey, MarbleValues } from '@rxjs-marbles'
+import { MarbleKey, MarbleValues } from '@rxjs-stuff/marbles'
 import { silence } from '@ts-mc/common/rxjs'
-import { ServerEventType } from '@ts-mc/core/server-events'
+import { ServerEvent, ServerEventType } from '@ts-mc/core/server-events'
 import { ServerEventFixtures } from '@ts-mc/core/server-events/testing'
 import { TypesFixtures } from '@ts-mc/core/types/testing'
 import { MinigameAgeEvent, MinigameEvents } from '@ts-mc/minigames'
@@ -21,64 +21,64 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
   describe('playerDeath$', () => {
 
     it('emits when a player dies', () => {
-      const source$ = hot('a')
-      const expected =    'a'
-
       helpers.serverEvents = {
         a: ServerEventFixtures.attackedByPlayer(ServerEventType.entityLivingDeath, { entityId: 'kenny' }),
       }
+
+      const source$ = hot('a', helpers.serverEvents)
+      const expected =    'a'
       const events = helpers.initEvents(source$)
 
       expect(events.playerDeath$).with.marbleValues(helpers.serverEvents).to.equal(expected)
     })
 
     it('emits when multiple players die', () => {
-      const source$ = hot('ab')
-      const expected =    'ab'
-
       helpers.serverEvents = {
         a: ServerEventFixtures.attackedByPlayer(ServerEventType.entityLivingDeath, { entityId: 'kenny' }),
         b: ServerEventFixtures.attackedByPlayer(ServerEventType.entityLivingDeath, { entityId: 'not-kenny' }),
       }
+
+      const source$ = hot('ab', helpers.serverEvents)
+      const expected =    'ab'
       const events = helpers.initEvents(source$)
 
       expect(events.playerDeath$).with.marbleValues(helpers.serverEvents).to.equal(expected)
     })
 
     it('does not emit when non-player entities die', () => {
-      const source$ = hot('a-b')
-      const expected =    '-'
-
       helpers.serverEvents = {
         a: ServerEventFixtures.attackedEntity(ServerEventType.entityLivingDeath, { entityId: 'minecraft:cow' }),
         b: ServerEventFixtures.attackedEntity(),
       }
+
+      const source$ = hot('a-b', helpers.serverEvents)
+      const expected =    '-'
       const events = helpers.initEvents(source$)
 
       expect(events.playerDeath$).with.marbleValues(helpers.serverEvents).to.equal(expected)
     })
 
     it('does not emit when untracked players die', () => {
-      const source$ = hot('a-b')
-      const expected =    'a'
 
       helpers.serverEvents = {
         a: ServerEventFixtures.attackedByPlayer(ServerEventType.entityLivingDeath, { entityId: 'kenny' }),
         b: ServerEventFixtures.attackedByPlayer(ServerEventType.entityLivingDeath, { entityId: 'some-other-guy' }),
       }
+      const source$ = hot('a-b', helpers.serverEvents)
+      const expected =    'a'
       const events = helpers.initEvents(source$)
 
       expect(events.playerDeath$).with.marbleValues(helpers.serverEvents).to.equal(expected)
     })
 
     it('does not re-emit events after subsequent subscriptions', () => {
-      const source$ =  hot('a')
-      const expected1 =    'a'
-      const expected2 =    '-'
 
       helpers.serverEvents = {
         a: ServerEventFixtures.attackedByPlayer(ServerEventType.entityLivingDeath, { entityId: 'kenny' }),
       }
+      const source$ =  hot('a', helpers.serverEvents)
+      const expected1 =    'a'
+      const expected2 =    '-'
       const events = helpers.initEvents(source$)
 
       expect(events.playerDeath$).with.marbleValues(helpers.serverEvents).to.equal(expected1)
@@ -96,7 +96,7 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
     })
 
     it('emits when a player dies', () => {
-      const source$ = hot('ab')
+      const source$ = hot('ab', helpers.serverEvents)
       const expected =    'ab'
 
       const events = helpers.initEvents(source$)
@@ -105,7 +105,7 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
     })
 
     it('re-emits events on subsequent subscriptions', () => {
-      const source$ =  hot('ab')
+      const source$ =  hot('ab', helpers.serverEvents)
       const expected1 =    'ab'
       const expected2 =    '--(ab)'
       const sub2 =         '--^'
@@ -117,15 +117,15 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
     })
 
     it('does not re-emit events for players that have respawned', () => {
-      const source$ =  hot('abc')
-      const expected1 =    'ab'
-      const expected2 =    '---a'
-      const sub2 =         '---^'
-
       helpers.serverEvents.c = ServerEventFixtures.player(
         ServerEventType.playerRespawn,
         { player: TypesFixtures.playerWithHeldItems(helpers.playerValues.b) },
       )
+
+      const source$ =  hot('abc', helpers.serverEvents)
+      const expected1 =    'ab'
+      const expected2 =    '---a'
+      const sub2 =         '---^'
 
       const events = helpers.initEvents(source$)
 
@@ -134,15 +134,15 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
     })
 
     it('does not re-emit events for players that have left the game', () => {
-      const source$ =  hot('abc')
-      const expected1 =    'ab'
-      const expected2 =    '---a'
-      const sub2 =         '---^'
-
       helpers.serverEvents.c = ServerEventFixtures.player(
         ServerEventType.playerLeft,
         { player: TypesFixtures.playerWithHeldItems(helpers.playerValues.b) },
       )
+
+      const source$ =  hot('abc', helpers.serverEvents)
+      const expected1 =    'ab'
+      const expected2 =    '---a'
+      const sub2 =         '---^'
 
       const events = helpers.initEvents(source$)
 
@@ -153,13 +153,13 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
     describe('playerReady$', () => {
 
       it('emits when a player respawns after dying', () => {
-        const source$ =  hot('bc')
-        const expected =     '-b'
-
         helpers.serverEvents.c = ServerEventFixtures.player(
           ServerEventType.playerRespawn,
           { player: TypesFixtures.playerWithHeldItems(helpers.playerValues.b) },
         )
+
+        const source$ =  hot('bc', helpers.serverEvents)
+        const expected =     '-b'
 
         const events = helpers.initEvents(source$)
 
@@ -167,13 +167,13 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
       })
 
       it('emits when a player leaves after dying', () => {
-        const source$ =  hot('bc')
-        const expected =     '-b'
-
         helpers.serverEvents.c = ServerEventFixtures.player(
           ServerEventType.playerLeft,
           { player: TypesFixtures.playerWithHeldItems(helpers.playerValues.b) },
         )
+
+        const source$ =  hot('bc', helpers.serverEvents)
+        const expected =     '-b'
 
         const events = helpers.initEvents(source$)
 
@@ -185,16 +185,6 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
     describe('playersReady$', () => {
 
       it('emits when all players are respawned or leave the game after dying', () => {
-
-        const source$ =  hot('--ab--cd')
-        const expected =     'r-x----r'
-        // start with true, emit false on first player death, then true when there are no longer any "limbo" players
-
-        const readyValues = {
-          r: true,
-          x: false,
-        }
-
         helpers.serverEvents.c = ServerEventFixtures.player(
           ServerEventType.playerRespawn,
           { player: TypesFixtures.playerWithHeldItems(helpers.playerValues.a) },
@@ -203,6 +193,15 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
           ServerEventType.playerLeft,
           { player: TypesFixtures.playerWithHeldItems(helpers.playerValues.b) },
         )
+
+        const source$ =  hot('--ab--cd', helpers.serverEvents)
+        const expected =     'r-x----r'
+        // start with true, emit false on first player death, then true when there are no longer any "limbo" players
+
+        const readyValues = {
+          r: true,
+          x: false,
+        }
 
         const events = helpers.initEvents(source$)
 
@@ -220,7 +219,7 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
     let trigger$: Observable<MarbleKey>
 
     // server events source - to simulates players dying and possibly respawning or leaving
-    let source$: Observable<MarbleKey>
+    let source$: Observable<ServerEvent>
 
     // expects that the resulting observable emits when the player respawns and not when trigger$ emits
     let expected: string
@@ -244,66 +243,66 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
     }
 
     it('emits without further waiting if the timed event emits before a player dies', () => {
-      trigger$ = cold('1s -x')
-      source$ =   hot('1s --d')
-      expected =      '1s -a'
-
       helpers.serverEvents = {
         d: ServerEventFixtures.attackedByPlayer(ServerEventType.entityLivingDeath, { entityId: helpers.playerValues.a.name }),
       }
+
+      trigger$ = cold('1s -x')
+      source$ =   hot('1s --d', helpers.serverEvents)
+      expected =      '1s -a'
 
       execTest()
     })
 
     it('delays emitting if a player dies before the timer emits', () => {
-      trigger$ = cold('1s -x')
-      source$ =   hot('1s d---r')
-      expected =      '1s ----a'
-
       helpers.serverEvents = {
         d: ServerEventFixtures.attackedByPlayer(ServerEventType.entityLivingDeath, { entityId: helpers.playerValues.a.name }),
         r: ServerEventFixtures.player(ServerEventType.playerRespawn, { player: helpers.playerValues.a })
       }
+
+      trigger$ = cold('1s -x')
+      source$ =   hot('1s d---r', helpers.serverEvents)
+      expected =      '1s ----a'
 
       execTest()
     })
 
     it('delays emitting if a player leaves before the timer emits', () => {
-      trigger$ = cold('1s -x')
-      source$ =   hot('1s d---l')
-      expected =      '1s ----a'
-
       helpers.serverEvents = {
         d: ServerEventFixtures.attackedByPlayer(ServerEventType.entityLivingDeath, { entityId: helpers.playerValues.a.name }),
         l: ServerEventFixtures.player(ServerEventType.playerLeft, { player: helpers.playerValues.a })
       }
 
+      trigger$ = cold('1s -x')
+      source$ =   hot('1s d---l', helpers.serverEvents)
+      expected =      '1s ----a'
+
       execTest()
     })
 
     it('continues emitting over multiple source events', () => {
-      trigger$ = cold('1s -x')
-      source$ =   hot('1s d---r')
-      expected =      '1s ----a 1s b 1s c 1s d'
-
       helpers.serverEvents = {
         d: ServerEventFixtures.attackedByPlayer(ServerEventType.entityLivingDeath, { entityId: helpers.playerValues.a.name }),
         r: ServerEventFixtures.player(ServerEventType.playerRespawn, { player: helpers.playerValues.a })
       }
+
+      trigger$ = cold('1s -x')
+      source$ =   hot('1s d---r', helpers.serverEvents)
+      expected =      '1s ----a 1s b 1s c 1s d'
 
       execTest(cold('a 1s b 1s c 1s d'))
     })
 
     it('continues emitting over multiple source events with multiple interruptions', () => {
-      trigger$ =    cold('1s   -x')
-      source$ =      hot('1s   d---r 1s d---r 1s d---r 1s d---r')
-      expected =         '1s   ----a 1s ----b 1s ----c 1s ----d'
-      const emit$ = cold('a 1s         b 1s c 1s d')
-
       helpers.serverEvents = {
         d: ServerEventFixtures.attackedByPlayer(ServerEventType.entityLivingDeath, { entityId: helpers.playerValues.a.name }),
         r: ServerEventFixtures.player(ServerEventType.playerRespawn, { player: helpers.playerValues.a })
       }
+
+      trigger$ =    cold('1s   -x')
+      source$ =      hot('1s   d---r 1s d---r 1s d---r 1s d---r', helpers.serverEvents)
+      expected =         '1s   ----a 1s ----b 1s ----c 1s ----d'
+      const emit$ = cold<string>('a 1s         b 1s c 1s d')
 
       execTest(emit$)
     })

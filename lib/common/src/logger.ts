@@ -53,8 +53,8 @@ export class LoggerFactory {
     const scope: InjectionScope = host
     const queue = new QueueingLogger(scope, this.now)
     const child = this.injector.createChild(scope)
-    const deferredLogger = child.inject(Logger).then(result => result.singleValue)
-    const deferredLogStream = child.inject(LogStream).then(result => result.singleValue)
+    const deferredLogger = child.inject(Logger)
+    const deferredLogStream = child.inject(LogStream)
     const deferredLogging = Promise.all([deferredLogger, deferredLogStream])
       .then(([logger, stream]) => ({ logger, stream }))
     return new DeferredLogger(queue, deferredLogging)

@@ -11,30 +11,31 @@
     "coverage": "nyc mocha"
   },
   "dependencies": {
-    "@dandi/common": "^1.0.0-alpha.55",
-    "@dandi/core": "^1.0.0-alpha.55",
+    "@dandi/common": "^1.0.0-alpha.71",
+    "@dandi/core": "^1.0.0-alpha.71",
     "colors": "^1.4.0",
     "dotenv": "^8.2.0",
-    "luxon": "^1.23.0",
-    "rcon-client": "^4.2.0",
-    "rxjs": "^6.5.4",
-    "uuid": "^7.0.3"
+    "luxon": "^1.26.0",
+    "rcon-client": "^4.2.3",
+    "rxjs": "^6.6.7",
+    "uuid": "^8.3.2"
   },
   "devDependencies": {
-    "@dandi/logging": "^1.0.0-alpha.55",
-    "@types/chai": "^4.2.11",
-    "@types/mocha": "^7.0.2",
-    "@types/node": "^13.9.2",
-    "@types/sinon": "^9.0.0",
-    "@types/sinon-chai": "^3.2.4",
-    "chai": "^4.2.0",
-    "mocha": "^7.1.1",
-    "nyc": "^15.0.1",
-    "sinon": "^9.0.2",
-    "sinon-chai": "^3.5.0",
+    "@dandi/logging": "^1.0.0-alpha.71",
+    "@rxjs-stuff/marbles": "^1.0.0",
+    "@types/chai": "^4.2.16",
+    "@types/mocha": "^8.2.2",
+    "@types/node": "^14.14.37",
+    "@types/sinon": "^9.0.11",
+    "@types/sinon-chai": "^3.2.5",
+    "chai": "^4.3.4",
+    "mocha": "^8.3.2",
+    "nyc": "^15.1.0",
+    "sinon": "^10.0.0",
+    "sinon-chai": "^3.6.0",
     "ts-custom-error-shim": "^1.0.2",
-    "ts-node": "^8.7.0",
+    "ts-node": "^9.1.1",
     "tsconfig-paths": "^3.9.0",
-    "typescript": "^3.8.3"
+    "typescript": "^4.2.4"
   }
 }

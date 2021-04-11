@@ -192,12 +192,12 @@ export class SocketClient implements RequestClient, ResponseClient {
 
 export const RequestClientProvider: Provider<RequestClient> = {
   provide: RequestClient,
-  useFactory: client => client,
+  useFactory: (client: RequestClient) => client,
   deps: [SocketClient],
 }
 
 export const ResponseClientProvider: Provider<ResponseClient> = {
   provide: ResponseClient,
-  useFactory: client => client,
+  useFactory: (client: ResponseClient) => client,
   deps: [SocketClient],
 }

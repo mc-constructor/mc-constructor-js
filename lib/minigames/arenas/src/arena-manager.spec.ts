@@ -60,6 +60,7 @@ describe.marbles('ArenaManager', ({ cold, hot }) => {
       deps: [ArenaMinigameEvents],
       restrictScope: GameScope,
     },
+    ArenaManagerEventsProxy.provide(),
     {
       provide: ArenaMinigameEvents,
       useFactory: (managerEvents: ArenaManagerEvents<MinigameEvents>) => arenaMinigameEventsFixture(managerEvents),

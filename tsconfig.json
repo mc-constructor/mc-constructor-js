@@ -19,13 +19,11 @@
     "paths": {
       "@ts-mc/core": ["./lib/core"],
       "@ts-mc/core/*": ["./lib/core/*"],
-      "@ts-mc/*": ["./lib/*"],
-      "@rxjs-marbles": ["./rxjs-marbles"],
-      "@rxjs-marbles/*": ["./rxjs-marbles/*"]
+      "@ts-mc/*": ["./lib/*"]
     },
     "typeRoots": [
+      "./node_modules/@rxjs-stuff/marbles/@types",
       "./node_modules/@types",
-      "./rxjs-marbles/@types",
       "./lib/common/testing/@types"
     ]
   }

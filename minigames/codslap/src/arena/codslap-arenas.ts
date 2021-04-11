@@ -9,19 +9,15 @@ import { localToken } from './local-token'
 import { PrimedAndReady } from './primed-and-ready.arena'
 import { ShrinkyDinks } from './shrinky-dinks'
 
-export const CodslapArenasModule = new ArenasModuleBuilder(localToken.PKG)
+const RealCodslapArenasModule = new ArenasModuleBuilder(localToken.PKG)
     .arena(Boring, {
       entry: Codslap.requirements.none,
       exit: [
-        // Codslap.requirements.minArenaAge(30),
         Codslap.requirements.minArenaAge(30),
-        // Codslap.requirements.count('codslap$', 15),
       ],
     })
     .arena(KingOfTheHill, {
-      // entry: Codslap.requirements.none,
       entry: [
-        // Codslap.requirements.count('codslap$', 30),
         Codslap.requirements.count('codslap$', 15),
       ],
       exit: [
@@ -30,7 +26,6 @@ export const CodslapArenasModule = new ArenasModuleBuilder(localToken.PKG)
       ],
     })
     .arena(PrimedAndReady, {
-      // entry: Codslap.requirements.none,
       entry: [
         Codslap.requirements.count('codslap$', 30),
       ],
@@ -41,7 +36,6 @@ export const CodslapArenasModule = new ArenasModuleBuilder(localToken.PKG)
     })
     .arena(ShrinkyDinks, {
       entry: [
-        // Codslap.requirements.count('codslap$', 5),
         Codslap.requirements.count('codslap$', 45),
       ],
       exit: [
@@ -59,3 +53,40 @@ export const CodslapArenasModule = new ArenasModuleBuilder(localToken.PKG)
       ],
     })
 
+const TestCodslapArenasModule = new ArenasModuleBuilder(localToken.PKG)
+  .arena(Boring, {
+    entry: Codslap.requirements.none,
+    exit: [
+      Codslap.requirements.minArenaAge(10),
+    ],
+  })
+  .arena(KingOfTheHill, {
+    entry: [
+      Codslap.requirements.count('codslap$', 5),
+    ],
+    exit: [
+      Codslap.requirements.minArenaAge(30),
+      Codslap.requirements.count('codslap$', 5),
+    ],
+  })
+  .arena(PrimedAndReady, {
+    entry: [
+      Codslap.requirements.count('codslap$', 5),
+    ],
+    exit: [
+      Codslap.requirements.minArenaAge(30),
+      Codslap.requirements.count('codslap$', 5),
+    ],
+  })
+  .arena(ShrinkyDinks, {
+    entry: [
+      Codslap.requirements.count('codslap$', 5),
+    ],
+    exit: [
+      Codslap.requirements.minArenaAge(30),
+      Codslap.requirements.count('codslap$', 5),
+    ],
+  })
+
+// export const CodslapArenasModule = RealCodslapArenasModule
+export const CodslapArenasModule = TestCodslapArenasModule
