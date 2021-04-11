@@ -16,6 +16,8 @@ export class ArenaMinigameEvents extends MinigameEvents {
   public readonly arenaComplete$: Observable<ConfiguredArena<this>>
   public readonly arenaInit$: Observable<ConfiguredArena<this>>
   public readonly arenaStart$: Observable<ConfiguredArena<this>>
+  public readonly pendingArenas$: Observable<Set<ConfiguredArena<this>>>
+  public readonly lastArena$: Observable<void>
 
   private readonly arenaAgeMap = new Map<Arena<this>, Observable<ArenaAgeEvent>>()
 
@@ -46,6 +48,13 @@ export class ArenaMinigameEvents extends MinigameEvents {
     this.arenaAge$ = this.arenaInit$.pipe(
       switchMap(arena => this.getArenaAge$(arena.instance)),
       share(),
+    )
+    this.pendingArenas$ = this.arenaManagerEvents.pendingArenas$.pipe(
+      this.debug(pendingArenas => ['pendingArenas$', pendingArenas]),
+      share(),
+    )
+    this.lastArena$ = this.arenaManagerEvents.lastArena$.pipe(
+      this.debug(() => ['lastArena$'])
     )
   }
 

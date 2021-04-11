@@ -14,6 +14,8 @@ export class ArenaManagerEventsProxy<TEvents extends MinigameEvents> implements 
   public readonly arenaComplete$: Observable<ConfiguredArena<TEvents>>
   public readonly arenaInit$: Observable<ConfiguredArena<TEvents>>
   public readonly arenaStart$: Observable<ConfiguredArena<TEvents>>
+  public readonly pendingArenas$: Observable<Set<ConfiguredArena<TEvents>>>
+  public readonly lastArena$: Observable<void>
 
   private readonly init$$ = new ReplaySubject<ArenaManagerEvents<TEvents>>(1)
 
@@ -22,6 +24,8 @@ export class ArenaManagerEventsProxy<TEvents extends MinigameEvents> implements 
     this.arenaComplete$ = this.initStream(events => events.arenaComplete$)
     this.arenaInit$ = this.initStream(events => events.arenaInit$)
     this.arenaStart$ = this.initStream(events => events.arenaStart$)
+    this.pendingArenas$ = this.initStream(events => events.pendingArenas$)
+    this.lastArena$ = this.initStream(events => events.lastArena$)
   }
 
   public init(events: ArenaManagerEvents<TEvents>) {

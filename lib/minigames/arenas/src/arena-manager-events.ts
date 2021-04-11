@@ -10,6 +10,8 @@ export interface ArenaManagerEvents<TEvents extends MinigameEvents> {
   readonly arenaComplete$: Observable<ConfiguredArena<TEvents>>
   readonly arenaInit$: Observable<ConfiguredArena<TEvents>>
   readonly arenaStart$: Observable<ConfiguredArena<TEvents>>
+  readonly pendingArenas$: Observable<Set<ConfiguredArena<TEvents>>>
+  readonly lastArena$: Observable<void>
 }
 
 export const ArenaManagerEvents: InjectionToken<ArenaManagerEvents<any>> = localToken.opinionated('ArenaManagerEvents', {

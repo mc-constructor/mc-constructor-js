@@ -83,8 +83,17 @@ const TestCodslapArenasModule = new ArenasModuleBuilder(localToken.PKG)
       Codslap.requirements.count('codslap$', 5),
     ],
     exit: [
-      Codslap.requirements.minArenaAge(30),
+      Codslap.requirements.minArenaAge(180),
       Codslap.requirements.count('codslap$', 5),
+    ],
+  })
+  .arena(BedrockPit, {
+    entry: [
+      Codslap.requirements.count('codslap$', 500),
+    ],
+    exit: [
+      Codslap.requirements.minArenaAge(120),
+      Codslap.requirements.count('codslap$', 500),
     ],
   })
 

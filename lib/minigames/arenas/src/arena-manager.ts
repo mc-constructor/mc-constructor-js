@@ -14,7 +14,7 @@ import {
   map,
   mapTo,
   pairwise,
-  share,
+  share, shareReplay,
   startWith,
   switchMap,
   switchMapTo,
@@ -34,6 +34,8 @@ export interface ArenaManager<TEvents extends MinigameEvents> {
   readonly arenaComplete$: Observable<ConfiguredArena<TEvents>>
   readonly arenaInit$: Observable<ConfiguredArena<TEvents>>
   readonly arenaStart$: Observable<ConfiguredArena<TEvents>>
+  readonly pendingArenas$: Observable<Set<ConfiguredArena<TEvents>>>
+  readonly lastArena$: Observable<void>
   readonly run$: Observable<any>
 }
 
@@ -42,6 +44,8 @@ class ArenaManagerImpl<TEvents extends MinigameEvents> {
 
   public readonly arenaAvailable$: Observable<ConfiguredArena<TEvents>>
   public readonly arenaComplete$: Observable<ConfiguredArena<TEvents>>
+  public readonly pendingArenas$: Observable<Set<ConfiguredArena<TEvents>>>
+  public readonly lastArena$: Observable<void>
 
   private readonly arenaInit$$ = new ReplaySubject<ConfiguredArena<TEvents>>(1)
   public readonly arenaInit$ = this.arenaInit$$.asObservable()
@@ -64,6 +68,8 @@ class ArenaManagerImpl<TEvents extends MinigameEvents> {
     this.logger.debug('ctr')
     this.arenaAvailable$ = this.arenaAvailable()
     this.arenaComplete$ = this.runArenas()
+    this.pendingArenas$ = this.initPendingArenas()
+    this.lastArena$ = this.initLastArena()
 
     this.run$ = this.arenaComplete$
 
@@ -86,6 +92,7 @@ class ArenaManagerImpl<TEvents extends MinigameEvents> {
   }
 
   private runArenas(): Observable<ConfiguredArena<TEvents>> {
+    console.log('runArenas')
     return this.arenaAvailable$.pipe(
       // Use pairwise so the previous arenas is emitted, allowing the arenas switching / cleanup logic to be triggered
       // once the next arenas is ready. Use startWith so that the first arenas emits with no previous arenas.
@@ -236,6 +243,25 @@ class ArenaManagerImpl<TEvents extends MinigameEvents> {
         this.logger.debug(`${type} reqs complete`, arena.title)
       }),
       share(),
+    )
+  }
+
+  private initPendingArenas(): Observable<Set<ConfiguredArena<TEvents>>> {
+    return of(new Set(this.arenas)).pipe(
+      switchMap(pendingArenas => this.arenaStart$.pipe(
+        map(arena => {
+          pendingArenas.delete(arena)
+          return new Set(pendingArenas)
+        }),
+      )),
+      shareReplay(1),
+    )
+  }
+
+  private initLastArena(): Observable<void> {
+    return this.pendingArenas$.pipe(
+      filter(pendingArenas => pendingArenas.size === 0),
+      mapTo(undefined),
     )
   }
 

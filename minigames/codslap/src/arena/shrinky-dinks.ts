@@ -5,7 +5,7 @@ import { MapCommand, MapCommandOperatorFn, CommandRequest, parallel } from '@ts-
 import { area, Block, loc } from '@ts-mc/core/types'
 import { Arena, ArenaBase, ArenaConstructor, PlatformLayer } from '@ts-mc/minigames/arenas'
 
-import { interval, Observable } from 'rxjs'
+import { interval, Observable, race } from 'rxjs'
 import { delay, switchMap, switchMapTo, takeWhile, tap } from 'rxjs/operators'
 
 import { CodslapEvents } from '../codslap-events'
@@ -18,13 +18,12 @@ class ShrinkyDinksArena extends ArenaBase<CodslapEvents, CodslapCommonCommands> 
   public static readonly title = text('Shrinky Dinks!').bold
   public static readonly description = text(`Keep an eye on the edges...`)
 
-  public static readonly exitRequirements = [
+  public readonly exitRequirements = [
     (events: CodslapEvents, arena: ShrinkyDinksArena) => arena.run(events)
   ]
 
-  private static readonly minDelay = 20 // seconds
+  private static readonly minDelay = 10 // seconds
   private static readonly minRadius = 1
-  // private static readonly removeRowInterval = 15000 // milliseconds
   private static readonly removeRowInterval = 10000 // milliseconds
   private static readonly removeRowVariation = 5000 // milliseconds
   private static readonly removeRowScheduler = new RandomIntervalScheduler(ShrinkyDinksArena.removeRowVariation)
@@ -61,16 +60,16 @@ class ShrinkyDinksArena extends ArenaBase<CodslapEvents, CodslapCommonCommands> 
   private run(events: CodslapEvents): Observable<any> {
     this.logger.debug('run')
     return Codslap.requirements.minArenaAge(ShrinkyDinksArena.minDelay)(events, this).pipe(
-      tap(() => this.logger.debug('minimum arena age met, waiting for next available arena to start shrinking')),
-      switchMapTo(events.arenaAvailable$),
-      tap(() => this.logger.debug('next arena is available, starting shrink timer')),
+      tap(() => this.logger.debug('minimum arena age met, waiting for last or next available arena to start shrinking')),
+      switchMapTo(race(events.arenaAvailable$, events.lastArena$)),
+      tap(() => this.logger.debug('last or next arena is available, starting shrink timer')),
       switchMap(() => interval(ShrinkyDinksArena.removeRowInterval, ShrinkyDinksArena.removeRowScheduler)),
       tap(() => this.logger.debug('shrink timer tick')),
       this.mapCommand(title('@a', text('Watch out!'))),
       delay(1500),
       // FIXME: if a player dies, pause until they respawn or disconnect before continuing
-      tap(() => this.currentRadius--),
       this.mapCommand(this.getNextRow.bind(this)),
+      tap(() => this.currentRadius--),  // must happen after getNextRow to ensure the first row doesn't get skipped
       takeWhile(() => this.currentRadius > ShrinkyDinksArena.minRadius),
     )
   }
