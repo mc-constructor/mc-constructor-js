@@ -6,7 +6,7 @@ import { area, Block, loc } from '@ts-mc/core/types'
 import { Arena, ArenaBase, ArenaConstructor, PlatformLayer } from '@ts-mc/minigames/arenas'
 
 import { interval, Observable, race } from 'rxjs'
-import { delay, switchMap, switchMapTo, takeWhile, tap } from 'rxjs/operators'
+import { switchMap, switchMapTo, takeWhile, tap } from 'rxjs/operators'
 
 import { CodslapEvents } from '../codslap-events'
 import { CodslapCommonCommands } from '../codslap-common-commands'
@@ -27,6 +27,9 @@ class ShrinkyDinksArena extends ArenaBase<CodslapEvents, CodslapCommonCommands> 
   private static readonly removeRowInterval = 10000 // milliseconds
   private static readonly removeRowVariation = 5000 // milliseconds
   private static readonly removeRowScheduler = new RandomIntervalScheduler(ShrinkyDinksArena.removeRowVariation)
+  private static readonly removeRowWarningDelay = 2500 // milliseconds
+  private static readonly removeRowWarningDelayVariation  = 1500
+  private static readonly removeRowWarningDelayScheduler = new RandomIntervalScheduler(ShrinkyDinksArena.removeRowWarningDelayVariation)
   private static readonly initialRadius = 15
 
   public readonly layers: PlatformLayer[] = [
@@ -66,7 +69,7 @@ class ShrinkyDinksArena extends ArenaBase<CodslapEvents, CodslapCommonCommands> 
       switchMap(() => interval(ShrinkyDinksArena.removeRowInterval, ShrinkyDinksArena.removeRowScheduler)),
       tap(() => this.logger.debug('shrink timer tick')),
       this.mapCommand(title('@a', text('Watch out!'))),
-      delay(1500),
+      switchMap(() => interval(ShrinkyDinksArena.removeRowWarningDelay, ShrinkyDinksArena.removeRowWarningDelayScheduler)),
       // FIXME: if a player dies, pause until they respawn or disconnect before continuing
       this.mapCommand(this.getNextRow.bind(this)),
       tap(() => this.currentRadius--),  // must happen after getNextRow to ensure the first row doesn't get skipped
