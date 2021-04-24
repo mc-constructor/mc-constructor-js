@@ -1,10 +1,10 @@
-import { block, BlockCommandBuilder } from '@ts-mc/core/cmd'
-import { CommandRequest, parallel } from '@ts-mc/core/command'
+import { block, BlockCommandBuilder, forceLoadAdd } from '@ts-mc/core/cmd'
+import { CommandRequest, parallel, series } from '@ts-mc/core/command'
 import { area, Area, Block, Coordinates, loc } from '@ts-mc/core/types'
 import { MinigameEvents } from '@ts-mc/minigames'
+import { Hooks } from '@ts-mc/minigames/behaviors'
 
 import { Arena } from './arena'
-import { ArenaHooks } from './arena-hook'
 import { CommonCommands } from './common-commands'
 
 export interface PlatformLayer<TBlock extends Block = Block> {
@@ -28,7 +28,7 @@ export abstract class ArenaBase<TEvents extends MinigameEvents, TCommon extends 
   implements Arena<TEvents> {
 
   public abstract readonly layers: PlatformLayer[]
-  public readonly hooks: ArenaHooks<TEvents>
+  public readonly hooks: Hooks<TEvents>
 
   public get center(): Coordinates {
     return this.common.center
@@ -86,13 +86,9 @@ export abstract class ArenaBase<TEvents extends MinigameEvents, TCommon extends 
     return center.modify.west(layer.radius).modify.north(layer.radius)
   }
 
-  protected getLayerArea(layer: PlatformLayer): [Coordinates, Coordinates, Coordinates] {
+  protected getLayerArea(layer: PlatformLayer): Area {
     const center = this.getLayerCenter(layer)
-    return [
-      center,
-      this.getLayerStart(layer, center),
-      this.getLayerEnd(layer, center),
-    ]
+    return area(this.getLayerStart(layer, center), this.getLayerEnd(layer, center))
   }
 
   protected blacklistSpawnArea(...areas: Area[]): void {
@@ -120,17 +116,20 @@ export abstract class ArenaBase<TEvents extends MinigameEvents, TCommon extends 
   }
 
   protected fill(resetBlock?: Block): CommandRequest {
-    return parallel('arenaBase.fill', ...this.layers.map(layer => {
-      const [, start, end] = this.getLayerArea(layer)
-      if (!resetBlock && !layer.ignoreForSpawn) {
-        if (layer.preventSpawn || NO_SPAWN_BLOCKS.includes(layer.block.block)) {
-          this.blacklistSpawnArea(area(start, end))
-        } else {
-          this.addSpawnArea(area(start, end))
+    return series(
+      parallel('arenaBase.fill.forceLoadAdd', ...this.layers.map(layer => forceLoadAdd(this.getLayerArea(layer)))),
+      parallel('arenaBase.fill.layer', ...this.layers.map(layer => {
+        const area = this.getLayerArea(layer)
+        if (!resetBlock && !layer.ignoreForSpawn) {
+          if (layer.preventSpawn || NO_SPAWN_BLOCKS.includes(layer.block.block)) {
+            this.blacklistSpawnArea(area)
+          } else {
+            this.addSpawnArea(area)
+          }
         }
-      }
-      return (resetBlock ? block(resetBlock) : layer.block).fill(start, end)
-    }))
+        return (resetBlock ? block(resetBlock) : layer.block).fill(area)
+      })),
+    )
   }
 
 }

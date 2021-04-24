@@ -5,6 +5,8 @@ import { InjectionToken, Provider } from '@dandi/core'
 
 import { localToken } from '../local-token'
 
+const HOST_INDEX = process.argv.indexOf('--host')
+const HOST = HOST_INDEX >= 0 ? process.argv[HOST_INDEX + 1] : undefined
 const PORT_INDEX = process.argv.indexOf('--port')
 const PORT = parseInt(process.argv[PORT_INDEX + 1], 10)
 
@@ -31,6 +33,7 @@ export const SocketClientConfigProvider: Provider<SocketClientConfig> = {
   provide: SocketClientConfig,
   useValue: {
     socket: {
+      host: HOST,
       port: PORT,
     },
     message: {

@@ -4,8 +4,9 @@ import { CompiledRequest, PendingRequest } from './compiled-request'
 
 export enum RequestType {
   cmd = 'cmd',
+  eventSubscription = 'eventSubscription',
   createStructure = 'createStructure',
-  minigame = 'minigame',
+  minigame = 'interop:dandoes_minigame',
 }
 
 export abstract class Request<TResponse extends any = any> {

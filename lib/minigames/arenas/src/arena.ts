@@ -5,7 +5,7 @@ import { CommandRequest } from '@ts-mc/core/command'
 import { Coordinates } from '@ts-mc/core/types'
 import { GameScope, MinigameEvents } from '@ts-mc/minigames'
 
-import { ArenaHooks } from './arena-hook'
+import { Hooks } from '../../behaviors/src/hooks'
 import { ArenaRequirement } from './arena-requirement'
 import { localToken } from './local-token'
 
@@ -15,7 +15,7 @@ export interface ArenaDescriptor<TEvents extends MinigameEvents> {
 }
 
 export interface Arena<TEvents extends MinigameEvents> {
-  readonly hooks?: ArenaHooks<TEvents>
+  readonly hooks?: Hooks<TEvents>
   readonly entryRequirements?: ArenaRequirement<TEvents>[]
   readonly exitRequirements?: ArenaRequirement<TEvents>[]
 

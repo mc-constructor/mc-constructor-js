@@ -4,6 +4,7 @@ import { text, title } from '@ts-mc/core/cmd'
 import { RequestClient } from '@ts-mc/core/client'
 import { MapCommand, MapCommandOperatorFn, CommandStatic, CommandStaticFn } from '@ts-mc/core/command'
 import { GameScope, MinigameEvents } from '@ts-mc/minigames'
+import { HookHandler, Hooks, HookSource } from '@ts-mc/minigames/behaviors'
 import { combineLatest, defer, forkJoin, merge, Observable, of, ReplaySubject, timer, NEVER } from 'rxjs'
 import {
   buffer,
@@ -14,7 +15,8 @@ import {
   map,
   mapTo,
   pairwise,
-  share, shareReplay,
+  share,
+  shareReplay,
   startWith,
   switchMap,
   switchMapTo,
@@ -23,10 +25,8 @@ import {
 } from 'rxjs/operators'
 
 import { ConfiguredArena, ConfiguredArenas } from './arena'
-import { ArenaHooks } from './arena-hook'
 import { ArenaManagerEventsProxy } from './arena-manager-events-proxy'
 import { ArenaRequirement } from './arena-requirement'
-import { HookHandler } from './behaviors'
 import { CommonCommands } from './common-commands'
 
 export interface ArenaManager<TEvents extends MinigameEvents> {
@@ -176,19 +176,31 @@ class ArenaManagerImpl<TEvents extends MinigameEvents> implements ArenaManager<T
 
   private initArenaHooks(arena: ConfiguredArena<TEvents>): Observable<any> {
     console.log('initArenaHooks')
-    const keys = Object.keys(arena.instance.hooks || {}) as (keyof ArenaHooks<TEvents>)[]
+    const keys = Object.keys(arena.instance.hooks || {}) as (keyof Hooks<TEvents>)[]
     if (!keys.length) {
       // even if there are no hooks, *something* must be returned in order to keep the arena running
       return NEVER
     }
-    const hooks = keys.map((hook: keyof ArenaHooks<TEvents>) => {
-      const handlers = arena.instance.hooks[hook] as HookHandler<any>[]
-      return merge(...handlers.map((handler: HookHandler<any>) => {
-        const hook$ = this.events[hook] as unknown as Observable<any>
+    const hookSource: HookSource<TEvents> = this.events as unknown as HookSource<TEvents>
+    const hooks = keys.map((hook: keyof HookSource<TEvents>) => {
+      const handlers = arena.instance.hooks[hook] as HookHandler<TEvents>[]
+      return merge(...handlers.map((handler: HookHandler<TEvents>) => {
+        const hook$ = hookSource[hook]
+        const switchMapOp = switchMap(event => {
+          if (handler.triggerFilter) {
+            return handler.triggerFilter().pipe(
+              take(1),
+              filter(result => result),
+              mapTo(event)
+            )
+          }
+          return of(event)
+        })
         return hook$.pipe(
+          switchMapOp,
           this.mapCommand(event => {
             this.logger.debug('arena hook:', arena.title, hook)
-            return handler({ arena: arena.instance, event, events: this.events })
+            return handler({ getRandomSpawn: () => arena.instance.getRandomSpawn(), event, events: this.events })
           }),
         )
       }))
@@ -206,7 +218,7 @@ class ArenaManagerImpl<TEvents extends MinigameEvents> implements ArenaManager<T
         delay(5000),
       )
     }).pipe(
-      switchMapTo(this.events.players$),
+      switchMapTo(this.events.players$.pipe(take(1))),
       this.mapCommand(players => this.common.movePlayersToHolding(players)),
       delay(500),
       arena ? this.mapCommand(arena.instance.cleanup()) : pass,

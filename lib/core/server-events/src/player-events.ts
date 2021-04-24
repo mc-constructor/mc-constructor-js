@@ -8,7 +8,7 @@ import { listPlayers } from '@ts-mc/core/cmd'
 
 import { PlayerEvent } from './player-event'
 import { ServerEventType } from './server-event-type'
-import { ServerEvents, eventType } from './server-events'
+import { ServerEvents } from './server-events'
 
 export class PlayerEvents {
 
@@ -21,17 +21,15 @@ export class PlayerEvents {
 
   constructor(
     protected readonly client: RequestClient,
-    protected readonly events$: ServerEvents,
+    protected readonly events: ServerEvents,
     protected readonly logger: Logger,
   ) {
     logger.debug('ctr')
-    const playerJoin$ = events$.pipe(
-      eventType(ServerEventType.playerJoined),
+    const playerJoin$ = events.eventStream(ServerEventType.playerJoined).pipe(
       tap(this.onPlayerJoin.bind(this)),
       share(),
     )
-    this.playerLeave$ = events$.pipe(
-      eventType(ServerEventType.playerLeft),
+    this.playerLeave$ = events.eventStream(ServerEventType.playerLeft).pipe(
       tap(this.onPlayerLeave.bind(this)),
       map(event => event.player),
     )

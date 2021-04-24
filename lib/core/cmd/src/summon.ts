@@ -5,6 +5,12 @@ import { snbt } from './snbt'
 
 // https://minecraft.gamepedia.com/Commands/summon
 
+export interface SummonCommand<TEntity extends AnyEntity> extends CommandRequest {
+  readonly entity: TEntity
+  readonly loc: Coordinates
+  readonly nbt: EntityData[TEntity]
+}
+
 class SummonCommandRequest<TEntity extends AnyEntity> extends SimpleArgsCommandRequest {
 
   protected readonly command = 'summon'
@@ -19,6 +25,10 @@ class SummonCommandRequest<TEntity extends AnyEntity> extends SimpleArgsCommandR
 
 }
 
-export function summon<TEntity extends AnyEntity>(entity: TEntity, loc: Coordinates, nbt?: EntityData[TEntity]): CommandRequest {
+export function isSummonCommand(obj: any): obj is SummonCommand<AnyEntity> {
+  return obj instanceof SummonCommandRequest;
+}
+
+export function summon<TEntity extends AnyEntity>(entity: TEntity, loc: Coordinates, nbt?: EntityData[TEntity]): SummonCommand<TEntity> {
   return new SummonCommandRequest(entity, loc, nbt)
 }

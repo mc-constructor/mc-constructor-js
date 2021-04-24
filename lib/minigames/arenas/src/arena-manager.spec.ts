@@ -188,7 +188,7 @@ describe.marbles('ArenaManager', ({ cold, hot }) => {
 
           playerDeath$: minigameEventFixture(hot('5000ms ' + Array(26).join('a')).pipe(
             mapTo({
-              type: ServerEventType.entityLivingDeath,
+              type: ServerEventType.livingDeath,
               player: { name: 'someguy' } as any,
             } as any),
           )),
@@ -210,7 +210,7 @@ describe.marbles('ArenaManager', ({ cold, hot }) => {
 
           playerDeath$: minigameEventFixture(hot('3500ms ' + Array(26).join('a') + ' 27500ms aaa').pipe(
             mapTo({
-              type: ServerEventType.entityLivingDeath,
+              type: ServerEventType.livingDeath,
               player: { name: 'someguy' } as any,
             } as any),
           )),

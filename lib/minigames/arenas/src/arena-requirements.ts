@@ -1,9 +1,9 @@
 import { MinigameEvents } from '@ts-mc/minigames'
+import { HookEvents } from '@ts-mc/minigames/behaviors'
 import { Observable, of } from 'rxjs'
 import { bufferCount, filter, share, take } from 'rxjs/operators'
 
 import { Arena } from './arena'
-import { ArenaHookEvents } from './arena-hook'
 import { ArenaMinigameEvents } from './arena-minigame-events'
 import { ArenaRequirement } from './arena-requirement'
 
@@ -20,7 +20,7 @@ export interface ArenaRequirementsStatic<TEvents extends MinigameEvents> {
 export function ArenaRequirements<TEvents extends MinigameEvents>(): ArenaRequirementsStatic<TEvents> {
   return {
     none: NoRequirements,
-    count: <TEvents extends MinigameEvents>(hook: keyof ArenaHookEvents<TEvents>, count: number): ArenaRequirement<TEvents> =>
+    count: <TEvents extends MinigameEvents>(hook: keyof HookEvents<TEvents>, count: number): ArenaRequirement<TEvents> =>
       (events: TEvents) => {
         const event$: Observable<any> = events[hook] as any
         return event$.pipe(bufferCount(count), take(1), share())

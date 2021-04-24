@@ -2,7 +2,7 @@ import { Inject, Injectable, Logger } from '@dandi/core'
 import { silence } from '@ts-mc/common/rxjs'
 import { RequestClient } from '@ts-mc/core/client'
 import { MapCommand, MapCommandOperatorFn } from '@ts-mc/core/command'
-import { eventType, MinigameStartEvent, ServerEvents, ServerEventType } from '@ts-mc/core/server-events'
+import { MinigameStartEvent, ServerEvents, ServerEventType } from '@ts-mc/core/server-events'
 import { combineLatest, defer, Observable, of, merge } from 'rxjs'
 import { bufferCount, map, mergeMap, pluck, share, switchMapTo, tap } from 'rxjs/operators'
 
@@ -39,7 +39,7 @@ export class MinigameManager {
 
       // these are required to ensure incoming messages
       // but don't spam the output with all the events
-      this.events$.pipe(silence),
+      this.events$.run$.pipe(silence),
     ).pipe(
       share(),
     )
@@ -72,8 +72,7 @@ export class MinigameManager {
   }
 
   protected listenForMinigameStart(): Observable<any> {
-    return this.events$.pipe(
-      eventType(ServerEventType.minigameStart),
+    return this.events$.eventStream(ServerEventType.minigameStart).pipe(
       mergeMap(this.startGame.bind(this)),
       share(),
     )

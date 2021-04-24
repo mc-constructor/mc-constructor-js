@@ -296,10 +296,10 @@ export enum Item {
   zombieSpawnEgg = 'minecraft:zombie_spawn_egg',
   zombieVillagerSpawnEgg = 'minecraft:zombie_villager_spawn_egg',
 
-  woodenCodslapper = 'nodesupportmod:wood_codslapper',
-  stoneCodslapper = 'nodesupportmod:stone_codslapper',
-  ironCodslapper = 'nodesupportmod:iron_codslapper',
-  goldCodslapper = 'nodesupportmod:golden_codslapper',
-  diamondCodslapper = 'nodesupportmod:diamond_codslapper',
-  codslapper = 'nodesupportmod:codslapper',
+  woodenCodslapper = 'dandoes_minigame_codslap:wood_codslapper',
+  stoneCodslapper = 'dandoes_minigame_codslap:stone_codslapper',
+  ironCodslapper = 'dandoes_minigame_codslap:iron_codslapper',
+  goldCodslapper = 'dandoes_minigame_codslap:golden_codslapper',
+  diamondCodslapper = 'dandoes_minigame_codslap:diamond_codslapper',
+  codslapper = 'dandoes_minigame_codslap:codslapper',
 }

@@ -4,7 +4,6 @@ import { RequestClient } from '@ts-mc/core/client'
 import { dequeueReplay, pass } from '@ts-mc/common/rxjs'
 import {
   EntityEvent,
-  eventType,
   PlayerEvent,
   PlayerEvents,
   ServerEvents,
@@ -42,13 +41,14 @@ export class MinigameEvents extends PlayerEvents {
   public readonly playerReady$: Observable<Player>
   public readonly playerRespawn$: Observable<PlayerEvent>
   public readonly playersReady$: Observable<boolean>
+  public readonly entityDeath$: Observable<EntityEvent>
+  public readonly entitySpawn$: Observable<EntityEvent>
 
   public readonly minigameAge$: Observable<MinigameAgeEvent> = timer(0, 1000).pipe(
     map(minigameAge => ({ minigameAge })),
     share(),
   )
 
-  protected readonly entityDeath$: Observable<EntityEvent>
   protected readonly playerAttack$: Observable<PlayerEvent>
 
   private _run$: Observable<any>
@@ -61,17 +61,20 @@ export class MinigameEvents extends PlayerEvents {
 
   constructor(
     client: RequestClient,
-    events$: ServerEvents,
+    events: ServerEvents,
     logger: Logger,
   ) {
-    super(client, events$, logger)
-    this.entityDeath$ = events$.pipe(
-      eventType(ServerEventType.entityLivingDeath),
-      tap(event => this.logger.debug('entityDeath$ - entityLivingDeath', event.entityId)),
+    super(client, events, logger)
+    this.entityDeath$ = events.eventStream(ServerEventType.livingDeath).pipe(
+      tap(event => this.logger.debug('entityDeath$ - livingDeath', event.entityId)),
       share(),
     )
-    this.playerRespawn$ = events$.pipe(
-      eventType(ServerEventType.playerRespawn),
+    this.entitySpawn$ = events.eventStream(ServerEventType.entityJoinWorld).pipe(
+      tap(event => this.logger.debug('entitySpawn$ - entityJoinWorld', event.entityId)),
+      share(),
+    )
+
+    this.playerRespawn$ = events.eventStream(ServerEventType.playerRespawn).pipe(
       tap(event => this.logger.debug('playerRespawn$', event.player.name)),
       share(),
     )
@@ -80,10 +83,7 @@ export class MinigameEvents extends PlayerEvents {
       tap(event => this.logger.debug('playerDeath$', event.entityId)),
       share(),
     )
-    this.playerAttack$ = events$.pipe(
-      eventType(ServerEventType.playerAttackEntity),
-      share(),
-    )
+    this.playerAttack$ = events.eventStream(ServerEventType.playerAttackEntity)
     this.playerUnlimbo$ = merge(
       this.playerRespawn$.pipe(pluck('player')),
       this.playerLeave$,

@@ -1,14 +1,16 @@
 import { Inject, Logger } from '@dandi/core'
 import { silence } from '@ts-mc/common/rxjs'
 import { RequestClient } from '@ts-mc/core/client'
+import { Mob } from '@ts-mc/core/types'
 import { actionbar, clearEffect, rawCmd, text, title } from '@ts-mc/core/cmd'
 import { MapCommand, MapCommandOperatorFn, CommandRequest, parallel } from '@ts-mc/core/command'
 import { AttackedByPlayerEvent, EntityEvent, PlayerEvent } from '@ts-mc/core/server-events'
 import { Minigame } from '@ts-mc/minigames'
 import { ArenaManager, CommonCommands, ConfiguredArena } from '@ts-mc/minigames/arenas'
+import { SummonedEntityManager } from '@ts-mc/minigames/entities'
 
 import { combineLatest, EMPTY, merge, Observable } from 'rxjs'
-import { mergeMap, switchMapTo } from 'rxjs/operators'
+import { mergeMap, switchMapTo, take } from 'rxjs/operators'
 
 import { CodslapEvents } from './codslap-events'
 import { Codslap } from './codslap-metadata'
@@ -34,9 +36,12 @@ export class CodslapMinigame implements Minigame {
     @Inject(ArenaManager) private readonly arena: ArenaManager<CodslapEvents>,
     @Inject(MapCommand) private readonly mapCommand: MapCommandOperatorFn,
     @Inject(Logger) private readonly logger: Logger,
+    @Inject(SummonedEntityManager) private readonly summonedEntities: SummonedEntityManager,
   ) {
     this.logger.debug('ctr')
     const onPlayerDeath$ = combineLatest([this.events.playerDeath$, this.arena.arenaInit$])
+    
+    this.summonedEntities.limitSpawn(Mob.cow, 25)
 
     const run$ = merge(
       this.mergeCmd(this.events.codslap$, this.onCodslap),
@@ -49,6 +54,7 @@ export class CodslapMinigame implements Minigame {
       this.obj.codslap.events$,
       this.obj.codslapMobKill.events$,
       this.obj.codslapPlayerKill.events$,
+      this.summonedEntities.mobCountEvent$,
     )
     this.run$ = this.init().pipe(switchMapTo(run$))
   }
@@ -56,7 +62,7 @@ export class CodslapMinigame implements Minigame {
   private init(): Observable<any> {
     return title('@a', text(`CODSLAP!`).bold, text('The game will begin in a moment...')).execute(this.client).pipe(
       this.mapCommand(this.common.initHoldingArea()),
-      switchMapTo(this.events.players$),
+      switchMapTo(this.events.players$.pipe(take(1))),
       this.mapCommand(players => this.common.movePlayersToHolding(players)),
       this.mapCommand(this.initCmd.compile()),
       this.mapCommand(title('@a', text('Get ready!'), text('May the best codslapper win!').bold)),

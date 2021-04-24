@@ -4,9 +4,6 @@
   - use Symbol.toStringTag
   - include debug/toStringTag text from contained commands (e.g. `[MultiCommandRequest: 'setblock etc etc', 'fill etc etc']`)
 
-# Marbles testing
-- 
-
 ## Minigame Commands
 - list
 - reset
@@ -47,9 +44,8 @@
  - give codslappers tiered dmg vs mobs, no dmg vs players
 
 ## Balance/Gameplay fixes
-- enabled limiting hook-based spawns (e.g. total number of cows spawned)
 - time based cow spawns if max is not reached
-- remove fire effect?
+- ~remove fire effect?~ can't, it's a minecraft bug :(
 
 ### Ideas:
  - collecting food drops increases satiation
@@ -63,9 +59,7 @@
 
 ### NEXT:
 - why is setblock failing?
-- Default/global hooks (e.g. cow spawning)  
-  - probably needs server mod to add a count command
-- Update Shrinky Dinks to use timing pattern from Primed and Ready
+- prevent moving to next level while player is dead
 - Fix codslap kills not getting counted if a player is dead
     - was this fixed by separating playerDeath$ and playerLimbo$ ?
     - might be due to the event not coming from the server?  

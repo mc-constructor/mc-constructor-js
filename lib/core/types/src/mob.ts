@@ -64,3 +64,7 @@ export enum Mob {
   wolf = 'minecraft:wolf',
   zombieHorse = 'minecraft:zombie_horse',
 }
+
+export function isMob(mob: any): mob is Mob {
+  return Object.values(Mob).includes(mob)
+}

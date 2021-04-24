@@ -3,7 +3,9 @@ import { generateRandomInt } from '@ts-mc/common'
 import { clear, rawCmd } from '@ts-mc/core/cmd'
 import { CommandRequest, parallel } from '@ts-mc/core/command'
 import { area, Coordinates, Item, loc, Mob } from '@ts-mc/core/types'
-import { CommonCommandsBase, summonBehavior } from '@ts-mc/minigames/arenas'
+import { ArenaMinigameEvents, CommonCommandsBase } from '@ts-mc/minigames/arenas'
+import { HookHandler } from '@ts-mc/minigames/behaviors'
+import { SummonBehaviorManager } from '@ts-mc/minigames/entities'
 
 import { CodslapObjectives } from './codslap-objectives'
 import { LEVELED_WEAPONS } from './codslapper'
@@ -22,20 +24,24 @@ export class CodslapCommonCommands extends CommonCommandsBase {
     this.spawnOffsetFromFloor.modify.down(100),
   )
 
-  public readonly summonCowsOnStartBehavior = summonBehavior(
-    Mob.cow,
-    { base: 10, playerBonus: generateRandomInt(0, 1), playerMultiplier: 1 },
-  )
-
-  public readonly summonCowsOnRespawnBehavior = summonBehavior(
-    Mob.cow,
-    { base: 10, playerBonus: generateRandomInt(0, 5) },
-  )
+  public readonly summonCowsOnStartBehavior: HookHandler<ArenaMinigameEvents>
+  public readonly summonCowsOnRespawnBehavior: HookHandler<ArenaMinigameEvents>
 
   constructor(
     @Inject(CodslapObjectives) private objectives: CodslapObjectives,
+    @Inject(SummonBehaviorManager) protected readonly summon: SummonBehaviorManager,
   ) {
     super()
+
+    this.summonCowsOnStartBehavior = this.summon.createMobBehavior(
+      Mob.cow,
+      { base: 10, playerBonus: generateRandomInt(0, 1), playerMultiplier: 1 },
+    )
+
+    this.summonCowsOnRespawnBehavior = summon.createMobBehavior(
+      Mob.cow,
+      { base: 10, playerBonus: generateRandomInt(0, 5) },
+    )
   }
 
   public equip(target: string, weapon?: Item): CommandRequest {

@@ -11,7 +11,7 @@ import {
   take,
 } from 'rxjs/operators'
 
-import { CompiledSimpleRequest, ExecuteResponse, RequestType, PendingRequest } from '../request'
+import { CompiledSimpleRequest, ExecuteResponse, RequestType, PendingRequest, CompiledRequest } from '../request'
 import { RequestClient } from '../request-client'
 import { ClientRawResponse, ClientResponse, isClientRawResponse, ResponseClient } from '../response-client'
 
@@ -89,6 +89,9 @@ export class SocketClient implements RequestClient, ResponseClient {
 
   private readonly pending = new Map<string, CompiledSocketMessage>()
   private readonly ready$: Observable<SocketConnection>
+  private readonly sent$$: Subject<CompiledRequest> = new Subject<CompiledRequest>();
+
+  public readonly sent$: Observable<CompiledRequest> = this.sent$$.asObservable()
 
   constructor(
     @Inject(SocketConnection) private readonly conn$: Observable<SocketConnection>,
@@ -104,6 +107,7 @@ export class SocketClient implements RequestClient, ResponseClient {
   public send(type: RequestType, buffer: Uint8Array | string, hasResponse?: boolean | number): PendingRequest<ClientResponse> {
     const msg = new CompiledSocketMessage(this.config.message, this.ready$, type, buffer, hasResponse, buffer?.toString(), this.logger)
     this.pending.set(msg.id, msg)
+    msg.sent$.subscribe(this.sent$$);
     return msg.pendingResponse$
   }
 

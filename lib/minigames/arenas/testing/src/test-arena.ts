@@ -1,13 +1,13 @@
-import { ArenaBase, ArenaHooks, CommonCommands, PlatformLayer, Arena, ArenaConstructor } from '@ts-mc/minigames/arenas'
-import { MinigameEvents } from '@ts-mc/minigames'
-import { block } from '@ts-mc/core/cmd'
-import { Block } from '@ts-mc/core/types'
-import { text } from '@ts-mc/core/cmd/src/text'
 import { Inject } from '@dandi/core'
+import { block, text } from '@ts-mc/core/cmd'
+import { Block } from '@ts-mc/core/types'
+import { MinigameEvents } from '@ts-mc/minigames'
+import { ArenaBase, CommonCommands, PlatformLayer, Arena, ArenaConstructor } from '@ts-mc/minigames/arenas'
+import { Hooks } from '@ts-mc/minigames/behaviors'
 
 export interface TestArenaProperties<TEvents extends MinigameEvents = MinigameEvents> {
   layers: PlatformLayer[]
-  hooks: ArenaHooks<TEvents>
+  hooks: Hooks<TEvents>
 }
 
 export function testArena<TEvents extends MinigameEvents>(

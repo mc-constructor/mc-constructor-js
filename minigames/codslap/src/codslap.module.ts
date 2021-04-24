@@ -1,5 +1,6 @@
 import { Registerable } from '@dandi/core'
 import { ArenasMinigameModuleBuilder, ArenasSupportModule } from '@ts-mc/minigames/arenas'
+import { MinigameEntitiesModule } from '@ts-mc/minigames/entities'
 
 import { CodslapArenasModule } from './arena'
 import { CodslapMinigame } from './codslap'
@@ -21,4 +22,5 @@ export const CodslapModule = new CodslapModuleBuilder(
   CodslapInit,
   CodslapMinigame,
   CodslapObjectives,
+  MinigameEntitiesModule,
 )

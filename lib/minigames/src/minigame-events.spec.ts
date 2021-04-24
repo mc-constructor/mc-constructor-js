@@ -22,7 +22,7 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
 
     it('emits when a player dies', () => {
       helpers.serverEvents = {
-        a: ServerEventFixtures.attackedByPlayer(ServerEventType.entityLivingDeath, { entityId: 'kenny' }),
+        a: ServerEventFixtures.attackedByPlayer(ServerEventType.livingDeath, { entityId: 'kenny' }),
       }
 
       const source$ = hot('a', helpers.serverEvents)
@@ -34,8 +34,8 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
 
     it('emits when multiple players die', () => {
       helpers.serverEvents = {
-        a: ServerEventFixtures.attackedByPlayer(ServerEventType.entityLivingDeath, { entityId: 'kenny' }),
-        b: ServerEventFixtures.attackedByPlayer(ServerEventType.entityLivingDeath, { entityId: 'not-kenny' }),
+        a: ServerEventFixtures.attackedByPlayer(ServerEventType.livingDeath, { entityId: 'kenny' }),
+        b: ServerEventFixtures.attackedByPlayer(ServerEventType.livingDeath, { entityId: 'not-kenny' }),
       }
 
       const source$ = hot('ab', helpers.serverEvents)
@@ -47,7 +47,7 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
 
     it('does not emit when non-player entities die', () => {
       helpers.serverEvents = {
-        a: ServerEventFixtures.attackedEntity(ServerEventType.entityLivingDeath, { entityId: 'minecraft:cow' }),
+        a: ServerEventFixtures.attackedEntity(ServerEventType.livingDeath, { entityId: 'minecraft:cow' }),
         b: ServerEventFixtures.attackedEntity(),
       }
 
@@ -61,8 +61,8 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
     it('does not emit when untracked players die', () => {
 
       helpers.serverEvents = {
-        a: ServerEventFixtures.attackedByPlayer(ServerEventType.entityLivingDeath, { entityId: 'kenny' }),
-        b: ServerEventFixtures.attackedByPlayer(ServerEventType.entityLivingDeath, { entityId: 'some-other-guy' }),
+        a: ServerEventFixtures.attackedByPlayer(ServerEventType.livingDeath, { entityId: 'kenny' }),
+        b: ServerEventFixtures.attackedByPlayer(ServerEventType.livingDeath, { entityId: 'some-other-guy' }),
       }
       const source$ = hot('a-b', helpers.serverEvents)
       const expected =    'a'
@@ -74,7 +74,7 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
     it('does not re-emit events after subsequent subscriptions', () => {
 
       helpers.serverEvents = {
-        a: ServerEventFixtures.attackedByPlayer(ServerEventType.entityLivingDeath, { entityId: 'kenny' }),
+        a: ServerEventFixtures.attackedByPlayer(ServerEventType.livingDeath, { entityId: 'kenny' }),
       }
       const source$ =  hot('a', helpers.serverEvents)
       const expected1 =    'a'
@@ -90,8 +90,8 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
 
     beforeEach(() => {
       helpers.serverEvents = {
-        a: ServerEventFixtures.attackedByPlayer(ServerEventType.entityLivingDeath, { entityId: 'kenny' }),
-        b: ServerEventFixtures.attackedByPlayer(ServerEventType.entityLivingDeath, { entityId: 'not-kenny' }),
+        a: ServerEventFixtures.attackedByPlayer(ServerEventType.livingDeath, { entityId: 'kenny' }),
+        b: ServerEventFixtures.attackedByPlayer(ServerEventType.livingDeath, { entityId: 'not-kenny' }),
       }
     })
 
@@ -244,7 +244,7 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
 
     it('emits without further waiting if the timed event emits before a player dies', () => {
       helpers.serverEvents = {
-        d: ServerEventFixtures.attackedByPlayer(ServerEventType.entityLivingDeath, { entityId: helpers.playerValues.a.name }),
+        d: ServerEventFixtures.attackedByPlayer(ServerEventType.livingDeath, { entityId: helpers.playerValues.a.name }),
       }
 
       trigger$ = cold('1s -x')
@@ -256,7 +256,7 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
 
     it('delays emitting if a player dies before the timer emits', () => {
       helpers.serverEvents = {
-        d: ServerEventFixtures.attackedByPlayer(ServerEventType.entityLivingDeath, { entityId: helpers.playerValues.a.name }),
+        d: ServerEventFixtures.attackedByPlayer(ServerEventType.livingDeath, { entityId: helpers.playerValues.a.name }),
         r: ServerEventFixtures.player(ServerEventType.playerRespawn, { player: helpers.playerValues.a })
       }
 
@@ -269,7 +269,7 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
 
     it('delays emitting if a player leaves before the timer emits', () => {
       helpers.serverEvents = {
-        d: ServerEventFixtures.attackedByPlayer(ServerEventType.entityLivingDeath, { entityId: helpers.playerValues.a.name }),
+        d: ServerEventFixtures.attackedByPlayer(ServerEventType.livingDeath, { entityId: helpers.playerValues.a.name }),
         l: ServerEventFixtures.player(ServerEventType.playerLeft, { player: helpers.playerValues.a })
       }
 
@@ -282,7 +282,7 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
 
     it('continues emitting over multiple source events', () => {
       helpers.serverEvents = {
-        d: ServerEventFixtures.attackedByPlayer(ServerEventType.entityLivingDeath, { entityId: helpers.playerValues.a.name }),
+        d: ServerEventFixtures.attackedByPlayer(ServerEventType.livingDeath, { entityId: helpers.playerValues.a.name }),
         r: ServerEventFixtures.player(ServerEventType.playerRespawn, { player: helpers.playerValues.a })
       }
 
@@ -295,7 +295,7 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
 
     it('continues emitting over multiple source events with multiple interruptions', () => {
       helpers.serverEvents = {
-        d: ServerEventFixtures.attackedByPlayer(ServerEventType.entityLivingDeath, { entityId: helpers.playerValues.a.name }),
+        d: ServerEventFixtures.attackedByPlayer(ServerEventType.livingDeath, { entityId: helpers.playerValues.a.name }),
         r: ServerEventFixtures.player(ServerEventType.playerRespawn, { player: helpers.playerValues.a })
       }
 

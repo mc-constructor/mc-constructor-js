@@ -1,35 +1,38 @@
-import { PlayerWithHeldItems } from '@ts-mc/core/types'
+import { AnyEntity, entityTypeFromEntityId, PlayerWithHeldItems } from '@ts-mc/core/types'
 
 import { parsePlayerWithHeldItems } from './player'
 import { ServerEvent } from './server-event'
 
-export interface EntityEvent extends ServerEvent {
+export interface EntityEvent<TEntity extends AnyEntity = AnyEntity> extends ServerEvent {
   entityId: string
+  entityType: TEntity
 }
 
 export enum AttackerType {
   player = 'player',
 }
 
-export interface AttackedEntityEvent extends EntityEvent {
+export interface AttackedEntityEvent<TEntity extends AnyEntity = AnyEntity> extends EntityEvent<TEntity> {
   damageSource: string
   attackerType: AttackerType | string
 }
 
-export interface AttackedByPlayerEvent extends AttackedEntityEvent {
+export interface AttackedByPlayerEvent<TEntity extends AnyEntity = AnyEntity> extends AttackedEntityEvent<TEntity> {
   attacker: PlayerWithHeldItems
 }
 
 /** @internal */
 export type AttackedByEntityEventType = {
-  [AttackerType.player]: AttackedByPlayerEvent,
+  [AttackerType.player]: AttackedByPlayerEvent<AnyEntity>,
 }
 
 /** @internal */
-export function parseEntityEvent(event: ServerEvent): EntityEvent {
+export function parseEntityEvent(event: ServerEvent): EntityEvent<AnyEntity> {
   const [entityId, ...extras] = event.extras
+  const entityType = entityTypeFromEntityId(entityId)
   return Object.assign(event, {
     entityId,
+    entityType,
     extras,
   })
 }
@@ -50,7 +53,7 @@ export function parseAttackedEntityEvent(event: ServerEvent): AttackedEntityEven
 }
 
 /** @internal */
-export function parseAttackedByPlayerEvent(event: AttackedEntityEvent): AttackedByPlayerEvent {
+export function parseAttackedByPlayerEvent<TEntity extends AnyEntity = AnyEntity>(event: AttackedEntityEvent<TEntity>): AttackedByPlayerEvent<TEntity> {
   const [attacker, extras] = parsePlayerWithHeldItems(event)
   return Object.assign(event, {
     attacker,

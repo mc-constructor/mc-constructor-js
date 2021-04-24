@@ -1,5 +1,5 @@
 import { readdirSync, statSync } from 'fs'
-import { resolve, join, relative } from 'path'
+import { resolve, relative } from 'path'
 
 import { Disposable } from '@dandi/common'
 import { Inject, Injectable, Logger, Registerable } from '@dandi/core'

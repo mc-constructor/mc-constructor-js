@@ -2,11 +2,12 @@ import { Inject, Injectable, Logger } from '@dandi/core'
 import {
   block,
   FillMethod,
+  forceLoadAdd,
   gamerule,
+  kill,
   rawCmd,
   time,
   weather,
-  kill,
 } from '@ts-mc/core/cmd'
 import { CommandRequest, parallel, series } from '@ts-mc/core/command'
 import { Block } from '@ts-mc/core/types'
@@ -44,6 +45,7 @@ export class CodslapInit {
       gamerule.doDaylightCycle.disable,
       gamerule.commandBlockOutput.disable,
       gamerule.sendCommandFeedback.enable,
+      gamerule.doMobSpawning.disable,
       // rawCmd(`setworldspawn ${this.common.spawn}`),
     )
   }
@@ -75,14 +77,17 @@ export class CodslapInit {
         cage.end.modify.down(25).modify.east(25).modify.south(25),
       )
 
-    return parallel(
-      'codslap.initArena',
-      kill(`@e[type=!player]`),
-      kill(`@e[type=item]`),
-      reset,
-      cage,
-      moatContainer,
-      lava,
+    return series(
+      forceLoadAdd(reset.start, reset.end),
+      parallel(
+        'codslap.initArena',
+        kill(`@e[type=!player]`),
+        kill(`@e[type=item]`),
+        reset,
+        cage,
+        moatContainer,
+        lava,
+      ),
     )
   }
 

@@ -28,6 +28,10 @@ export type EntityMap = Entity & typeof MiscEntity
 
 export type AnyEntity = EntityBlock | EntityItem | MiscEntity | Mob | Projectile | Vehicle
 
+export function entityTypeFromEntityId<TEntity extends AnyEntity>(entityId: string): TEntity {
+  return entityId.replace(/^entity\./, '').replace(/\./g, ':') as TEntity
+}
+
 export const Entity: EntityMap = Object.defineProperties(MiscEntity, {
   block: { get: () => EntityBlock },
   item: { get: () => EntityItem },

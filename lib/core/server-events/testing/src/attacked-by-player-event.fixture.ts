@@ -8,7 +8,7 @@ export const ATTACKED_BY_PLAYER_DEFAULTS: Omit<AttackedByPlayerEvent, keyof Atta
 })
 
 export function attackedByPlayerEventFixture(
-  type: AttackedEntityEventType = ServerEventType.entityLivingAttack,
+  type: AttackedEntityEventType = ServerEventType.livingAttack,
   config?: Partial<AttackedByPlayerEvent>,
 ): AttackedByPlayerEvent {
   return Object.assign(attackedEntityEventFixture(type), ATTACKED_BY_PLAYER_DEFAULTS, config)
