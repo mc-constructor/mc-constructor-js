@@ -20,16 +20,20 @@ class ListPlayersCommand extends SimpleArgsCommandRequest<UuidsArgs, ListPlayers
   }
 
   protected parseSuccessResponse(response: ClientResponse): ListPlayersResult {
-    const [key, connectedRaw, maxRaw, playersRaw] = response.extras
+    const [listPlayersKey, connectedRaw, maxRaw, nameAndIdKey, ...playerNameAndUuidPairs] = response.extras
     const connectedPlayers = parseInt(connectedRaw)
     const maxPlayers = parseInt(maxRaw)
-    const players = playersRaw.split(', ')
-      .filter(player => !!player)
-      .map(entry => {
-        const [name, uuidRaw] = entry.split(' ')
-        const uuid = uuidRaw.substring(1, uuidRaw.length - 1)
-        return { name, uuid }
-      })
+
+    // player names and uuids come in pairs of lines (e.g. player1Name\nplayer1Uuid\nplayer2Name\nplayer2Uuid
+    const players = playerNameAndUuidPairs.reduce((result, entry, index) => {
+      if (index % 2) {
+        return result
+      }
+      const name = entry
+      const uuid = playerNameAndUuidPairs[index + 1]
+      result.push({ name, uuid })
+      return result;
+    }, [])
     return {
       connectedPlayers,
       maxPlayers,
