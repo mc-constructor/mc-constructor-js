@@ -159,7 +159,8 @@ class ArenaManagerImpl<TEvents extends MinigameEvents> implements ArenaManager<T
     arena: ConfiguredArena<TEvents>,
   ): Observable<ConfiguredArena<TEvents>> {
     console.log('initArena', arena.title)
-    return defer(() => this.clearArena(prevArena, arena)).pipe(
+    return defer(() => this.waitToHaveReadyPlayers()).pipe(
+      switchMapTo(this.clearArena(prevArena, arena)),
       tap(() => console.log('initArena start')),
       this.mapCommand(arena.instance.init()),
       delay(2500),
@@ -171,6 +172,19 @@ class ArenaManagerImpl<TEvents extends MinigameEvents> implements ArenaManager<T
         return arena
       }),
       share(),
+    )
+  }
+
+  protected waitToHaveReadyPlayers(): Observable<void> {
+    return defer(() => {
+      this.logger.debug('waiting to have at least one player...')
+      return this.events.hasPlayers$.pipe(
+        filter(hasPlayers => hasPlayers),
+        take(1),
+      )
+    }).pipe(
+      tap(() => this.logger.debug('waiting for players to be ready...')),
+      switchMapTo(this.events.waitForAllPlayersReady().pipe(take(1)))
     )
   }
 
