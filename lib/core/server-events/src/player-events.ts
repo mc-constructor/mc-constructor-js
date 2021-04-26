@@ -1,10 +1,10 @@
 import { Logger } from '@dandi/core'
+import { dequeueReplay } from '@ts-mc/common/rxjs'
+import { RequestClient } from '@ts-mc/core/client'
+import { listPlayers } from '@ts-mc/core/cmd'
 import { Player } from '@ts-mc/core/types'
 import { defer, merge, Observable } from 'rxjs'
-import { RequestClient } from '@ts-mc/core/client'
-import { map, share, tap, shareReplay, distinctUntilChanged } from 'rxjs/operators'
-import { dequeueReplay } from '@ts-mc/common/rxjs'
-import { listPlayers } from '@ts-mc/core/cmd'
+import { map, share, tap, shareReplay, distinctUntilChanged, pluck } from 'rxjs/operators'
 
 import { PlayerEvent } from './player-event'
 import { ServerEventType } from './server-event-type'
@@ -16,7 +16,8 @@ export class PlayerEvents {
   protected readonly playersByUuid: Map<string, Player> = new Map<string, Player>()
 
   public readonly player$: Observable<Player>
-  public readonly playerLeave$: Observable<Player>
+  public readonly playerJoin$: Observable<PlayerEvent>
+  public readonly playerLeave$: Observable<PlayerEvent>
   public readonly players$: Observable<Player[]>
   public readonly hasPlayers$: Observable<boolean>
 
@@ -26,22 +27,22 @@ export class PlayerEvents {
     protected readonly logger: Logger,
   ) {
     logger.debug('ctr')
-    const playerJoin$ = events.eventStream(ServerEventType.playerJoined).pipe(
+    this.playerJoin$ = events.eventStream(ServerEventType.playerJoined).pipe(
       tap(this.onPlayerJoin.bind(this)),
       share(),
     )
     this.playerLeave$ = events.eventStream(ServerEventType.playerLeft).pipe(
       tap(this.onPlayerLeave.bind(this)),
-      map(event => event.player),
+      share(),
     )
-    this.player$ = playerJoin$.pipe(
+    this.player$ = this.playerJoin$.pipe(
       map(event => event.player),
-      dequeueReplay(this.playerLeave$),
+      dequeueReplay(this.playerLeave$.pipe(pluck('player'))),
     )
 
     const init$ = this.init(client)
 
-    this.players$ = merge(init$, playerJoin$, this.playerLeave$).pipe(
+    this.players$ = merge(init$, this.playerJoin$, this.playerLeave$).pipe(
       map(() => this.players),
       shareReplay(1),
     )

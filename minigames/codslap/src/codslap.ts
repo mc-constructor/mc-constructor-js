@@ -3,7 +3,7 @@ import { silence } from '@ts-mc/common/rxjs'
 import { RequestClient } from '@ts-mc/core/client'
 import { Mob } from '@ts-mc/core/types'
 import { actionbar, clearEffect, rawCmd, text, title } from '@ts-mc/core/cmd'
-import { MapCommand, MapCommandOperatorFn, CommandRequest, parallel } from '@ts-mc/core/command'
+import { MapCommand, MapCommandOperatorFn, CommandRequest, parallel, series } from '@ts-mc/core/command'
 import { AttackedByPlayerEvent, EntityEvent, PlayerEvent } from '@ts-mc/core/server-events'
 import { Minigame } from '@ts-mc/minigames'
 import { ArenaManager, CommonCommands, ConfiguredArena } from '@ts-mc/minigames/arenas'
@@ -49,6 +49,7 @@ export class CodslapMinigame implements Minigame {
       this.mergeCmd(this.events.codslapPlayerKill$, this.onCodslapPlayerKill),
       this.mergeCmd(this.events.codslapMobKill$, this.onCodslapMobKill),
       this.mergeCmd(this.events.playerRespawn$, this.onPlayerRespawn),
+      this.mergeCmd(combineLatest([this.arena.arenaStart$, this.events.playerJoin$]), this.onPlayerJoin),
       this.events.run$,
       this.arena.run$,
       this.obj.codslap.events$,
@@ -111,6 +112,14 @@ export class CodslapMinigame implements Minigame {
     return parallel(
       this.common.resetPlayer(event.player.name),
       clearEffect(event.player.name),
+    )
+  }
+
+  private onPlayerJoin([arena, event]: [ConfiguredArena<CodslapEvents>, PlayerEvent]): CommandRequest {
+    return series(
+      this.common.movePlayersToHolding([event.player]),
+      this.common.resetPlayer(event.player.name),
+      this.common.movePlayersToArena([event.player], arena.instance)
     )
   }
 

@@ -58,8 +58,13 @@
     - See EntityExplode event for list of blocks that are destroyed/damaged for spawn blacklisting
 
 ### NEXT:
-- why is setblock failing?
-- prevent moving to next level while player is dead
 - Fix codslap kills not getting counted if a player is dead
     - was this fixed by separating playerDeath$ and playerLimbo$ ?
-    - might be due to the event not coming from the server?  
+    - might be due to the event not coming from the server?
+
+### Before playtesting:
+- make starting a new game stop the old one
+- gracefully handle exceptions
+- set up download location
+- create installation instructions
+- set up discord server?

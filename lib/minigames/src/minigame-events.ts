@@ -86,7 +86,7 @@ export class MinigameEvents extends PlayerEvents {
     this.playerAttack$ = events.eventStream(ServerEventType.playerAttackEntity)
     this.playerUnlimbo$ = merge(
       this.playerRespawn$.pipe(pluck('player')),
-      this.playerLeave$,
+      this.playerLeave$.pipe(pluck('player')),
     ).pipe(
       share(),
     )
