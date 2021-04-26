@@ -114,7 +114,6 @@ class ServerEventsImpl implements ServerEvents {
           return false
         }),
         map(event => PARSERS[event.type](event)),
-        tap(event => logger.debug(`Received event type ${event.type}`, event)),
         share(),
       )
     this.run$ = this.events$.pipe(silence);
