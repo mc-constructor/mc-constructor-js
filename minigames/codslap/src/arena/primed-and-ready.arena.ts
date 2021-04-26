@@ -1,7 +1,7 @@
 import { Inject, Logger } from '@dandi/core'
 import { RandomIntervalScheduler } from '@ts-mc/common/rxjs'
 import { RequestError } from '@ts-mc/core/client'
-import { block, rawCmd, summon, text, title } from '@ts-mc/core/cmd'
+import { block, summon, text, title } from '@ts-mc/core/cmd'
 import { CommandRequest, MapCommand, MapCommandOperatorFn, parallel, series } from '@ts-mc/core/command'
 import { area, Area, Block, Coordinates, EntityBlock, loc } from '@ts-mc/core/types'
 import { Arena, ArenaBase, ArenaConstructor, PlatformLayer } from '@ts-mc/minigames/arenas'
@@ -104,10 +104,11 @@ class PrimedAndReadyArena extends ArenaBase<CodslapEvents, CodslapCommonCommands
   private getTntCommand(coords: Coordinates): [CommandRequest, [Coordinates, Area]] {
     const cmd = parallel(
       series(
-        block(Block.air).set(coords),
-        block(Block.bedrock).set(coords.modify.down(1)),
+        parallel(
+          block(Block.air).set(coords),
+          block(Block.bedrock).set(coords.modify.down(1)),
+        ),
         summon(EntityBlock.tnt, coords, { Fuse: 80 }),
-        rawCmd(`summon ${Block.tnt} ${coords} {"Fuse":80}`),
       ),
       title('@a', text('Watch out!')),
     )
@@ -121,7 +122,10 @@ class PrimedAndReadyArena extends ArenaBase<CodslapEvents, CodslapCommonCommands
 
   private replaceBlock([loc, blacklistArea]: [Coordinates, Area]): CommandRequest {
     this.restoreSpawnArea(blacklistArea)
-    return block(Block.bedrock).set(loc)
+    return parallel(
+      block(Block.bedrock).set(loc),
+      block(Block.air).set(loc.modify.down(1)),
+    )
   }
 
 }
