@@ -33,6 +33,8 @@ export class CommonCommandsBase implements CommonCommands {
   public movePlayersToHolding(players: Player[]): CommandRequest {
     return parallel(
       'movePlayersToHolding',
+      clear('@a'),
+      clearEffect('@a'),
       tellraw('@a', 'Off to holding you go...'),
       this.teleportPlayersToRandomWithin(players, [this.holdingArea])
     )
@@ -55,8 +57,6 @@ export class CommonCommandsBase implements CommonCommands {
       forceLoadAdd(this.holdingArea),
       parallel(
         'initHoldArea blocks and clear',
-        clear('@a'),
-        clearEffect('@a'),
         block(Block.whiteWool).fill(this.holdingArea),
       ),
     )

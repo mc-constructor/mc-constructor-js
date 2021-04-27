@@ -10,7 +10,7 @@ import {
   ServerEventType
 } from '@ts-mc/core/server-events'
 import { Player } from '@ts-mc/core/types'
-import { merge, MonoTypeOperatorFunction, Observable, of, race, timer } from 'rxjs'
+import { defer, merge, MonoTypeOperatorFunction, Observable, of, race, timer } from 'rxjs'
 import {
   concatMap,
   delay,
@@ -24,6 +24,7 @@ import {
   share,
   shareReplay,
   startWith,
+  switchMapTo,
   take,
   tap,
 } from 'rxjs/operators'
@@ -183,6 +184,19 @@ export class MinigameEvents extends PlayerEvents {
         }),
       )
     })
+  }
+
+  public waitToHaveReadyPlayers(): Observable<void> {
+    return defer(() => {
+      this.logger.debug('waiting to have at least one player...')
+      return this.hasPlayers$.pipe(
+        filter(hasPlayers => hasPlayers),
+        take(1),
+      )
+    }).pipe(
+      tap(() => this.logger.debug('waiting for players to be ready...')),
+      switchMapTo(this.waitForAllPlayersReady().pipe(take(1)))
+    )
   }
 
   protected getRunStreams(): Observable<any>[] {

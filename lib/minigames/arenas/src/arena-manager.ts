@@ -159,7 +159,7 @@ class ArenaManagerImpl<TEvents extends MinigameEvents> implements ArenaManager<T
     arena: ConfiguredArena<TEvents>,
   ): Observable<ConfiguredArena<TEvents>> {
     console.log('initArena', arena.title)
-    return defer(() => this.waitToHaveReadyPlayers()).pipe(
+    return defer(() => this.events.waitToHaveReadyPlayers()).pipe(
       switchMapTo(this.clearArena(prevArena, arena)),
       tap(() => console.log('initArena start')),
       this.mapCommand(arena.instance.init()),
@@ -172,19 +172,6 @@ class ArenaManagerImpl<TEvents extends MinigameEvents> implements ArenaManager<T
         return arena
       }),
       share(),
-    )
-  }
-
-  protected waitToHaveReadyPlayers(): Observable<void> {
-    return defer(() => {
-      this.logger.debug('waiting to have at least one player...')
-      return this.events.hasPlayers$.pipe(
-        filter(hasPlayers => hasPlayers),
-        take(1),
-      )
-    }).pipe(
-      tap(() => this.logger.debug('waiting for players to be ready...')),
-      switchMapTo(this.events.waitForAllPlayersReady().pipe(take(1)))
     )
   }
 
@@ -223,15 +210,17 @@ class ArenaManagerImpl<TEvents extends MinigameEvents> implements ArenaManager<T
   }
 
   private clearArena(arena: ConfiguredArena<TEvents>, nextArena: ConfiguredArena<TEvents>): Observable<ConfiguredArena<TEvents>> {
-    return defer(() => {
-      console.log('in clearArena')
-      if (!arena) {
-        return of(undefined)
-      }
-      return this.command(title('@a', text('Coming up...'), nextArena.title)).pipe(
-        delay(5000),
-      )
-    }).pipe(
+    console.log('in clearArena')
+    return this.events.waitToHaveReadyPlayers().pipe(
+      switchMap(() => {
+        if (!arena) {
+          return of(undefined)
+        }
+        return this.command(title('@a', text('Coming up...'), nextArena.title)).pipe(
+          delay(5000),
+        )
+      }),
+      switchMapTo(this.events.waitToHaveReadyPlayers()),
       switchMapTo(this.events.players$.pipe(take(1))),
       this.mapCommand(players => this.common.movePlayersToHolding(players)),
       delay(500),

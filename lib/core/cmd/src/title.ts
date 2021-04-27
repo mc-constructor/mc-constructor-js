@@ -22,7 +22,6 @@ export interface TitleTimesTicks {
 
 export class TitleTimes {
 
-
   public readonly ticks: TitleTimesTicks
 
   constructor(

@@ -3,8 +3,8 @@ import { silence } from '@ts-mc/common/rxjs'
 import { RequestClient } from '@ts-mc/core/client'
 import { MapCommand, MapCommandOperatorFn } from '@ts-mc/core/command'
 import { MinigameStartEvent, ServerEvents, ServerEventType } from '@ts-mc/core/server-events'
-import { combineLatest, defer, Observable, of, merge } from 'rxjs'
-import { bufferCount, map, mergeMap, pluck, share, switchMapTo, tap } from 'rxjs/operators'
+import { combineLatest, defer, Observable, of, merge, EMPTY } from 'rxjs'
+import { bufferCount, catchError, map, mergeMap, pluck, share, switchMapTo, tap } from 'rxjs/operators'
 
 import { register, unregister } from './cmd/register-minigame'
 import { GameInfo, MinigameLoader } from './minigame-loader'
@@ -41,6 +41,10 @@ export class MinigameManager {
       // but don't spam the output with all the events
       this.events$.run$.pipe(silence),
     ).pipe(
+      catchError(err => {
+        logger.error(err)
+        return EMPTY
+      }),
       share(),
     )
   }
