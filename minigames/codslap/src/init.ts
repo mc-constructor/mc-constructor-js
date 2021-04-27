@@ -94,7 +94,6 @@ export class CodslapInit {
   protected initPlayers(): CommandRequest {
     return parallel(
       'codslap.initPlayers',
-      this.common.resetPlayer('@a'),
       rawCmd('gamemode adventure @a', 1500),
     )
   }

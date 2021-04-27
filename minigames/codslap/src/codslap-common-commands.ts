@@ -1,9 +1,10 @@
 import { Inject } from '@dandi/core'
 import { generateRandomInt } from '@ts-mc/common'
 import { clear, rawCmd } from '@ts-mc/core/cmd'
-import { CommandRequest, parallel } from '@ts-mc/core/command'
-import { area, Coordinates, Item, loc, Mob } from '@ts-mc/core/types'
-import { ArenaMinigameEvents, CommonCommandsBase } from '@ts-mc/minigames/arenas'
+import { CommandRequest, parallel, series } from '@ts-mc/core/command'
+import { area, Coordinates, Item, loc, Mob, Player } from '@ts-mc/core/types'
+import { MinigameEvents } from '@ts-mc/minigames'
+import { Arena, ArenaMinigameEvents, CommonCommandsBase } from '@ts-mc/minigames/arenas'
 import { HookHandler } from '@ts-mc/minigames/behaviors'
 import { SummonBehaviorManager } from '@ts-mc/minigames/entities'
 
@@ -44,11 +45,24 @@ export class CodslapCommonCommands extends CommonCommandsBase {
     )
   }
 
-  public equip(target: string, weapon?: Item): CommandRequest {
+  public equip(target: string | Player, weapon?: Item): CommandRequest {
+    const targetId = typeof target === 'string' ? target : target.name
+    return this.doEquip(targetId, weapon)
+  }
+
+  private doEquip(target: string, weapon?: Item): CommandRequest {
     return parallel(
       'codslapCommon.equip',
       clear(target),
       rawCmd(`replaceitem entity ${target} weapon.mainhand ${weapon || this.getPlayerWeapon(target)[0]}`),
+    )
+  }
+
+  public movePlayersToArena(players: Player[], arena: Arena<MinigameEvents>): CommandRequest {
+    return series(
+      'codslapCommon.movePlayersToArena',
+      parallel(...players.map(this.resetPlayer.bind(this))),
+      super.movePlayersToArena(players, arena),
     )
   }
 
@@ -62,7 +76,7 @@ export class CodslapCommonCommands extends CommonCommandsBase {
     return [weapon, LEVELS[nextLevel] - score]
   }
 
-  public resetPlayer(target: string): CommandRequest {
+  public resetPlayer(target: string | Player): CommandRequest {
     return this.equip(target)
   }
 

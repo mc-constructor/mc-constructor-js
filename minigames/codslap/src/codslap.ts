@@ -3,14 +3,34 @@ import { silence } from '@ts-mc/common/rxjs'
 import { RequestClient } from '@ts-mc/core/client'
 import { Mob } from '@ts-mc/core/types'
 import { actionbar, clearEffect, rawCmd, text, title } from '@ts-mc/core/cmd'
-import { MapCommand, MapCommandOperatorFn, CommandRequest, parallel, series } from '@ts-mc/core/command'
+import {
+  MapCommand,
+  MapCommandOperatorFn,
+  CommandRequest,
+  parallel,
+  series,
+  CommandStatic,
+  CommandStaticFn
+} from '@ts-mc/core/command'
 import { AttackedByPlayerEvent, EntityEvent, PlayerEvent } from '@ts-mc/core/server-events'
 import { Minigame } from '@ts-mc/minigames'
 import { ArenaManager, CommonCommands, ConfiguredArena } from '@ts-mc/minigames/arenas'
 import { SummonedEntityManager } from '@ts-mc/minigames/entities'
 
-import { combineLatest, EMPTY, merge, Observable } from 'rxjs'
-import { mergeMap, switchMapTo, take } from 'rxjs/operators'
+import { combineLatest, defer, EMPTY, merge, Observable, of } from 'rxjs'
+import {
+  delay,
+  map,
+  mapTo,
+  mergeMap,
+  reduce,
+  share,
+  shareReplay,
+  switchMap,
+  switchMapTo,
+  take,
+  takeUntil
+} from 'rxjs/operators'
 
 import { CodslapEvents } from './codslap-events'
 import { Codslap } from './codslap-metadata'
@@ -21,6 +41,11 @@ import { CodslapInit } from './init'
 /**
  * /summon minecraft:zombie ~ ~ ~ {HandItems:[{id:cod, Count:1,tag:{Enchantments:[{id:knockback,lvl:50}]}}]}
  */
+
+interface InitState {
+  ready?: true
+  titleShown?: true
+}
 
 @Minigame(Codslap)
 export class CodslapMinigame implements Minigame {
@@ -35,6 +60,7 @@ export class CodslapMinigame implements Minigame {
     @Inject(CodslapObjectives) private readonly obj: CodslapObjectives,
     @Inject(ArenaManager) private readonly arena: ArenaManager<CodslapEvents>,
     @Inject(MapCommand) private readonly mapCommand: MapCommandOperatorFn,
+    @Inject(CommandStatic) private readonly execCmd: CommandStaticFn,
     @Inject(Logger) private readonly logger: Logger,
     @Inject(SummonedEntityManager) private readonly summonedEntities: SummonedEntityManager,
   ) {
@@ -43,13 +69,15 @@ export class CodslapMinigame implements Minigame {
     
     this.summonedEntities.limitSpawn(Mob.cow, 25)
 
+    const moveJoinedPlayers$ = this.moveJoinedPlayers()
+
     const run$ = merge(
       this.mergeCmd(this.events.codslap$, this.onCodslap),
       this.mergeCmd(onPlayerDeath$, this.onPlayerDeath),
       this.mergeCmd(this.events.codslapPlayerKill$, this.onCodslapPlayerKill),
       this.mergeCmd(this.events.codslapMobKill$, this.onCodslapMobKill),
       this.mergeCmd(this.events.playerRespawn$, this.onPlayerRespawn),
-      this.mergeCmd(combineLatest([this.arena.arenaStart$, this.events.playerJoin$]), this.onPlayerJoin),
+      moveJoinedPlayers$,
       this.events.run$,
       this.arena.run$,
       this.obj.codslap.events$,
@@ -61,12 +89,41 @@ export class CodslapMinigame implements Minigame {
   }
 
   private init(): Observable<any> {
-    return title('@a', text(`CODSLAP!`).bold, text('The game will begin in a moment...')).execute(this.client).pipe(
-      this.mapCommand(this.common.initHoldingArea()),
+    const initHoldingArea$ = this.execCmd(this.common.initHoldingArea()).pipe(
+      mapTo({ ready: true } as InitState),
+      take(1),
+      shareReplay(1),
+    )
+
+    const titleCmd = title('@a', text(`CODSLAP!`).bold, text('The game will begin in a moment...'))
+    const introTitle$ = defer(() => this.execCmd(titleCmd));
+
+    const showIntroTitle$ = this.events.waitToHaveReadyPlayers().pipe(
+      switchMapTo(introTitle$),
+      take(1),
+    )
+
+    const showIntroTitleDuringInit$ = showIntroTitle$.pipe(
+      takeUntil(initHoldingArea$), // cancel if no players have joined by the time the holding area is ready
+      mapTo({ titleShown: true } as InitState),
+    )
+
+    const introInit$ = merge(initHoldingArea$, showIntroTitleDuringInit$).pipe(
+      reduce((result, item) => Object.assign(result, item), {} as InitState)
+    )
+
+    return introInit$.pipe(
+      switchMap(state => {
+        if (state.titleShown) {
+          return of()
+        }
+        return showIntroTitle$
+      }),
       switchMapTo(this.events.players$.pipe(take(1))),
       this.mapCommand(players => this.common.movePlayersToHolding(players)),
       this.mapCommand(this.initCmd.compile()),
       this.mapCommand(title('@a', text('Get ready!'), text('May the best codslapper win!').bold)),
+      share(),
     )
   }
 
@@ -115,11 +172,24 @@ export class CodslapMinigame implements Minigame {
     )
   }
 
-  private onPlayerJoin([arena, event]: [ConfiguredArena<CodslapEvents>, PlayerEvent]): CommandRequest {
-    return series(
-      this.common.movePlayersToHolding([event.player]),
-      this.common.resetPlayer(event.player.name),
-      this.common.movePlayersToArena([event.player], arena.instance)
+  private moveJoinedPlayers(): Observable<any> {
+    return this.events.playerJoin$.pipe(
+      switchMap(event => this.arena.arenaStart$.pipe(
+        take(1),
+        map(arena => ([arena, event] as [ConfiguredArena<CodslapEvents>, PlayerEvent])),
+      )),
+      switchMap(([arena, event]) => {
+        return this.execCmd(this.common.movePlayersToHolding([event.player])).pipe(
+          delay(5000),
+          this.mapCommand(title('@a', text(`CODSLAP!`).bold, text('The game will begin in a moment...'))),
+          delay(5000),
+          this.mapCommand(series(
+            this.common.resetPlayer(event.player.name),
+            this.common.movePlayersToArena([event.player], arena.instance))
+          )
+        )
+      }),
+      share(),
     )
   }
 

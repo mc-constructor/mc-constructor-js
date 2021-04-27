@@ -63,8 +63,9 @@
     - might be due to the event not coming from the server?
 
 ### Before playtesting:
-- make starting a new game stop the old one
-- gracefully handle exceptions
+- add "stop" and "reset" minigame commands
+- prevent starting a new game when one is already running
+- gracefully handle errors in client
 - set up download location
 - create installation instructions
 - set up discord server?
