@@ -1,16 +1,16 @@
-import { Inject, Injectable } from '@dandi/core'
+import { Inject, Injectable, RestrictScope } from '@dandi/core'
 import { range } from '@ts-mc/common'
 import { CommandRequest, parallel } from '@ts-mc/core/command'
 import { summon } from '@ts-mc/core/cmd'
 import { AnyEntity, EntityData, Mob } from '@ts-mc/core/types'
-import { MinigameEvents } from '@ts-mc/minigames'
+import { GameScope, MinigameEvents } from '@ts-mc/minigames'
 import { HookHandler, HookHandlerArgs } from '@ts-mc/minigames/behaviors'
 
 import { SummonedEntityManager } from './summoned-entity-manager'
 import { NumberFn, SummonCount } from './summon-count'
 import { map } from 'rxjs/operators'
 
-@Injectable()
+@Injectable(RestrictScope(GameScope))
 export class SummonBehaviorManager {
   constructor(@Inject(SummonedEntityManager) private readonly entityManager: SummonedEntityManager) {
   }

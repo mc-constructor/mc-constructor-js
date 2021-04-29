@@ -1,7 +1,7 @@
 import { Disposable } from '@dandi/common'
-import { Inject, Injectable } from '@dandi/core'
+import { Inject, Injectable, RestrictScope } from '@dandi/core'
 import { RequestClient } from '@ts-mc/core/client'
-import { MinigameEvents } from '@ts-mc/minigames'
+import { GameScope, MinigameEvents } from '@ts-mc/minigames'
 import { isMob, Mob } from '@ts-mc/core/types'
 import { merge, Observable, ReplaySubject, Subject } from 'rxjs'
 import { filter, map, pluck, scan, share, shareReplay } from 'rxjs/operators'
@@ -33,7 +33,7 @@ interface MobConfigEvent {
   config: MobConfig
 }
 
-@Injectable()
+@Injectable(RestrictScope(GameScope))
 export class SummonedEntityManager implements Disposable {
 
   public readonly mobCountEvent$: Observable<MobCountEvent>

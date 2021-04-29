@@ -63,7 +63,6 @@
     - might be due to the event not coming from the server?
 
 ### Before playtesting:
-- fix arena behaviors not working after reset / subsequent starts
 - gracefully handle errors in client
 - set up download location
 - create installation instructions
