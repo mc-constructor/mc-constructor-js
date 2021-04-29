@@ -2,7 +2,7 @@ import { Inject, Injectable, InjectionToken, Logger, Provider } from '@dandi/cor
 import { silence } from '@ts-mc/common/rxjs'
 import { RequestClient, RequestType, ResponseClient } from '@ts-mc/core/client'
 import { defer, Observable, OperatorFunction } from 'rxjs'
-import { filter, finalize, map, share, switchMapTo, tap } from 'rxjs/operators'
+import { filter, finalize, map, share, switchMapTo } from 'rxjs/operators'
 
 
 import {
@@ -14,7 +14,12 @@ import {
   parseEntityEvent
 } from './entity'
 import { localToken } from './local-token'
-import { MinigameStartEvent, parseMinigameStartEvent } from './minigame'
+import {
+  MinigameResetEvent,
+  MinigameStartEvent,
+  MinigameStopEvent,
+  parseMinigameEvent,
+} from './minigame'
 import { parsePlayerEvent, PlayerEvent } from './player-event'
 import { parseMessage, ServerEvent } from './server-event'
 import { ServerEventType } from './server-event-type'
@@ -36,6 +41,8 @@ type ServerEventTypes = {
   [ServerEventType.playerRespawn]: PlayerEvent
 
   [ServerEventType.minigameStart]: MinigameStartEvent
+  [ServerEventType.minigameStop]: MinigameStopEvent
+  [ServerEventType.minigameReset]: MinigameResetEvent
 }
 type ServerEventParserMap = { [TEventType in ServerEventType]: ServerEventParserFn<ServerEventTypes[TEventType]> }
 
@@ -54,7 +61,9 @@ const PARSERS: ServerEventParserMap = {
   [ServerEventType.playerJoined]: parsePlayerEvent,
   [ServerEventType.playerLeft]: parsePlayerEvent,
 
-  [ServerEventType.minigameStart]: parseMinigameStartEvent,
+  [ServerEventType.minigameStart]: parseMinigameEvent,
+  [ServerEventType.minigameStop]: parseMinigameEvent,
+  [ServerEventType.minigameReset]: parseMinigameEvent,
 }
 
 export function isEventType<TEvent extends ServerEventType>(type: TEvent, event: ServerEvent): event is ServerEventTypes[TEvent] {
@@ -123,9 +132,7 @@ class ServerEventsImpl implements ServerEvents {
     if (this.streams.has(type)) {
       return this.streams.get(type) as Observable<ServerEventTypes[TEvent]>;
     }
-    return defer(() => {
-      return this.req.send(RequestType.eventSubscription, `add ${type}`, true)
-    }).pipe(
+    return defer(() => this.req.send(RequestType.eventSubscription, `add ${type}`, true)).pipe(
       switchMapTo(this.events$),
       eventType(type),
       finalize(() => {

@@ -15,4 +15,6 @@ export enum ServerEventType {
   playerRespawn = 'net.minecraftforge.event.entity.player.PlayerEvent$PlayerRespawnEvent',
 
   minigameStart = 'net.dandoes.minecraft.minigame.event.MinigameGameClientEvent$MinigameStartGameClientEvent',
+  minigameStop = 'net.dandoes.minecraft.minigame.event.MinigameGameClientEvent$MinigameStopGameClientEvent',
+  minigameReset = 'net.dandoes.minecraft.minigame.event.MinigameGameClientEvent$MinigameResetGameClientEvent',
 }

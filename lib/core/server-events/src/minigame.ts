@@ -1,32 +1,36 @@
 import { ServerEvent } from './server-event'
 
-export interface MinigameEvent extends ServerEvent {
+export interface MinigameLifecycleEvent extends ServerEvent {
   key: string
-  minigameEventType: MinigameEventType
+  minigameEventType: MinigameLifecycleEventType
 }
 
-export enum MinigameEventType {
+export enum MinigameLifecycleEventType {
   start = 'event.minigame.start',
   stop = 'event.minigame.stop',
   reset = 'event.minigame.reset',
 }
 
-export interface MinigameStartEvent extends MinigameEvent {
-  minigameEventType: MinigameEventType.start
+export interface MinigameStartEvent extends MinigameLifecycleEvent {
+  minigameEventType: MinigameLifecycleEventType.start
+}
+
+export interface MinigameStopEvent extends MinigameLifecycleEvent {
+  minigameEventType: MinigameLifecycleEventType.stop
+}
+
+export interface MinigameResetEvent extends MinigameLifecycleEvent {
+  minigameEventType: MinigameLifecycleEventType.reset
 }
 
 /** @internal */
-export function parseMinigameEvent(event: ServerEvent): MinigameEvent {
+export function parseMinigameEvent<TEvent extends MinigameLifecycleEvent>(event: ServerEvent): TEvent {
   const [minigameEventTypeRaw, key, ...extras] = event.extras
-  const minigameEventType = minigameEventTypeRaw as MinigameEventType
+  const minigameEventType = minigameEventTypeRaw as MinigameLifecycleEventType
 
   return Object.assign(event, {
     key,
     minigameEventType,
     extras,
-  })
-}
-
-export function parseMinigameStartEvent(event: ServerEvent): MinigameStartEvent {
-  return parseMinigameEvent(event) as MinigameStartEvent
+  }) as TEvent
 }

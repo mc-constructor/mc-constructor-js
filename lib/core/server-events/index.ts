@@ -6,8 +6,8 @@ export {
 } from './src/entity'
 
 export {
-  MinigameEvent,
-  MinigameEventType,
+  MinigameLifecycleEvent,
+  MinigameLifecycleEventType,
   MinigameStartEvent,
 } from './src/minigame'
 
