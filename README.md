@@ -4,6 +4,8 @@ A framework for interacting with a Minecraft server using NodeJS.
 
 > **warning:** MC Constructor is still very much experimental - use at your own risk
 
+**Discord:** [https://discord.gg/XSZKqJKtSW](https://discord.gg/XSZKqJKtSW)
+
 ## Requirements
 
 ### Client
