@@ -64,6 +64,3 @@
 
 ### Before playtesting:
 - gracefully handle errors in client
-- set up download location
-- create installation instructions
-- set up discord server?
