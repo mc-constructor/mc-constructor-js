@@ -64,3 +64,4 @@
 
 ### Before playtesting:
 - gracefully handle errors in client
+- show game client message when NodeJS client disconnects during a minigame

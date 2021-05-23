@@ -1,5 +1,5 @@
 import { Constructor } from '@dandi/common'
-import { Injectable, InjectionToken, Module } from '@dandi/core'
+import { Injectable, InjectionToken, Module, RestrictScope } from '@dandi/core'
 import { Observable } from 'rxjs'
 
 import { GameScope } from './game-scope'
@@ -39,7 +39,7 @@ export function getMinigameMeta(target: Constructor<Minigame>): MinigameMetadata
 
 function MinigameDecorator(descriptor: MinigameMetadata): ClassDecorator {
   return function minigameDecorator(target) {
-    Injectable(MinigameDecorator)(target)
+    Injectable(MinigameDecorator, RestrictScope(GameScope))(target)
     Reflect.set(target, MINIGAME_META, descriptor)
   }
 }

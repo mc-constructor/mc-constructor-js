@@ -5,10 +5,10 @@ import { summon } from '@ts-mc/core/cmd'
 import { AnyEntity, EntityData, Mob } from '@ts-mc/core/types'
 import { GameScope, MinigameEvents } from '@ts-mc/minigames'
 import { HookHandler, HookHandlerArgs } from '@ts-mc/minigames/behaviors'
+import { map } from 'rxjs/operators'
 
 import { SummonedEntityManager } from './summoned-entity-manager'
 import { NumberFn, SummonCount } from './summon-count'
-import { map } from 'rxjs/operators'
 
 @Injectable(RestrictScope(GameScope))
 export class SummonBehaviorManager {

@@ -88,16 +88,21 @@ export class MinigameLoader {
           throw Object.assign(err, { type: 'MinigameLoaderError' })
         }
       })()).pipe(
+        map((instanced: InstancedMinigame) => Object.assign(instanced, {
+          run$: instanced.run$.pipe(
+            finalize(() => {
+              this.logger.info('Disposing gameInjector')
+              Disposable.dispose(gameInjector, 'cleanup')
+            }),
+            share(),
+          )
+        })),
         catchError(err => {
           this.logger.error(err)
           if (err.type === 'MinigameLoaderError') {
             throw err
           }
           return of(undefined)
-        }),
-        finalize(() => {
-          this.logger.info('Disposing gameInjector')
-          Disposable.dispose(gameInjector, 'cleanup')
         }),
         share(),
       )
