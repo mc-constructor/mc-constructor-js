@@ -5,7 +5,7 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "start": "TS_NODE_CACHE=false node --require ts-node/register --require tsconfig-paths ./index.ts --port 8888",
+    "start": "node --require ts-node/register --require tsconfig-paths/register ./index.ts --port 8888",
     "build": "tsc",
     "test": "mocha",
     "coverage": "nyc mocha"
