@@ -14,10 +14,9 @@
     "@dandi/common": "^1.0.0-alpha.71",
     "@dandi/core": "^1.0.0-alpha.71",
     "colors": "^1.4.0",
-    "dotenv": "^8.2.0",
-    "luxon": "^1.26.0",
-    "rcon-client": "^4.2.3",
-    "rxjs": "^6.6.7",
+    "dotenv": "^10.0.0",
+    "luxon": "^1.27.0",
+    "rxjs": "^7.1.0",
     "uuid": "^8.3.2"
   },
   "devDependencies": {
@@ -34,8 +33,8 @@
     "sinon": "^10.0.0",
     "sinon-chai": "^3.6.0",
     "ts-custom-error-shim": "^1.0.2",
-    "ts-node": "^9.1.1",
+    "ts-node": "^10.0.0",
     "tsconfig-paths": "^3.9.0",
-    "typescript": "^4.2.4"
+    "typescript": "^4.3.2"
   }
 }
