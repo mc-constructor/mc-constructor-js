@@ -2,7 +2,8 @@ import { Logger } from '@dandi/core'
 import { MarbleValues } from '@rxjs-stuff/marbles'
 import { silence } from '@ts-mc/common/rxjs'
 import { RequestClientFixture } from '@ts-mc/core/client/testing'
-import { ServerEvent } from '@ts-mc/core/server-events'
+import { ServerEvents } from '@ts-mc/core/server-events'
+import { serverEventsFixture } from '@ts-mc/core/server-events/testing'
 import { ArenaAgeEvent, ArenaMinigameEvents } from '@ts-mc/minigames/arenas'
 import { ArenaManagerFixture, arenaManagerFixture } from '@ts-mc/minigames/arenas/testing'
 import { minigameEventsHelpers } from '@ts-mc/minigames/testing'
@@ -12,8 +13,8 @@ import { Observable } from 'rxjs'
 describe.marbles('ArenaMinigameEvents', ({ hot }) => {
 
   const helpers = minigameEventsHelpers<ArenaMinigameEvents>({
-    minigameEventsFactory: (requestClient: RequestClientFixture, serverEvents$: Observable<ServerEvent>, logger: Logger) =>
-      new ArenaMinigameEvents(manager, requestClient, serverEvents$, logger)
+    minigameEventsFactory: (requestClient: RequestClientFixture, serverEvents: ServerEvents, logger: Logger) =>
+      new ArenaMinigameEvents(manager, requestClient, serverEvents, logger)
   })
 
   let manager: ArenaManagerFixture
@@ -33,7 +34,7 @@ describe.marbles('ArenaMinigameEvents', ({ hot }) => {
       const expected = 'abcdefghijk'.split('').join(' 999ms ')
       manager.config({ arenaInit$ })
 
-      const events = helpers.initEvents(hot('-'))
+      const events = helpers.initEvents(serverEventsFixture(hot('-')))
 
       const expectedAges: MarbleValues<ArenaAgeEvent> = {
         a: {
@@ -84,7 +85,7 @@ describe.marbles('ArenaMinigameEvents', ({ hot }) => {
 
       const arenaAge$ = events.arenaAge$
 
-      expect(events.run$.pipe(silence)).with.subscription('^ 20s !').to.equal('-')
+      expect(events.run$.pipe(silence())).with.subscription('^ 20s !').to.equal('-')
       expect(arenaAge$).with.marbleValues(expectedAges).and.subscription('^ 10s !').to.equal(expected)
 
     })

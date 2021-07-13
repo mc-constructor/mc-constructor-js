@@ -1,4 +1,4 @@
 import { MonoTypeOperatorFunction } from 'rxjs'
 import { filter } from 'rxjs/operators'
 
-export const silence = filter(() => false) as MonoTypeOperatorFunction<never>
+export const silence: () => MonoTypeOperatorFunction<never> = () => filter(() => false)

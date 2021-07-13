@@ -136,7 +136,8 @@ function gameruleFn<TRule extends GameRule>(rule: TRule, value?: GameRuleValue[T
   return new GameRuleCommand(rule, value)
 }
 
-export const gamerule: GameRuleCommandBuilder = Object.defineProperties(
+
+export const gamerule: GameRuleCommandBuilder = Object.create(
   gameruleFn,
   Object.values(GameRule).reduce((result, rule) => {
     result[rule] = {

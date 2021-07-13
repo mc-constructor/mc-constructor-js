@@ -1,8 +1,9 @@
 import { EntityBlock } from './entity-block'
+import { EntityItem } from './entity-item'
 import { Mob } from './mob'
 import { Projectile } from './projectile'
 import { Vehicle } from './vehicle'
-import { EntityItem } from './entity-item'
+import { defineObject } from '@ts-mc/common'
 
 export enum MiscEntity {
   areaEffectCloud = 'minecraft:area_effect_cloud',
@@ -22,9 +23,8 @@ export interface Entity {
   readonly mob: typeof Mob
   readonly projectile: typeof Projectile
   readonly vehicle: typeof Vehicle
+  readonly misc: typeof MiscEntity
 }
-
-export type EntityMap = Entity & typeof MiscEntity
 
 export type AnyEntity = EntityBlock | EntityItem | MiscEntity | Mob | Projectile | Vehicle
 
@@ -32,10 +32,11 @@ export function entityTypeFromEntityId<TEntity extends AnyEntity>(entityId: stri
   return entityId.replace(/^entity\./, '').replace(/\./g, ':') as TEntity
 }
 
-export const Entity: EntityMap = Object.defineProperties(MiscEntity, {
+export const Entity: Entity = defineObject({}, {
   block: { get: () => EntityBlock },
   item: { get: () => EntityItem },
   mob: { get: () => Mob },
   projectile: { get: () => Projectile },
   vehicle: { get: () => Vehicle },
+  misc: { get: () => MiscEntity },
 })

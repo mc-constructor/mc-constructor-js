@@ -24,8 +24,8 @@ import { parsePlayerEvent, PlayerEvent } from './player-event'
 import { parseMessage, ServerEvent } from './server-event'
 import { ServerEventType } from './server-event-type'
 
-type ServerEventParserFn<TEvent extends ServerEvent> = (event: ServerEvent) => TEvent
-type ServerEventTypes = {
+export type ServerEventParserFn<TEvent extends ServerEvent> = (event: ServerEvent) => TEvent
+export type ServerEventTypes = {
   [ServerEventType.entityJoinWorld]: EntityEvent
   [ServerEventType.livingDeath]: AttackedEntityEvent
   [ServerEventType.livingAttack]: AttackedEntityEvent
@@ -125,7 +125,7 @@ class ServerEventsImpl implements ServerEvents {
         map(event => PARSERS[event.type](event)),
         share(),
       )
-    this.run$ = this.events$.pipe(silence);
+    this.run$ = this.events$.pipe(silence());
   }
 
   public eventStream<TEvent extends ServerEventType>(type: TEvent): Observable<ServerEventTypes[TEvent]> {

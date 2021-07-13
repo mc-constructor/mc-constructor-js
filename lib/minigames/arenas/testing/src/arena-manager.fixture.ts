@@ -14,12 +14,19 @@ export type ArenaManagerFixtureConfig<TEvents extends ArenaMinigameEvents = Aren
 export function arenaManagerFixture<TEvents extends ArenaMinigameEvents>(
   config?: ArenaManagerFixtureConfig<TEvents>,
 ): ArenaManagerFixture<TEvents> {
+  const arenaAvailable$ = NEVER
   const arenaComplete$ = config?.arenaComplete$ || NEVER
+  const arenaInit$ = NEVER
+  const arenaStart$ = NEVER
+  const pendingArenas$ = NEVER
+  const lastArena$ = NEVER
   return Object.assign({
-    arenaAvailable$: NEVER,
+    arenaAvailable$,
     arenaComplete$,
-    arenaInit$: NEVER,
-    arenaStart$: NEVER,
+    arenaInit$,
+    arenaStart$,
+    lastArena$,
+    pendingArenas$,
     run$: arenaComplete$,
 
     config: function configFixture(

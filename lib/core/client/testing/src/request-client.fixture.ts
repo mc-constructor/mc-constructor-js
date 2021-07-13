@@ -1,6 +1,7 @@
+import { defineObject } from '@ts-mc/common'
 import { stub } from '@dandi/core/testing'
-import { ClientResponse, isClientResponse, RequestClient, RequestType } from '@ts-mc/core/client'
-import { NEVER, Observable, ReplaySubject } from 'rxjs'
+import { ClientResponse, CompiledRequest, isClientResponse, RequestClient, RequestType } from '@ts-mc/core/client'
+import { NEVER, Observable, ReplaySubject, Subject } from 'rxjs'
 import { map } from 'rxjs/operators'
 import { SinonStub } from 'sinon'
 
@@ -25,8 +26,11 @@ export function requestClientFixture(response$?: ClientFixtureResponse, response
   let count = 0
   // use a ReplaySubject so that ordering of marbles expectations doesn't matter
   const write$$ = new ReplaySubject<string>()
-  return Object.defineProperties({
+  const sent$$ = new Subject<CompiledRequest>()
+  const pending = new Map<string, CompiledRequest<ClientResponse>>()
+  const init = {
     send: stub().callsFake((type: RequestType, cmd: Uint8Array | string, hasResponse: boolean | number = true) => {
+      console.log('fixture.send', type, cmd, hasResponse)
       const callResponse$ = typeof response$ === 'function' ?
         response$(cmd.toString()) :
           Array.isArray(response$) ?
@@ -42,8 +46,10 @@ export function requestClientFixture(response$?: ClientFixtureResponse, response
       )
       const sendFn = () => write$$.next(cmd.toString())
       const compiled = new TestCompiledRequest(hasResponse, mappedResponse$, `clientFixture#${count++}`, sendFn)
+      pending.set(compiled.id, compiled)
       // console.log(`client.send#${compiled.id}`, cmd, callResponse$ !== NEVER)
       lastSent = compiled
+      compiled.sent$.subscribe(sent$$)
       return Object.assign(compiled.pendingResponse$, { compiled })
     }) as ClientSendStub,
     config(configResponse$: ClientFixtureResponse, configResponseValues?: { [key: string]: any }): void {
@@ -51,7 +57,12 @@ export function requestClientFixture(response$?: ClientFixtureResponse, response
       responseValues = configResponseValues
     },
     write$: write$$.asObservable(),
-  }, {
-    lastSent: { get: () => lastSent },
+    sent$: sent$$.asObservable(),
+    getPendingMessage(id: string): CompiledRequest<ClientResponse> {
+      return pending.get(id)
+    },
+  }
+  return defineObject(init, {
+    lastSent: { get: () => lastSent }
   })
 }

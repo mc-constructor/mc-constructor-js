@@ -121,7 +121,7 @@ class ArenaManagerImpl<TEvents extends MinigameEvents> implements ArenaManager<T
                   this.logger.debug('arena start', arena.title)
                   this.arenaStart$$.next(arena)
                 }),
-                silence,
+                silence(),
               ),
             )
           }),

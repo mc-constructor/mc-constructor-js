@@ -16,12 +16,12 @@
     "colors": "^1.4.0",
     "dotenv": "^10.0.0",
     "luxon": "^1.27.0",
-    "rxjs": "^7.1.0",
+    "rxjs": "^7.2.0",
     "uuid": "^8.3.2"
   },
   "devDependencies": {
     "@dandi/logging": "^1.0.0-alpha.71",
-    "@rxjs-stuff/marbles": "^1.0.0",
+    "@rxjs-stuff/marbles": "^2.0.0-pre.1",
     "@types/chai": "^4.2.16",
     "@types/mocha": "^8.2.2",
     "@types/node": "^14.14.37",
@@ -35,6 +35,6 @@
     "ts-custom-error-shim": "^1.0.2",
     "ts-node": "^10.0.0",
     "tsconfig-paths": "^3.9.0",
-    "typescript": "^4.3.2"
+    "typescript": "^4.3.5"
   }
 }

@@ -33,31 +33,48 @@ export enum ManagerStateType {
   running = 'running',
 }
 
-export interface MinigameIdle {
-  type: ManagerStateType.idle
+export interface MinigameIdleInfo {
   event?: MinigameStopEvent | MinigameResetEvent
 }
 
-export interface MinigameStartRequest {
+export interface MinigameIdle extends MinigameIdleInfo {
+  type: ManagerStateType.idle
+}
+
+export interface MinigameStartInfo {
   key: string
-  type: ManagerStateType.startRequest
   event: MinigameStartEvent | MinigameResetEvent
 }
 
-export interface MinigameLoading extends Omit<MinigameStartRequest, 'type'> {
-  type: ManagerStateType.loading
+export interface MinigameStartRequest extends MinigameStartInfo {
+  type: ManagerStateType.startRequest
+}
+
+export interface MinigameLoadingInfo extends MinigameStartInfo {
   info: MinigameInfo
 }
 
-export interface MinigameLoaded extends Omit<MinigameLoading, 'type'> {
-  type: ManagerStateType.loaded
+export interface MinigameLoading extends MinigameLoadingInfo {
+  type: ManagerStateType.loading
+}
+
+export interface MinigameLoadedInfo extends MinigameLoadingInfo {
   loaded: LoadedMinigame
 }
 
-export interface MinigameRunning extends Omit<MinigameLoaded, 'type'> {
-  type: ManagerStateType.running
+export interface MinigameLoaded extends MinigameLoadedInfo {
+  type: ManagerStateType.loaded
+}
+
+export interface MinigameRunningInfo extends MinigameLoadedInfo {
   instanced: InstancedMinigame
 }
+
+export interface MinigameRunning extends MinigameRunningInfo {
+  type: ManagerStateType.running
+}
+
+export type ManagerStateInfo = MinigameIdleInfo | MinigameStartInfo | MinigameLoadingInfo | MinigameLoadedInfo | MinigameRunningInfo
 
 export type ManagerState = MinigameIdle | MinigameStartRequest | MinigameLoading | MinigameLoaded | MinigameRunning
 
@@ -155,7 +172,7 @@ export class MinigameManager {
 
       // these are required to ensure incoming messages
       // but don't spam the output with all the events
-      this.events$.run$.pipe(silence),
+      this.events$.run$.pipe(silence()),
     ).pipe(
       catchError(err => {
         logger.error(err)
@@ -169,7 +186,7 @@ export class MinigameManager {
     return { type: ManagerStateType.idle, event }
   }
 
-  protected stateProps<TState extends ManagerState>(state: TState): Omit<TState, 'type'> {
+  protected stateProps<TState extends ManagerState>(state: TState): ManagerStateInfo {
     const { type, ...props } = state
     return props
   }
@@ -213,7 +230,7 @@ export class MinigameManager {
     return this.loader.getMinigameInstance(state.loaded).pipe(
       mergeMap(instanced => merge(
         of(this.transitionState(state, ManagerStateType.running, { instanced })),
-        instanced.run$.pipe(silence),
+        instanced.run$.pipe(silence()),
       ))
     )
   }

@@ -1,8 +1,9 @@
 import { Socket } from 'net'
 
 import { stub } from '@dandi/core/testing'
+import { silence } from '@ts-mc/common/rxjs'
 import { combineLatest, defer, merge, NEVER, Observable, of, Subject } from 'rxjs'
-import { filter, map, mapTo, share, shareReplay, switchMap, take } from 'rxjs/operators'
+import { map, mapTo, shareReplay, switchMap, tap } from 'rxjs/operators'
 
 import { SinonStub } from 'sinon'
 
@@ -39,26 +40,26 @@ export function socketConnectionFixtureFactory(scriptFn?: () => SocketConnection
       cb()
     }),
   }
-  const script$ = defer(() => of(scriptFn ? scriptFn() : {})).pipe(share())
+  const script$ = defer(() => of(scriptFn ? scriptFn() : {})).pipe(shareReplay(1))
   const data$: Observable<any> = script$.pipe(
     switchMap(script => combineLatest([script.data$ || NEVER, of(script.dataValues)])),
+    // tap(data => console.log('DATA!', data)),
     map(([data, values]) => {
       if (!onData) {
         return
       }
       onData(values ? values[data] : data)
     }),
-    filter(() => false),
-    share(),
+    silence(),
   )
   const conn$ = script$.pipe(
-    switchMap(script => script.conn$.pipe(mapTo(fixture)) || of(fixture)),
-    take(1),
-    share(),
-    shareReplay(1)
+    switchMap(script => script.conn$ ? script.conn$.pipe(mapTo(fixture)) : of(fixture)),
   )
   return {
-    conn$: merge(conn$, data$).pipe(shareReplay(1)),
+    conn$: merge(conn$, data$).pipe(
+      // IMPORTANT: required to prevent duplicated processing
+      shareReplay(1),
+    ),
     fixture,
     write$: write$$.asObservable(),
   }

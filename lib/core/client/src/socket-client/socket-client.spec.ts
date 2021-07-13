@@ -1,5 +1,4 @@
-import { Uuid } from '@dandi/common'
-import { testHarness, stub } from '@dandi/core/testing'
+import { testHarness } from '@dandi/core/testing'
 import { expect } from 'chai'
 import { Observable } from 'rxjs'
 import { TextEncoder } from 'util'
@@ -8,7 +7,8 @@ import {
   SocketConnectionFixture,
   SocketConnectionFixtureFactory,
   socketConnectionFixtureFactory,
-  SocketConnectionFixtureScript
+  SocketConnectionFixtureScript,
+  TestDataBuilder,
 } from '../../testing'
 import { RequestType } from '../request'
 
@@ -29,6 +29,8 @@ describe.marbles('SocketClient', ({ cold }) => {
     },
   )
 
+  let prev: any
+  let id: 0
   let connFixture: SocketConnectionFixtureFactory
   let connFixtureScript: SocketConnectionFixtureScript
   let conn$: Observable<SocketConnectionFixture>
@@ -48,22 +50,31 @@ describe.marbles('SocketClient', ({ cold }) => {
       socket: {} as any,
     }
     client = await harness.inject(SocketClient)
+    const clientId = id++
+    expect(conn$).not.to.have.property('_id')
+    Object.assign(conn$, {_id: clientId})
+    expect(prev).not.to.eq(conn$)
+    if (prev) {
+      expect(prev._id).not.to.equal(clientId)
+    }
+    prev = conn$
   })
   afterEach(() => {
     connFixture = undefined
     conn$ = undefined
     client = undefined
+    connFixtureScript = undefined
   })
 
   it('writes the delimiter as soon as the connection is available', () => {
     const conn$ =    cold('-----a')
     const expectedWrite = '-----a'
 
-    connFixtureScript = { conn$ }
-
     const writeValues = {
       a: config.message.delimiter + '\n',
     }
+
+    connFixtureScript = { conn$ }
 
     expect(client.messages$).to.equal('-')
     expect(connFixture.write$).with.marbleValues(writeValues).to.equal(expectedWrite)
@@ -91,100 +102,56 @@ describe.marbles('SocketClient', ({ cold }) => {
 
     expect(connFixture.write$).with.marbleValues(writeValues).to.equal(expectedWrite)
     expect(client.messages$).with.marbleValues(messageValues).to.equal('-------b')
-
   })
 
   it('does not attempt to write any message content before the delimiter is confirmed', () => {
     const conn$ =    cold('-----a--')
-    const data$ =    cold('-----a-')
-    const expectedWrite = '-----(am)-'
-    const expectedSend  = '-----m'
+    const data$ =    cold('-----xm-')
 
-    stub(Uuid, 'create').returns('abcdef')
+    const testData = TestDataBuilder.forConfig(config)
+      .add('a', RequestType.cmd, 'hi', true, { success: true, extras: ['hijklmnop'] })
+      .build()
 
-    const writeValues = {
-      a: config.message.delimiter + '\n',
-      m: `${Uuid.create()}\ncmd\nhi${config.message.delimiter}`
-    }
+    connFixtureScript = { conn$, data$, dataValues: testData.dataValues }
 
-    const dataValues = {
-      a: config.message.delimiter,
-    }
-
-    const send$ = client.send(RequestType.cmd, 'hi', true)
-    const msg = (client as any).pending.get('abcdef')
-
-    const sentValues = {
-      m: msg,
-    }
-
-    connFixtureScript = { conn$, data$, dataValues }
-
-    expect(connFixture.write$, 'write$').with.marbleValues(writeValues).to.equal(expectedWrite)
-    expect(client.messages$, 'messages$').to.equal('-')
-    expect(send$.sent$, 'send$').with.marbleValues(sentValues).to.equal(expectedSend)
+    testData.verify(client, connFixture, {
+      requests: {
+        a: testData.responseMarbles.a('-----a'),
+      },
+      responses: {
+        a: testData.responseMarbles.a('------(a|)'),
+      },
+      messages: testData.messageMarbles('-'), // FIXME: what *is* this??,
+      write: testData.writeMarbles('-----(xa)-'),
+    })
   })
 
   it('splits data chunks with multiple delimiters into separate responses', () => {
     const conn$ =    cold('-----x--')
     const data$ =    cold('-----xm-')
-    const expectedWrite = '-----(xabc)-'
-    const expectedSendA = '-----a'
-    const expectedResA  = '------(a|)'
-    const expectedSendB = '-----b'
-    const expectedResB  = '------(b|)'
-    const expectedSendC = '-----c'
-    const expectedResC  = '------(c|)'
-    const delimiter = config.message.delimiter
 
-    stub(Uuid, 'create')
-      .onFirstCall().returns(Uuid.for('a'))
-      .onSecondCall().returns(Uuid.for('b'))
-      .onThirdCall().returns(Uuid.for('c'))
-      .returns('foo?')
+    const testData = new TestDataBuilder(config, 'x', 'm')
+      .add('a', RequestType.cmd, 'hi', true, { success: true, extras: ['hihi'] })
+      .add('b', RequestType.cmd, 'hello', true, { success: true, extras: ['hellohello']})
+      .add('c', RequestType.cmd, 'greetings', true, { success: true, extras: ['greetingsgreetings']})
+      .build()
 
-    const writeValues = {
-      x: delimiter + '\n',
-      a: `a\ncmd\nhi${delimiter}`,
-      b: `b\ncmd\nhello${delimiter}`,
-      c: `c\ncmd\ngreetings${delimiter}`,
-    }
+    connFixtureScript = { conn$, data$, dataValues: testData.dataValues }
 
-    const dataValues = {
-      x: delimiter,
-      m: `a\ntrue\nhihi${delimiter}b\ntrue\nhellohello${delimiter}c\ntrue\ngreetingsgreetings${delimiter}`
-    }
-
-    const responseValues = {
-      a: { success: true, extras: ['hihi'] },
-      b: { success: true, extras: ['hellohello'] },
-      c: { success: true, extras: ['greetingsgreetings'] },
-    }
-
-    const sendA$ = client.send(RequestType.cmd, 'hi', true)
-    const sendB$ = client.send(RequestType.cmd, 'hello', true)
-    const sendC$ = client.send(RequestType.cmd, 'greetings', true)
-    const msgA = (client as any).pending.get('a')
-    const msgB = (client as any).pending.get('b')
-    const msgC = (client as any).pending.get('c')
-
-    const sentValues = {
-      a: msgA,
-      b: msgB,
-      c: msgC,
-    }
-
-    connFixtureScript = { conn$, data$, dataValues }
-
-    expect(sendA$.sent$, 'sendA$').with.marbleValues(sentValues).to.equal(expectedSendA)
-    expect(sendB$.sent$, 'sendB$').with.marbleValues(sentValues).to.equal(expectedSendB)
-    expect(sendC$.sent$, 'sendC$').with.marbleValues(sentValues).to.equal(expectedSendC)
-    expect(connFixture.write$, 'write$').with.marbleValues(writeValues).to.equal(expectedWrite)
-    expect(sendA$, 'resA').with.marbleValues(responseValues).to.equal(expectedResA)
-    expect(sendB$, 'resB').with.marbleValues(responseValues).to.equal(expectedResB)
-    expect(sendC$, 'resC').with.marbleValues(responseValues).to.equal(expectedResC)
-    expect(client.messages$, 'messages$').to.equal('-')
-
+    testData.verify(client, connFixture, {
+      requests: {
+        a: testData.responseMarbles.a('-----a'),
+        b: testData.responseMarbles.b('-----b'),
+        c: testData.responseMarbles.c('-----c'),
+      },
+      responses: {
+        a: testData.responseMarbles.a('------(a|)'),
+        b: testData.responseMarbles.b('------(b|)'),
+        c: testData.responseMarbles.c('------(c|)'),
+      },
+      messages: testData.messageMarbles('-'),
+      write: testData.writeMarbles('-----(xabc)-'),
+    })
   })
 
 })

@@ -76,4 +76,4 @@ export const loggerFactory: LoggerFactory = Object.defineProperties({}, {
   init: {
     value: () => { throw new Error('LoggerFactory.init() must be called on an injected LoggerFactory.') },
   },
-})
+}) as LoggerFactory

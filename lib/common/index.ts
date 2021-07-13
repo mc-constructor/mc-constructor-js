@@ -1,4 +1,5 @@
 export * from './src/class-factory-provider'
+export * from './src/define-object'
 export * from './src/lazy'
 export * from './src/logger'
 export * from './src/random-int'

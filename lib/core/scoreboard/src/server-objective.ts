@@ -62,7 +62,7 @@ export class ServerObjective extends Objective {
 
         if (cmd) {
           // merge with empty observable so that the command executes, but doesn't add its result into the stream
-          return cmd.execute(this.client).pipe(silence)
+          return cmd.execute(this.client).pipe(silence())
         }
         return EMPTY
       }),

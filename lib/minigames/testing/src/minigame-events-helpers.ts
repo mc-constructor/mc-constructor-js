@@ -2,10 +2,9 @@ import { Logger, NoopLogger } from '@dandi/core'
 import { MarbleValues } from '@rxjs-stuff/marbles'
 import { AnyFn, impersonate, stubLoggerFactory } from '@ts-mc/common/testing'
 import { RequestClientFixture, requestClientFixture } from '@ts-mc/core/client/testing'
-import { ServerEvent } from '@ts-mc/core/server-events'
+import { ServerEvent, ServerEvents } from '@ts-mc/core/server-events'
 import { PlayerWithHeldItems } from '@ts-mc/core/types'
 import { MinigameEvents } from '@ts-mc/minigames'
-import { Observable } from 'rxjs'
 
 export type PlayerMarbleValues = MarbleValues<PlayerWithHeldItems>
 export type ServerEventMarbleValues = MarbleValues<ServerEvent>
@@ -13,16 +12,16 @@ export type ServerEventMarbleValues = MarbleValues<ServerEvent>
 export interface MinigameEventsHelpers<TEvents extends MinigameEvents> {
   playerValues: PlayerMarbleValues
   serverEvents: ServerEventMarbleValues
-  initEvents(source$: Observable<ServerEvent>): TEvents
+  initEvents(serverEvents: ServerEvents): TEvents
 }
 
 export interface MinigameEventsFactory<TEvents extends MinigameEvents> {
-  (requestClient: RequestClientFixture, serverEvents$: Observable<ServerEvent>, logger: Logger): TEvents
+  (requestClient: RequestClientFixture, serverEvents: ServerEvents, logger: Logger): TEvents
 }
 
 const defaultMinigameEventsFactory: MinigameEventsFactory<MinigameEvents> =
-  (requestClient: RequestClientFixture, serverEvents$: Observable<ServerEvent>, logger: Logger) =>
-    new MinigameEvents(requestClient, serverEvents$, logger)
+  (requestClient: RequestClientFixture, serverEvents: ServerEvents, logger: Logger) =>
+    new MinigameEvents(requestClient, serverEvents, logger)
 
 export interface MinigameEventsHelpersFactoryConfig<TEvents extends MinigameEvents> {
   minigameEventsFactory: MinigameEventsFactory<TEvents>
@@ -39,9 +38,9 @@ export class MinigameEventsHelpersImpl<TEvents extends MinigameEvents> implement
 
   constructor(private readonly minigameEventsFactory: MinigameEventsFactory<TEvents>) {}
 
-  public initEvents(source$: Observable<ServerEvent>): TEvents {
+  public initEvents(serverEvents: ServerEvents): TEvents {
     const playerValues = this.playerValues
-    const events = this.minigameEventsFactory(requestClientFixture(), source$, new NoopLogger())
+    const events = this.minigameEventsFactory(requestClientFixture(), serverEvents, new NoopLogger())
 
     impersonate(events, function(this: MinigameEvents) {
       Object.values(playerValues || {}).forEach(player => this.addPlayer(player))

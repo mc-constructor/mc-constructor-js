@@ -54,7 +54,7 @@ function timeFn(subCommand: TimeSubCommand, arg: number | TimeSpec | TimeType): 
   return new TimeCommand(subCommand, arg)
 }
 
-export const time: TimeCommandBuilder = Object.defineProperties(timeFn, {
+export const time: TimeCommandBuilder = Object.create(timeFn, {
   add: { get: () => timeFn.bind(undefined, TimeSubCommand.add) },
   query: { get: () => timeFn.bind(undefined, TimeSubCommand.query) },
   set: {

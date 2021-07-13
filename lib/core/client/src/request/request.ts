@@ -1,6 +1,6 @@
 import { RequestClient } from '../request-client'
 
-import { CompiledRequest, PendingRequest } from './compiled-request'
+import { CompiledRequest, PendingResponse } from './compiled-request'
 
 export enum RequestType {
   cmd = 'cmd',
@@ -12,7 +12,7 @@ export enum RequestType {
 export abstract class Request<TResponse extends any = any> {
   protected abstract readonly debug: string
 
-  public execute(client: RequestClient): PendingRequest<TResponse> {
+  public execute(client: RequestClient): PendingResponse<TResponse> {
     // console.log(this.constructor.name, 'execute', this.debug)
     return this.compileRequest(client).pendingResponse$
   }

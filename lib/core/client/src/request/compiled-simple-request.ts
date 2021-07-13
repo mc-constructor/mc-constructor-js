@@ -11,7 +11,7 @@ import {
   tap,
 } from 'rxjs/operators'
 
-import { CompiledRequest, PendingRequest } from './compiled-request'
+import { CompiledRequest, PendingResponse } from './compiled-request'
 
 export type ExecuteResponse<TResponse> = Observable<Observable<TResponse>>
 export type ExecuteFn<TResponse> = () => ExecuteResponse<TResponse>
@@ -19,7 +19,7 @@ export type ExecuteFn<TResponse> = () => ExecuteResponse<TResponse>
 export class CompiledSimpleRequest<TResponse = any> implements CompiledRequest<TResponse> {
 
   public readonly id: string
-  public readonly pendingResponse$: PendingRequest<TResponse>
+  public readonly pendingResponse$: PendingResponse<TResponse>
   public readonly sent$: Observable<this>
 
   private readonly created: number
@@ -61,7 +61,6 @@ export class CompiledSimpleRequest<TResponse = any> implements CompiledRequest<T
   }
 
   protected initPendingMessage(sent$: ExecuteResponse<TResponse>): Observable<TResponse> {
-    // console.log(`${this.constructor.name}.initPendingMessage`)
     return sent$.pipe(
       switchMap(response$ => {
         // console.log(`${this.constructor.name}.switchMapToResponse`)

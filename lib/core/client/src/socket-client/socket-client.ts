@@ -8,10 +8,10 @@ import {
   skip,
   switchMap,
   switchMapTo,
-  take,
+  take, tap,
 } from 'rxjs/operators'
 
-import { CompiledSimpleRequest, ExecuteResponse, RequestType, PendingRequest, CompiledRequest } from '../request'
+import { CompiledSimpleRequest, ExecuteResponse, RequestType, PendingResponse, CompiledRequest } from '../request'
 import { RequestClient } from '../request-client'
 import { ClientRawResponse, ClientResponse, isClientRawResponse, ResponseClient } from '../response-client'
 
@@ -41,9 +41,7 @@ class CompiledSocketMessage extends CompiledSimpleRequest<ClientResponse> {
   }
 
   public send(conn$: Observable<SocketConnection>): ExecuteResponse<ClientResponse> {
-    // console.log('waiting for connection:', this.debug)
     return conn$.pipe(
-      // tap(() => console.log('got connection:', this.debug)),
       switchMap(conn => new Observable<Observable<ClientResponse>>(o => {
         const newline = this.config.encoder.encode('\n')
         const id = this.config.encoder.encode(this.id.toString())
@@ -57,6 +55,7 @@ class CompiledSocketMessage extends CompiledSimpleRequest<ClientResponse> {
           body,
           this.config.delimiterBuffer,
         ])
+        // console.log('CompiledSocketMessage.send writing content', content.toString('utf-8'))
         // this.logger.debug('sending to server:', content.toString('utf-8'))
         conn.write(content, (err) => {
           if (err) {
@@ -70,13 +69,14 @@ class CompiledSocketMessage extends CompiledSimpleRequest<ClientResponse> {
     )
   }
 
-  public respond(responseRaw: string[]): void {
+  public onResponse(responseRaw: string[]): void {
     const [successRaw, ...extras] = responseRaw
     const success = successRaw === 'true'
     const response: ClientResponse = {
       success,
       extras,
     }
+    // console.log('CompiledSocketMessage.onResponse', { response })
     this.response$$.next(response)
     this.response$$.complete()
   }
@@ -104,16 +104,23 @@ export class SocketClient implements RequestClient, ResponseClient {
     this.messages$ = this.initMessages(incoming$)
   }
 
-  public send(type: RequestType, buffer: Uint8Array | string, hasResponse?: boolean | number): PendingRequest<ClientResponse> {
+  public send(type: RequestType, buffer: Uint8Array | string, hasResponse?: boolean | number): PendingResponse<ClientResponse> {
     const msg = new CompiledSocketMessage(this.config.message, this.ready$, type, buffer, hasResponse, buffer?.toString(), this.logger)
     this.pending.set(msg.id, msg)
     msg.sent$.subscribe(this.sent$$);
     return msg.pendingResponse$
   }
 
+  public getPendingMessage(id: string): CompiledSimpleRequest<ClientResponse> {
+    return this.pending.get(id)
+  }
+
   private initIncoming(conn$: Observable<SocketConnection>): Observable<symbol | string> {
+    // console.log('SocketClient.initIncoming', conn$)
     return conn$.pipe(
+      // tap(conn => console.log('SocketClient.initIncoming conn$', conn)),
       switchMap(conn => new Observable<symbol | string>(o => {
+        // console.log('SocketClient.initIncoming switchMap', conn)
         conn.write(this.config.message.delimiter + '\n', (err: Error) => {
           if (err) {
             o.error(err)
@@ -125,10 +132,9 @@ export class SocketClient implements RequestClient, ResponseClient {
         let buffer = ''
         let ready = false
         conn.on('data', chunk => {
+          // console.log('SocketClient.initIncoming on data', chunk)
           try {
             buffer += chunk.toString()
-
-            // console.log('DATA CHUNK', chunk.toString().replace(/\n/g, ' '))
 
             const nextEnd = () => buffer.indexOf(this.config.message.delimiter)
 
@@ -138,13 +144,18 @@ export class SocketClient implements RequestClient, ResponseClient {
               buffer = buffer.substring(responseEndIndex + this.config.message.delimiter.length)
               if (!ready && response === '') {
                 ready = true
+
+                // console.log('SocketClient.initIncoming client ready')
                 o.next(CLIENT_READY)
                 continue
+              } else {
+                // console.log('already ready')
               }
-              // console.log('EMITTING RESPONSE', response.replace(/\n/g, ' '))
+              // console.log('EMITTING RESPONSE', JSON.stringify(response.replace(/\n/g, ' ')))
+              // FIXME: should this happen if the response is empty?
               o.next(response)
             }
-            // console.log('BUFFER', buffer.replace(/\n/g, ' '))
+            // console.log('REMAINING BUFFER', JSON.stringify(buffer.replace(/\n/g, ' ')))
           } catch (err) {
             o.error(err)
           }
@@ -184,7 +195,7 @@ export class SocketClient implements RequestClient, ResponseClient {
     const pendingMessage = this.pending.get(id)
     // console.log('HANDLE RESPONSE', id, pendingMessage.debug)
     if (pendingMessage) {
-      pendingMessage.respond(parts)
+      pendingMessage.onResponse(parts)
       // console.log('RESPONSE', pendingMessage.debug, parts.join(':'))
       this.pending.delete(id)
       return HANDLED

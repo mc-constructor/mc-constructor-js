@@ -209,10 +209,10 @@
   resolved "https://registry.yarnpkg.com/@istanbuljs/schema/-/schema-0.1.2.tgz#26520bf09abe4a5644cd5414e37125a8954241dd"
   integrity sha512-tsAQNx32a8CoFhjhijUIhI4kccIAgmGhy8LZMZgGfmXcpMbPRUqn5LWmgRttILi6yeGmBJd2xsPkFMs0PzgPCw==
 
-"@rxjs-stuff/marbles@^1.0.0":
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/@rxjs-stuff/marbles/-/marbles-1.0.0.tgz#5e575e8aefad50868ddeb7414c9c4dc5f3c99d77"
-  integrity sha512-FqAmmGz7sbH5Q8f9aI/ZTEwC5r1lT6VmKJHbQ6klxPN8xzd3/ttwwvc3qyNduxC5MFCuPRBhqp/URnRYQNqIfw==
+"@rxjs-stuff/marbles@^2.0.0-pre.1":
+  version "2.0.0-pre.1"
+  resolved "https://registry.yarnpkg.com/@rxjs-stuff/marbles/-/marbles-2.0.0-pre.1.tgz#1607570d00391d6d7c98af06ebb476b18825ec46"
+  integrity sha512-ZGI1fo42vSCl6hjCi5Gxvqmt+N3Lw0Oyey0JOo6FKXP7iB8Xj2v2S9WRX8tmsBYQpbi5pFYJgq3oEYUfIO50og==
 
 "@sinonjs/commons@^1.6.0", "@sinonjs/commons@^1.7.0":
   version "1.7.2"
@@ -1355,10 +1355,10 @@ rimraf@^3.0.0:
   dependencies:
     glob "^7.1.3"
 
-rxjs@^7.1.0:
-  version "7.1.0"
-  resolved "https://registry.yarnpkg.com/rxjs/-/rxjs-7.1.0.tgz#94202d27b19305ef7b1a4f330277b2065df7039e"
-  integrity sha512-gCFO5iHIbRPwznl6hAYuwNFld8W4S2shtSJIqG27ReWXo9IWrCyEICxUA+6vJHwSR/OakoenC4QsDxq50tzYmw==
+rxjs@^7.2.0:
+  version "7.2.0"
+  resolved "https://registry.yarnpkg.com/rxjs/-/rxjs-7.2.0.tgz#5cd12409639e9514a71c9f5f9192b2c4ae94de31"
+  integrity sha512-aX8w9OpKrQmiPKfT1bqETtUr9JygIz6GZ+gql8v7CijClsP0laoFUdKzxFAoWuRdSlOdU2+crss+cMf+cqMTnw==
   dependencies:
     tslib "~2.1.0"
 
@@ -1604,10 +1604,10 @@ typedarray-to-buffer@^3.1.5:
   dependencies:
     is-typedarray "^1.0.0"
 
-typescript@^4.3.2:
-  version "4.3.2"
-  resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.3.2.tgz#399ab18aac45802d6f2498de5054fcbbe716a805"
-  integrity sha512-zZ4hShnmnoVnAHpVHWpTcxdv7dWP60S2FsydQLV8V5PbS3FifjWFFRiHSWpDJahly88PRyV5teTSLoq4eG7mKw==
+typescript@^4.3.5:
+  version "4.3.5"
+  resolved "https://registry.yarnpkg.com/typescript/-/typescript-4.3.5.tgz#4d1c37cc16e893973c45a06886b7113234f119f4"
+  integrity sha512-DqQgihaQ9cUrskJo9kIyW/+g0Vxsk8cDtZ52a3NGh0YNTfpUSArXSohyUGnvbPazEPLu398C0UxmKSOrPumUzA==
 
 uuid@^3.3.3:
   version "3.4.0"

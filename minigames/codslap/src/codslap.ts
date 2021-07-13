@@ -131,7 +131,7 @@ export class CodslapMinigame implements Minigame {
     return source$.pipe(
       mergeMap(v => {
         const cmd = fn.call(this, v)
-        return cmd ? cmd.execute(this.client).pipe(silence) : EMPTY
+        return cmd ? cmd.execute(this.client).pipe(silence()) : EMPTY
       }),
     )
   }

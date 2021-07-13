@@ -1,7 +1,7 @@
 import { MarbleKey, MarbleValues } from '@rxjs-stuff/marbles'
 import { silence } from '@ts-mc/common/rxjs'
 import { ServerEvent, ServerEventType } from '@ts-mc/core/server-events'
-import { ServerEventFixtures } from '@ts-mc/core/server-events/testing'
+import { ServerEventFixtures, serverEventsFixture } from '@ts-mc/core/server-events/testing'
 import { TypesFixtures } from '@ts-mc/core/types/testing'
 import { MinigameAgeEvent, MinigameEvents } from '@ts-mc/minigames'
 import { minigameEventsHelpers } from '@ts-mc/minigames/testing'
@@ -27,7 +27,7 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
 
       const source$ = hot('a', helpers.serverEvents)
       const expected =    'a'
-      const events = helpers.initEvents(source$)
+      const events = helpers.initEvents(serverEventsFixture(source$))
 
       expect(events.playerDeath$).with.marbleValues(helpers.serverEvents).to.equal(expected)
     })
@@ -40,7 +40,7 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
 
       const source$ = hot('ab', helpers.serverEvents)
       const expected =    'ab'
-      const events = helpers.initEvents(source$)
+      const events = helpers.initEvents(serverEventsFixture(source$))
 
       expect(events.playerDeath$).with.marbleValues(helpers.serverEvents).to.equal(expected)
     })
@@ -53,7 +53,7 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
 
       const source$ = hot('a-b', helpers.serverEvents)
       const expected =    '-'
-      const events = helpers.initEvents(source$)
+      const events = helpers.initEvents(serverEventsFixture(source$))
 
       expect(events.playerDeath$).with.marbleValues(helpers.serverEvents).to.equal(expected)
     })
@@ -66,7 +66,7 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
       }
       const source$ = hot('a-b', helpers.serverEvents)
       const expected =    'a'
-      const events = helpers.initEvents(source$)
+      const events = helpers.initEvents(serverEventsFixture(source$))
 
       expect(events.playerDeath$).with.marbleValues(helpers.serverEvents).to.equal(expected)
     })
@@ -79,7 +79,7 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
       const source$ =  hot('a', helpers.serverEvents)
       const expected1 =    'a'
       const expected2 =    '-'
-      const events = helpers.initEvents(source$)
+      const events = helpers.initEvents(serverEventsFixture(source$))
 
       expect(events.playerDeath$).with.marbleValues(helpers.serverEvents).to.equal(expected1)
       expect(events.playerDeath$).with.marbleValues(helpers.serverEvents).and.subscription('-^').to.equal(expected2)
@@ -99,7 +99,7 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
       const source$ = hot('ab', helpers.serverEvents)
       const expected =    'ab'
 
-      const events = helpers.initEvents(source$)
+      const events = helpers.initEvents(serverEventsFixture(source$))
 
       expect(events.playerLimbo$).with.marbleValues(helpers.playerValues).to.equal(expected)
     })
@@ -110,7 +110,7 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
       const expected2 =    '--(ab)'
       const sub2 =         '--^'
 
-      const events = helpers.initEvents(source$)
+      const events = helpers.initEvents(serverEventsFixture(source$))
 
       expect(events.playerLimbo$, 'expected1').with.marbleValues(helpers.playerValues).to.equal(expected1)
       expect(events.playerLimbo$, 'expected2').with.marbleValues(helpers.playerValues).and.subscription(sub2).to.equal(expected2)
@@ -127,7 +127,7 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
       const expected2 =    '---a'
       const sub2 =         '---^'
 
-      const events = helpers.initEvents(source$)
+      const events = helpers.initEvents(serverEventsFixture(source$))
 
       expect(events.playerLimbo$, 'expected1').with.marbleValues(helpers.playerValues).to.equal(expected1)
       expect(events.playerLimbo$, 'expected2').with.marbleValues(helpers.playerValues).and.subscription(sub2).to.equal(expected2)
@@ -144,7 +144,7 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
       const expected2 =    '---a'
       const sub2 =         '---^'
 
-      const events = helpers.initEvents(source$)
+      const events = helpers.initEvents(serverEventsFixture(source$))
 
       expect(events.playerLimbo$, 'expected1').with.marbleValues(helpers.playerValues).to.equal(expected1)
       expect(events.playerLimbo$, 'expected2').with.marbleValues(helpers.playerValues).and.subscription(sub2).to.equal(expected2)
@@ -161,7 +161,7 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
         const source$ =  hot('bc', helpers.serverEvents)
         const expected =     '-b'
 
-        const events = helpers.initEvents(source$)
+        const events = helpers.initEvents(serverEventsFixture(source$))
 
         expect(events.playerReady$).with.marbleValues(helpers.playerValues).to.equal(expected)
       })
@@ -175,7 +175,7 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
         const source$ =  hot('bc', helpers.serverEvents)
         const expected =     '-b'
 
-        const events = helpers.initEvents(source$)
+        const events = helpers.initEvents(serverEventsFixture(source$))
 
         expect(events.playerReady$).with.marbleValues(helpers.playerValues).to.equal(expected)
       })
@@ -203,7 +203,7 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
           x: false,
         }
 
-        const events = helpers.initEvents(source$)
+        const events = helpers.initEvents(serverEventsFixture(source$))
 
         expect(events.playersReady$).with.marbleValues(readyValues).to.equal(expected)
       })
@@ -226,12 +226,12 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
 
     function execTest(timedEventSource$: Observable<string> = cold('a')) {
       const eventTrigger$: Observable<true> = trigger$.pipe(mapTo(true))
-      const events = helpers.initEvents(source$)
+      const events = helpers.initEvents(serverEventsFixture(source$))
 
       // run$ needs to be subscribed in order to correctly track the server events required to make
       // timedPlayerReadyEvent work. Pipe to silence so we don't have to worry about what actually gets emitted,
       // because it doesn't matter for these tests
-      expect(events.run$.pipe(silence), 'run$').with.subscription('^ 10s !').to.equal('')
+      expect(events.run$.pipe(silence()), 'run$').with.subscription('^ 10s !').to.equal('')
 
       const timedEvent$ = timedEventSource$.pipe(
         tap(v => console.log('event', v)),
@@ -316,7 +316,7 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
     let expectMinigameAge: () => Chai.Assertion
 
     beforeEach(() => {
-      events = helpers.initEvents(cold('-'))
+      events = helpers.initEvents(serverEventsFixture(cold('-')))
       expectedAges = {
         a: {
           minigameAge: 0,
@@ -352,7 +352,7 @@ describe.marbles('MinigameEvents', ({ cold, hot }) => {
     })
 
     it('runs on its own when run$ is subscribed to, and emits the correct values to direct subscribers', () => {
-      expect(events.run$.pipe(silence)).with.subscription('^ 20s !').to.equal('')
+      expect(events.run$.pipe(silence())).with.subscription('^ 20s !').to.equal('')
       expectMinigameAge().with.subscription('2999ms ^ 2s !').to.equal('3s d 999ms e')
     })
 

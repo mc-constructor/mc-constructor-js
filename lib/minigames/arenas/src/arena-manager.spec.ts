@@ -197,7 +197,7 @@ describe.marbles('ArenaManager', ({ cold, hot }) => {
         const expectedStart = '3s -a 39999ms b'
 
         expect(manager.arenaStart$, 'arenaStart$').with.marbleValues(arenaMarbles).to.equal(expectedStart)
-        expect(manager.run$.pipe(silence), 'run$').and.marbleValues(arenaMarbles).to.equal('70s |')
+        expect(manager.run$.pipe(silence()), 'run$').and.marbleValues(arenaMarbles).to.equal('70s |')
       })
 
       it('continues subscribing to hooks after exit requirements are complete', () => {
@@ -219,7 +219,7 @@ describe.marbles('ArenaManager', ({ cold, hot }) => {
         const expectedStart = '3s -a 39999ms b'
 
         expect(manager.arenaStart$, 'arenaStart$').with.marbleValues(arenaMarbles).to.equal(expectedStart)
-        expect(manager.run$.pipe(silence), 'run$').and.marbleValues(arenaMarbles).to.equal('70s |')
+        expect(manager.run$.pipe(silence()), 'run$').and.marbleValues(arenaMarbles).to.equal('70s |')
 
         // 31026ms = sum of timings from playerDeath$ above:
         //  3500ms : initial delay

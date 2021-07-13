@@ -1,13 +1,13 @@
 import { Observable } from 'rxjs'
 
-export interface PendingRequest<TResponse = any> extends Observable<TResponse> {
+export interface PendingResponse<TResponse = any> extends Observable<TResponse> {
   id: string
   sent$: Observable<CompiledRequest<TResponse>>
 }
 
 export interface CompiledRequest<TResponse = any> {
   id: string
-  pendingResponse$: PendingRequest<TResponse>
+  pendingResponse$: PendingResponse<TResponse>
   sent$: Observable<this>
   debug: string
 }

@@ -1,5 +1,4 @@
 import { Observable, PartialObserver, Subject, Subscription } from 'rxjs'
-import { toSubscriber } from 'rxjs/internal-compatibility'
 
 export type TriggerSelectorFn<TStream, TTrigger> = (trigger: TTrigger, event: TStream) => boolean
 
@@ -44,19 +43,26 @@ export class DequeueReplaySubject<TStream, TTrigger = TStream> extends Subject<T
   }
 
   subscribe(observer?: PartialObserver<TStream>): Subscription;
-  /** @deprecated Use an observer instead of a complete callback */
-  subscribe(next: null | undefined, error: null | undefined, complete: () => void): Subscription;
-  /** @deprecated Use an observer instead of an error callback */
-  subscribe(next: null | undefined, error: (error: any) => void, complete?: () => void): Subscription;
-  /** @deprecated Use an observer instead of a complete callback */
-  subscribe(next: (value: TStream) => void, error: null | undefined, complete: () => void): Subscription;
   subscribe(next?: (value: TStream) => void, error?: (error: any) => void, complete?: () => void): Subscription;
   subscribe(observerOrNext?: PartialObserver<TStream> | ((value: TStream) => void) | null,
             error?: ((error: any) => void) | null,
             complete?: (() => void) | null): Subscription {
-    const sink = toSubscriber(observerOrNext, error, complete);
+    let observer: PartialObserver<TStream>
+    if (typeof observerOrNext === 'function') {
+      observer = { next: observerOrNext, error, complete }
+    } else {
+      observer = observerOrNext
+    }
+
+    const sink = new Subject()
+    const sinkSub = sink.subscribe(observer)
     this._events.forEach(sink.next.bind(sink));
-    return super.subscribe(sink);
+
+    const sub = super.subscribe(sink);
+    sub.add(sinkSub)
+    sub.add(() => sink.complete())
+
+    return sub
   }
 
   /** @internal */
