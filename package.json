@@ -15,7 +15,7 @@
     "@dandi/core": "^1.0.0-alpha.71",
     "colors": "^1.4.0",
     "dotenv": "^8.2.0",
-    "luxon": "^1.26.0",
+    "luxon": "^1.28.1",
     "rcon-client": "^4.2.3",
     "rxjs": "^6.6.7",
     "uuid": "^8.3.2"
